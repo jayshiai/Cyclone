@@ -29,6 +29,12 @@ void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
     {
         PrintAST(parenNode->expression, indent + (isLast ? "    " : "|   "), true);
     }
+
+    if (auto *unaryNode = dynamic_cast<UnaryExpressionNode *>(node))
+    {
+        std::cout << indent + (isLast ? "    |-- Operation: " : "|   |-- Operation: ") << unaryNode->op << std::endl;
+        PrintAST(unaryNode->expression, indent + (isLast ? "    " : "|   "), true);
+    }
 }
 
 main()

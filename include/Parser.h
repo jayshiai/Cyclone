@@ -19,6 +19,7 @@ private:
     SyntaxNode *ParseExpression(int precedence = 0);
     SyntaxNode *ParsePrimaryExpression();
     int GetBinaryPrecedence(TokenType type);
+    int GetUnaryPrecedence(TokenType type);
 };
 
 #endif

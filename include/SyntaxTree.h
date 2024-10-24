@@ -49,6 +49,18 @@ public:
     ParenthesizedExpressionNode(SyntaxNode *expression) : expression(expression) {};
 };
 
+class UnaryExpressionNode : public SyntaxNode
+{
+public:
+    std::string getType() const override
+    {
+        return "UnaryExpression";
+    }
+    SyntaxNode *expression;
+    std::string op;
+    UnaryExpressionNode(SyntaxNode *expression, std::string op) : expression(expression), op(op) {};
+};
+
 class SyntaxTree
 {
 public:

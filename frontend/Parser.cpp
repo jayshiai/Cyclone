@@ -20,7 +20,21 @@ void Parser::NextToken()
 }
 SyntaxNode *Parser::ParseExpression(int parentPrecedence)
 {
-    SyntaxNode *left = ParsePrimaryExpression();
+    SyntaxNode *left;
+
+    int unaryPrecedence = GetUnaryPrecedence(currentToken.type);
+    if (unaryPrecedence != 0 && unaryPrecedence >= parentPrecedence)
+    {
+        std::string op = currentToken.value;
+        NextToken();
+        SyntaxNode *expression = ParseExpression(unaryPrecedence);
+        left = new UnaryExpressionNode(expression, op);
+    }
+    else
+    {
+        left = ParsePrimaryExpression();
+    }
+
     while (true)
     {
 
@@ -48,6 +62,18 @@ int Parser::GetBinaryPrecedence(TokenType type)
     case TokenType::MINUS:
         return 1;
 
+    default:
+        return 0;
+    }
+}
+
+int Parser::GetUnaryPrecedence(TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::PLUS:
+    case TokenType::MINUS:
+        return 6;
     default:
         return 0;
     }
