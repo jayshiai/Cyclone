@@ -1,5 +1,5 @@
-#include "Parser.h"
-#include "SyntaxTree.h"
+#include "CodeAnalysis/Parser.h"
+#include "CodeAnalysis/SyntaxTree.h"
 #include <iostream>
 
 Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), currentTokenIndex(0), currentToken(tokens[currentTokenIndex]) {}

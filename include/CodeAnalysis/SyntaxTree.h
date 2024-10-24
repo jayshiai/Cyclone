@@ -19,8 +19,7 @@ public:
         return "NumericLiteral";
     }
     std::string value;
-    NumericLiteralNode(std::string value) : value(value) {
-                                            };
+    NumericLiteralNode(std::string value) : value(value) {};
 };
 
 class BinaryExpressionNode : public SyntaxNode

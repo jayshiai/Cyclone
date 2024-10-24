@@ -2,8 +2,8 @@
 #define PARSER_H
 
 #include <vector>
-#include "Lexer.h"
-#include "SyntaxTree.h"
+#include "CodeAnalysis/Lexer.h"
+#include "CodeAnalysis/SyntaxTree.h"
 class Parser
 {
 public:

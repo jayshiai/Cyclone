@@ -1,6 +1,6 @@
-#include "lexer.h"
-#include "parser.h"
-#include "SyntaxTree.h"
+#include "CodeAnalysis/lexer.h"
+#include "CodeAnalysis/parser.h"
+#include "CodeAnalysis/SyntaxTree.h"
 #include <iostream>
 
 void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
