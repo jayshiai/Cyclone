@@ -1,2 +1,2 @@
-./.vscode
-./compiler.exe
+.vscode/*
+*.exe
