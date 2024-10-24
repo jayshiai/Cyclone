@@ -18,47 +18,47 @@ void Parser::NextToken()
         currentToken = tokens[currentTokenIndex];
     }
 }
-
-SyntaxNode *Parser::ParseExpression()
+SyntaxNode *Parser::ParseExpression(int parentPrecedence)
 {
-
-    SyntaxNode *left = ParseTerm();
-
-    while (currentToken.type == TokenType::PLUS || currentToken.type == TokenType::MINUS)
+    SyntaxNode *left = ParsePrimaryExpression();
+    while (true)
     {
+
+        int precedence = GetBinaryPrecedence(currentToken.type);
+        if (precedence == 0 || precedence <= parentPrecedence)
+        {
+            break;
+        }
         std::string op = currentToken.value;
         NextToken();
-        SyntaxNode *right = ParseTerm();
+        SyntaxNode *right = ParseExpression(precedence);
         left = new BinaryExpressionNode(left, right, op);
     }
     return left;
 }
 
-SyntaxNode *Parser::ParseTerm()
+int Parser::GetBinaryPrecedence(TokenType type)
 {
-    SyntaxNode *left = ParseFactor();
-
-    while (currentToken.type == TokenType::MULTIPLY || currentToken.type == TokenType::DIVIDE)
+    switch (type)
     {
-        std::string op = currentToken.value;
-        NextToken();
-        SyntaxNode *right = ParseFactor();
+    case TokenType::MULTIPLY:
+    case TokenType::DIVIDE:
+        return 2;
+    case TokenType::PLUS:
+    case TokenType::MINUS:
+        return 1;
 
-        left = new BinaryExpressionNode(left, right, op);
+    default:
+        return 0;
     }
-
-    return left;
 }
 
-SyntaxNode *Parser::ParseFactor()
+SyntaxNode *Parser::ParsePrimaryExpression()
 {
-    if (currentToken.type == TokenType::NUMBER)
+
+    switch (currentToken.type)
     {
-        SyntaxNode *node = new NumericLiteralNode(currentToken.value);
-        NextToken();
-        return node;
-    }
-    else if (currentToken.type == TokenType::LPAREN)
+    case TokenType::LPAREN:
     {
         NextToken();
         SyntaxNode *expression = ParseExpression();
@@ -68,15 +68,20 @@ SyntaxNode *Parser::ParseFactor()
         }
         else
         {
-            diagnostics.push_back("Expected ')' but got :" + currentToken.value + " at position: " + std::to_string(currentTokenIndex));
+            diagnostics.push_back("Expected ')' but got :" + currentToken.value + " at position: " + std::to_string(currentToken.position));
         }
-        return expression;
+        return new ParenthesizedExpressionNode(expression);
+        break;
     }
-    else
+    case TokenType::NUMBER:
     {
-        std::cerr << "Unexpected token: " << currentToken.value << std::endl;
-        exit(1);
+        SyntaxNode *node = new NumericLiteralNode(currentToken.value);
+        NextToken();
+        return node;
+        break;
     }
-
-    return nullptr; // Unreachable
+    default:
+        diagnostics.push_back("Unexpected token: " + currentToken.value + " at position: " + std::to_string(currentToken.position));
+        break;
+    }
 }

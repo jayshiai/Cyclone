@@ -20,7 +20,8 @@ struct Token
 {
     TokenType type;
     std::string value;
-    Token(TokenType type, std::string value) : type(type), value(value) {}
+    size_t position;
+    Token(TokenType type, std::string value, size_t position) : type(type), value(value), position(position) {}
 };
 
 class Lexer

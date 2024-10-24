@@ -16,9 +16,9 @@ private:
     size_t currentTokenIndex;
     Token currentToken;
     void NextToken();
-    SyntaxNode *ParseExpression();
-    SyntaxNode *ParseTerm();
-    SyntaxNode *ParseFactor();
+    SyntaxNode *ParseExpression(int precedence = 0);
+    SyntaxNode *ParsePrimaryExpression();
+    int GetBinaryPrecedence(TokenType type);
 };
 
 #endif

@@ -9,51 +9,60 @@ std::vector<Token> Lexer::tokenize()
     std::vector<Token> tokens;
     while (currentChar != '\0')
     {
-        if (isspace(currentChar))
+        switch (currentChar)
         {
-            skipWhitespace();
-        }
-        else if (isdigit(currentChar))
-        {
-            tokens.push_back(Token{TokenType::NUMBER, number()});
-        }
-        else if (currentChar == '+')
-        {
-            tokens.push_back(Token{TokenType::PLUS, "+"});
+        case '+':
+            tokens.push_back(Token{TokenType::PLUS, "+", pos});
             advance();
-        }
-        else if (currentChar == '-')
-        {
-            tokens.push_back(Token{TokenType::MINUS, "-"});
+            break;
+
+        case '-':
+            tokens.push_back(Token{TokenType::MINUS, "-", pos});
             advance();
-        }
-        else if (currentChar == '*')
-        {
-            tokens.push_back(Token{TokenType::MULTIPLY, "*"});
+            break;
+
+        case '*':
+            tokens.push_back(Token{TokenType::MULTIPLY, "*", pos});
             advance();
-        }
-        else if (currentChar == '/')
-        {
-            tokens.push_back(Token{TokenType::DIVIDE, "/"});
+            break;
+
+        case '/':
+            tokens.push_back(Token{TokenType::DIVIDE, "/", pos});
             advance();
-        }
-        else if (currentChar == '(')
-        {
-            tokens.push_back(Token{TokenType::LPAREN, "("});
+            break;
+
+        case '(':
+            tokens.push_back(Token{TokenType::LPAREN, "(", pos});
             advance();
-        }
-        else if (currentChar == ')')
-        {
-            tokens.push_back(Token{TokenType::RPAREN, ")"});
+            break;
+
+        case ')':
+            tokens.push_back(Token{TokenType::RPAREN, ")", pos});
             advance();
-        }
-        else
-        {
-            std::cerr << "Unknown character: " << currentChar << std::endl;
-            exit(1);
+            break;
+
+        default:
+
+            if (isdigit(currentChar))
+            {
+                tokens.push_back(Token{TokenType::NUMBER, number(), pos});
+            }
+
+            else if (isspace(currentChar))
+            {
+                skipWhitespace();
+            }
+
+            else
+            {
+                std::cerr << "Unknown character: " << currentChar << std::endl;
+                exit(1);
+            }
+
+            break;
         }
     }
-    tokens.push_back(Token{TokenType::END_OF_FILE, ""});
+    tokens.push_back(Token{TokenType::END_OF_FILE, "", pos});
     return tokens;
 }
 

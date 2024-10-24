@@ -33,11 +33,20 @@ public:
     SyntaxNode *left;
     SyntaxNode *right;
     std::string op;
-    BinaryExpressionNode(SyntaxNode *left, SyntaxNode *right, std::string op) : left(left), right(right), op(op) {
-
-                                                                                };
+    BinaryExpressionNode(SyntaxNode *left, SyntaxNode *right, std::string op) : left(left), right(right), op(op) {};
 
 private:
+};
+
+class ParenthesizedExpressionNode : public SyntaxNode
+{
+public:
+    std::string getType() const override
+    {
+        return "ParenthesizedExpression";
+    }
+    SyntaxNode *expression;
+    ParenthesizedExpressionNode(SyntaxNode *expression) : expression(expression) {};
 };
 
 class SyntaxTree

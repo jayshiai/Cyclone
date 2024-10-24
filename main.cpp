@@ -8,24 +8,26 @@
 void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
 {
     if (!node)
-        return; // Safety check for null pointer
+        return;
 
-    // Use ASCII characters instead of Unicode
-    std::cout << indent << "|--" << node->getType(); // Ensure getType() is implemented properly
+    std::cout << indent << "|--" << node->getType();
 
-    // Handle specific node types for additional output
     if (auto *numNode = dynamic_cast<NumericLiteralNode *>(node))
     {
         std::cout << ": " << numNode->value;
     }
     std::cout << std::endl;
 
-    // If there are children (only applicable for BinaryExpressionNode)
     if (auto *binNode = dynamic_cast<BinaryExpressionNode *>(node))
     {
         PrintAST(binNode->left, indent + (isLast ? "    " : "|   "), false);
         std::cout << indent + (isLast ? "    |-- Operation: " : "|   |-- Operation: ") << binNode->op << std::endl;
         PrintAST(binNode->right, indent + (isLast ? "    " : "|   "), true);
+    }
+
+    if (auto *parenNode = dynamic_cast<ParenthesizedExpressionNode *>(node))
+    {
+        PrintAST(parenNode->expression, indent + (isLast ? "    " : "|   "), true);
     }
 }
 
@@ -55,11 +57,13 @@ main()
     std::cout << "Abstract Syntax Tree" << std::endl;
     PrintAST(Root.root);
 
-    std::cout << "Diagnostics:" << std::endl;
-    for (auto &diagnostic : Root.diagnostics)
+    if (Root.diagnostics.size() != 0)
     {
-        std::cout << diagnostic << std::endl;
+        std::cout << "Diagnostics:" << std::endl;
+        for (auto &diagnostic : Root.diagnostics)
+        {
+            std::cout << diagnostic << std::endl;
+        }
     }
-
     return 0;
 }
