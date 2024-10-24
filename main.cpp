@@ -3,8 +3,6 @@
 #include "SyntaxTree.h"
 #include <iostream>
 
-// Function to print the AST
-// Function to print the AST
 void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
 {
     if (!node)
@@ -41,11 +39,9 @@ main()
 {
     std::string input;
 
-    // Read input from user
     std::cout << "Enter an expression: ";
     std::getline(std::cin, input);
 
-    // Create Lexer instance and tokenize the input
     Lexer lexer(input);
     std::vector<Token> tokens = lexer.tokenize();
     std::cout << "Tokens:" << std::endl;
@@ -54,12 +50,10 @@ main()
     {
         std::cout << "      Type: " << static_cast<int>(token.type) << ", Value: " << token.value << std::endl;
     }
-    // Create Parser instance and parse the tokens
+
     Parser parser(tokens);
     SyntaxTree Root = parser.parse();
 
-    // std::cout << "asd:" << Root.root->getType() << std::endl;
-    // Print the AST
     std::cout << "Abstract Syntax Tree" << std::endl;
     PrintAST(Root.root);
 
