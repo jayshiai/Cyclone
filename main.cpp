@@ -1,37 +1,31 @@
 #include "CodeAnalysis/lexer.h"
 #include "CodeAnalysis/parser.h"
 #include "CodeAnalysis/SyntaxTree.h"
+#include "CodeAnalysis/Binder.h"
+#include "CodeAnalysis/Evaluator.h"
+#include "CodeAnalysis/Compilation.h"
+#include "Utils.h"
 #include <iostream>
+#include <any>
 
 void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
 {
     if (!node)
         return;
 
-    std::cout << indent << "|--" << node->getType();
+    std::cout << indent << "|--" << convertSyntaxKindToString(node->Kind);
 
-    if (auto *numNode = dynamic_cast<NumericLiteralNode *>(node))
+    if (Token *token = dynamic_cast<Token *>(node))
     {
-        std::cout << ": " << numNode->value;
+        std::cout << " " << token->value;
     }
     std::cout << std::endl;
+    indent += isLast ? "   " : "|   ";
 
-    if (auto *binNode = dynamic_cast<BinaryExpressionNode *>(node))
+    auto children = node->GetChildren();
+    for (size_t i = 0; i < children.size(); i++)
     {
-        PrintAST(binNode->left, indent + (isLast ? "    " : "|   "), false);
-        std::cout << indent + (isLast ? "    |-- Operation: " : "|   |-- Operation: ") << binNode->op << std::endl;
-        PrintAST(binNode->right, indent + (isLast ? "    " : "|   "), true);
-    }
-
-    if (auto *parenNode = dynamic_cast<ParenthesizedExpressionNode *>(node))
-    {
-        PrintAST(parenNode->expression, indent + (isLast ? "    " : "|   "), true);
-    }
-
-    if (auto *unaryNode = dynamic_cast<UnaryExpressionNode *>(node))
-    {
-        std::cout << indent + (isLast ? "    |-- Operation: " : "|   |-- Operation: ") << unaryNode->op << std::endl;
-        PrintAST(unaryNode->expression, indent + (isLast ? "    " : "|   "), true);
+        PrintAST(children[i], indent, i == children.size() - 1);
     }
 }
 
@@ -48,22 +42,40 @@ main()
 
     for (auto &token : tokens)
     {
-        std::cout << "      Type: " << static_cast<int>(token.type) << ", Value: " << token.value << std::endl;
+        std::cout << "      Type: " << convertSyntaxKindToString(token.Kind) << ", Value: " << token.value << std::endl;
     }
 
     Parser parser(tokens);
     SyntaxTree Root = parser.parse();
+    Compilation compilation(&Root);
+    std::unordered_map<std::string, std::any> variables;
+    EvaluationResult result = compilation.Evaluate(variables);
 
     std::cout << "Abstract Syntax Tree" << std::endl;
     PrintAST(Root.root);
 
-    if (Root.diagnostics.size() != 0)
+    if (result.Diagnostics.size() > 0)
     {
-        std::cout << "Diagnostics:" << std::endl;
-        for (auto &diagnostic : Root.diagnostics)
+        for (auto &diagnostic : result.Diagnostics)
         {
-            std::cout << diagnostic << std::endl;
+            std::cout << diagnostic.ToString() << std::endl;
         }
     }
+    else
+    {
+        if (result.Value.type() == typeid(int))
+        {
+            std::cout << "Result: " << std::any_cast<int>(result.Value) << std::endl;
+        }
+        else if (result.Value.type() == typeid(bool))
+        {
+            std::cout << "Result: " << std::any_cast<bool>(result.Value) << std::endl;
+        }
+        else
+        {
+            std::cout << "Unexpected type in result." << std::endl;
+        }
+    }
+
     return 0;
 }

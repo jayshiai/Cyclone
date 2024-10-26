@@ -9,17 +9,25 @@ class Parser
 public:
     Parser(const std::vector<Token> &tokens);
     SyntaxTree parse();
+    const DiagnosticBag &GetDiagnostics() const
+    {
+        return _diagnostics;
+    }
 
 private:
-    std::vector<std::string> diagnostics;
+    DiagnosticBag _diagnostics;
     std::vector<Token> tokens;
     size_t currentTokenIndex;
     Token currentToken;
+    Token peek( int offset);
     void NextToken();
-    SyntaxNode *ParseExpression(int precedence = 0);
+    SyntaxNode *Expect(SyntaxKind kind);
+    SyntaxNode *ParseAssignmentExpression();
+    SyntaxNode *ParseExpression();
+    SyntaxNode *ParseBinaryExpression(int precedence = 0);
     SyntaxNode *ParsePrimaryExpression();
-    int GetBinaryPrecedence(TokenType type);
-    int GetUnaryPrecedence(TokenType type);
+    int GetBinaryPrecedence(SyntaxKind kind);
+    int GetUnaryPrecedence(SyntaxKind kind);
 };
 
 #endif

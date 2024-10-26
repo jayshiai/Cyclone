@@ -1,8 +1,10 @@
 #include "CodeAnalysis/Lexer.h"
+#include "CodeAnalysis/SyntaxTree.h"
 #include <iostream>
 #include <cctype>
-
-Lexer::Lexer(const std::string &input) : input(input), pos(0), currentChar(input[pos]) {}
+#include <stdexcept>
+#include "CodeAnalysis/Diagnostic.h"
+Lexer::Lexer(const std::string &input) : input(input), pos(0), currentChar(input[pos]), lookAhead(input[pos + 1]) {}
 
 std::vector<Token> Lexer::tokenize()
 {
@@ -12,40 +14,96 @@ std::vector<Token> Lexer::tokenize()
         switch (currentChar)
         {
         case '+':
-            tokens.push_back(Token{TokenType::PLUS, "+", pos});
+            tokens.push_back(Token{SyntaxKind::PLUS, "+", pos});
             advance();
             break;
 
         case '-':
-            tokens.push_back(Token{TokenType::MINUS, "-", pos});
+            tokens.push_back(Token{SyntaxKind::MINUS, "-", pos});
             advance();
             break;
 
         case '*':
-            tokens.push_back(Token{TokenType::MULTIPLY, "*", pos});
+            tokens.push_back(Token{SyntaxKind::MULTIPLY, "*", pos});
             advance();
             break;
 
         case '/':
-            tokens.push_back(Token{TokenType::DIVIDE, "/", pos});
+            tokens.push_back(Token{SyntaxKind::DIVIDE, "/", pos});
             advance();
             break;
 
         case '(':
-            tokens.push_back(Token{TokenType::LPAREN, "(", pos});
+            tokens.push_back(Token{SyntaxKind::LPAREN, "(", pos});
             advance();
             break;
 
         case ')':
-            tokens.push_back(Token{TokenType::RPAREN, ")", pos});
+            tokens.push_back(Token{SyntaxKind::RPAREN, ")", pos});
             advance();
             break;
-
+        case '&':
+            if (lookAhead == '&')
+            {
+                tokens.push_back(Token{SyntaxKind::AMPERSAND_AMPERSAND, "&&", pos});
+                advance();
+                advance();
+            }
+            break;
+        case '|':
+            if (lookAhead == '|')
+            {
+                tokens.push_back(Token{SyntaxKind::PIPE_PIPE, "||", pos});
+                advance();
+                advance();
+            }
+            break;
+        case '=':
+            if (lookAhead == '=')
+            {
+                tokens.push_back(Token{SyntaxKind::EQUALS_EQUALS, "==", pos});
+                advance();
+                advance();
+            }
+            else
+            {
+                tokens.push_back(Token{SyntaxKind::EQUALS, "=", pos});
+                advance();
+            }
+            break;
+        case '!':
+            if (lookAhead == '=')
+            {
+                tokens.push_back(Token{SyntaxKind::BANG_EQUALS, "!=", pos});
+                advance();
+                advance();
+            }
+            else
+            {
+                tokens.push_back(Token{SyntaxKind::BANG, "!", pos});
+                advance();
+            }
+            break;
         default:
 
             if (isdigit(currentChar))
             {
-                tokens.push_back(Token{TokenType::NUMBER, number(), pos});
+                int start = pos;
+                std::string numberText = number();
+                int length = pos - start;
+                int value;
+
+                try
+                {
+                    value = std::stoi(numberText);
+                }
+                catch (const std::invalid_argument &)
+                {
+                    _diagnostics.ReportInvalidNumber(TextSpan(start, length), numberText, "int");
+                    value = 0;
+                }
+
+                tokens.push_back(Token{SyntaxKind::NUMBER, numberText, pos});
             }
 
             else if (isspace(currentChar))
@@ -53,16 +111,40 @@ std::vector<Token> Lexer::tokenize()
                 skipWhitespace();
             }
 
+            else if (isalpha(currentChar))
+            {
+                std::string result;
+                while (isalpha(currentChar))
+                {
+                    result += currentChar;
+                    advance();
+                }
+
+                if (result == "true")
+                {
+                    tokens.push_back(Token{SyntaxKind::TRUE, "true", pos});
+                }
+                else if (result == "false")
+                {
+                    tokens.push_back(Token{SyntaxKind::FALSE, "false", pos});
+                }
+                else
+                {
+                    tokens.push_back(Token{SyntaxKind::IDENTIFIER, result, pos});
+                }
+            }
+
             else
             {
-                std::cerr << "Unknown character: " << currentChar << std::endl;
-                exit(1);
+                _diagnostics.ReportBadCharacter(pos, currentChar);
+                tokens.push_back(Token{SyntaxKind::BAD_TOKEN, std::string(1, currentChar), pos});
+                advance();
             }
 
             break;
         }
     }
-    tokens.push_back(Token{TokenType::END_OF_FILE, "", pos});
+    tokens.push_back(Token{SyntaxKind::END_OF_FILE, "", pos});
     return tokens;
 }
 
@@ -72,6 +154,7 @@ void Lexer::advance()
     if (pos < input.size())
     {
         currentChar = input[pos];
+        lookAhead = input[pos + 1];
     }
     else
     {
@@ -96,4 +179,17 @@ std::string Lexer::number()
         advance();
     }
     return result;
+}
+
+SyntaxKind Lexer::checkKeyword(const std::string &keyword)
+{
+    if (keyword == "true")
+    {
+        return SyntaxKind::TRUE;
+    }
+    else if (keyword == "false")
+    {
+        return SyntaxKind::FALSE;
+    }
+    return SyntaxKind::IDENTIFIER;
 }

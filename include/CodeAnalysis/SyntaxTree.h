@@ -1,71 +1,140 @@
 #ifndef SYNTAX_TREE_H
 #define SYNTAX_TREE_H
 
+#include "CodeAnalysis/Diagnostic.h"
 #include <vector>
 #include <string>
+
+enum class SyntaxKind
+{
+    NUMBER,
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
+    LPAREN, // (
+    RPAREN, // )
+    TRUE,
+    FALSE,
+    BANG,
+    EQUALS,
+    EQUALS_EQUALS,
+    BANG_EQUALS,
+    AMPERSAND_AMPERSAND,
+    PIPE_PIPE,
+    IDENTIFIER,
+    END_OF_FILE,
+    BAD_TOKEN,
+    LiteralExpression,
+    UnaryExpression,
+    BinaryExpression,
+    ParenthesizedExpression,
+    NameExpression,
+    AssignmentExpression,
+};
 
 class SyntaxNode
 {
 public:
     virtual ~SyntaxNode() = default;
-    virtual std::string getType() const = 0;
+    SyntaxKind Kind;
+    virtual std::vector<SyntaxNode *> GetChildren() const { return {}; }
+
+protected:
+    SyntaxNode(SyntaxKind kind) : Kind(kind) {}
 };
 
-class NumericLiteralNode : public SyntaxNode
+class Token : public SyntaxNode
 {
 public:
-    std::string getType() const override
-    {
-        return "NumericLiteral";
-    }
     std::string value;
-    NumericLiteralNode(std::string value) : value(value) {};
+    size_t position;
+    TextSpan Span;
+    Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.size())) {}
 };
 
+class LiteralExpressionNode : public SyntaxNode
+{
+public:
+    Token LiteralToken;
+    LiteralExpressionNode(Token LiteralToken)
+        : SyntaxNode(SyntaxKind::LiteralExpression), LiteralToken(LiteralToken) {}
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&LiteralToken))};
+    }
+};
+
+class NameExpressionNode : public SyntaxNode
+{
+public:
+    Token IdentifierToken;
+    NameExpressionNode(Token IdentifierToken)
+        : SyntaxNode(SyntaxKind::NameExpression), IdentifierToken(IdentifierToken) {}
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken))};
+    }
+};
+
+class AssignmentExpressionNode : public SyntaxNode
+{
+public:
+    Token IdentifierToken;
+    Token EqualsToken;
+    SyntaxNode *Expression;
+    AssignmentExpressionNode(Token IdentifierToken, Token EqualsToken, SyntaxNode *Expression)
+        : SyntaxNode(SyntaxKind::AssignmentExpression), IdentifierToken(IdentifierToken), EqualsToken(EqualsToken), Expression(Expression) {}
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Expression};
+    }
+};
 class BinaryExpressionNode : public SyntaxNode
 {
 public:
-    std::string getType() const override
-    {
-        return "BinaryExpression";
-    }
     SyntaxNode *left;
     SyntaxNode *right;
-    std::string op;
-    BinaryExpressionNode(SyntaxNode *left, SyntaxNode *right, std::string op) : left(left), right(right), op(op) {};
+    Token OperatorToken;
+    BinaryExpressionNode(SyntaxNode *left, SyntaxNode *right, Token OperatorToken)
+        : SyntaxNode(SyntaxKind::BinaryExpression), left(left), right(right), OperatorToken(OperatorToken) {}
 
-private:
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {left, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OperatorToken)), right};
+    }
 };
 
 class ParenthesizedExpressionNode : public SyntaxNode
 {
 public:
-    std::string getType() const override
-    {
-        return "ParenthesizedExpression";
-    }
     SyntaxNode *expression;
-    ParenthesizedExpressionNode(SyntaxNode *expression) : expression(expression) {};
+    ParenthesizedExpressionNode(SyntaxNode *expression)
+        : SyntaxNode(SyntaxKind::ParenthesizedExpression), expression(expression) {}
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {expression};
+    }
 };
 
 class UnaryExpressionNode : public SyntaxNode
 {
 public:
-    std::string getType() const override
-    {
-        return "UnaryExpression";
-    }
     SyntaxNode *expression;
-    std::string op;
-    UnaryExpressionNode(SyntaxNode *expression, std::string op) : expression(expression), op(op) {};
+    Token OperatorToken;
+    UnaryExpressionNode(SyntaxNode *expression, Token OperatorToken)
+        : SyntaxNode(SyntaxKind::UnaryExpression), expression(expression), OperatorToken(OperatorToken) {}
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OperatorToken)), expression};
+    }
 };
-
 class SyntaxTree
 {
 public:
-    SyntaxTree(SyntaxNode *root, std::vector<std::string> diagnostics) : root(root), diagnostics(diagnostics) {};
+    SyntaxTree(SyntaxNode *root, DiagnosticBag _diagnostics) : root(root), Diagnostics(_diagnostics) {};
     SyntaxNode *root;
-    std::vector<std::string> diagnostics;
+    DiagnosticBag Diagnostics;
 };
 
 #endif
