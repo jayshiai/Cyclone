@@ -26,7 +26,6 @@ class SourceText
 {
 private:
     std::string _text;
-    std::vector<TextLine> _lines;
 
     SourceText(const std::string &text)
         : _text(text)
@@ -41,6 +40,7 @@ private:
     static int GetLineBreakWidth(const std::string &text, int position);
 
 public:
+    std::vector<TextLine> _lines;
     static SourceText From(const std::string &text)
     {
         return SourceText(text);

@@ -4,7 +4,7 @@
 #include <cctype>
 #include <stdexcept>
 #include "CodeAnalysis/Diagnostic.h"
-
+#include "Utils.h"
 std::vector<Token> Lexer::tokenize()
 {
     std::vector<Token> tokens;
@@ -127,6 +127,11 @@ std::vector<Token> Lexer::tokenize()
         }
     }
     tokens.push_back(Token{SyntaxKind::END_OF_FILE, "", pos});
+    std::cout << "TOKENS: " << std::endl;
+    for (auto token : tokens)
+    {
+        std::cout << "  " << convertSyntaxKindToString(token.Kind) << " " << token.value << std::endl;
+    }
     return tokens;
 }
 

@@ -15,7 +15,7 @@ Token Parser::peek(int offset)
 SyntaxTree Parser::parse()
 {
     SyntaxNode *root = ParseExpression();
-    return SyntaxTree(root, _diagnostics);
+    return SyntaxTree(Text, root, _diagnostics);
 }
 
 void Parser::NextToken()
@@ -110,18 +110,18 @@ int Parser::GetBinaryPrecedence(SyntaxKind kind)
         return 0;
     }
 }
-SyntaxNode *Parser::Expect(SyntaxKind kind)
+Token Parser::Expect(SyntaxKind kind)
 {
     if (currentToken.Kind == kind)
     {
-        SyntaxNode *node = new Token(currentToken);
+        Token token = currentToken;
         NextToken();
-        return node;
+        return token;
     }
     else
     {
         _diagnostics.ReportUnexpectedToken(currentToken.Span, convertSyntaxKindToString(currentToken.Kind), convertSyntaxKindToString(kind));
-        return new Token(kind, currentToken.value, currentToken.position);
+        return Token(kind, currentToken.value, currentToken.position);
     }
 }
 SyntaxNode *Parser::ParsePrimaryExpression()
@@ -140,12 +140,8 @@ SyntaxNode *Parser::ParsePrimaryExpression()
         return ParseNumberLiteral();
         break;
     case SyntaxKind::IDENTIFIER:
-        return ParseNameExpression();
-        break;
-
     default:
-        _diagnostics.ReportUnexpectedToken(currentToken.Span, convertSyntaxKindToString(currentToken.Kind), "Primary Expression");
-        return new Token(currentToken.Kind, currentToken.value, currentToken.position);
+        return ParseNameExpression();
         break;
     }
 }
@@ -175,5 +171,6 @@ SyntaxNode *Parser::ParseNumberLiteral()
 
 SyntaxNode *Parser::ParseNameExpression()
 {
-    return Expect(SyntaxKind::IDENTIFIER);
+    Token name = Expect(SyntaxKind::IDENTIFIER);
+    return new NameExpressionNode(name);
 }

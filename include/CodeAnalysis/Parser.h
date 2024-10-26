@@ -8,11 +8,11 @@
 class Parser
 {
 public:
-    Parser(const std::vector<Token> &tokens, DiagnosticBag diagnostic) : tokens(tokens), currentTokenIndex(0), currentToken(tokens[0])
+    Parser(SourceText text, const std::vector<Token> &tokens, DiagnosticBag diagnostic) : Text(text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0])
     {
         _diagnostics.AddRange(diagnostic);
     };
-    Parser(const std::vector<Token> &tokens) : tokens(tokens), currentTokenIndex(0), currentToken(tokens[0]) {}
+    Parser(SourceText text, const std::vector<Token> &tokens) : Text(text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0]) {}
     SyntaxTree parse();
     const DiagnosticBag &GetDiagnostics() const
     {
@@ -20,13 +20,14 @@ public:
     }
 
 private:
+    SourceText Text;
     DiagnosticBag _diagnostics;
     std::vector<Token> tokens;
     size_t currentTokenIndex;
     Token currentToken;
     Token peek(int offset);
     void NextToken();
-    SyntaxNode *Expect(SyntaxKind kind);
+    Token Expect(SyntaxKind kind);
     SyntaxNode *ParseAssignmentExpression();
     SyntaxNode *ParseExpression();
     SyntaxNode *ParseBinaryExpression(int precedence = 0);

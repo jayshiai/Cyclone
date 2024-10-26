@@ -4,4 +4,5 @@
 #include "CodeAnalysis/Binder.h"
 std::string convertSyntaxKindToString(SyntaxKind kind);
 std::string convertTypetoString(Type type);
+void PrintDiagnostic(Diagnostic diagnostic, SourceText Text);
 #endif

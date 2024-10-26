@@ -2,6 +2,8 @@
 #define SYNTAX_TREE_H
 
 #include "CodeAnalysis/Diagnostic.h"
+#include "CodeAnalysis/SourceText.h"
+
 #include <vector>
 #include <string>
 #include <any>
@@ -52,7 +54,7 @@ public:
     std::string value;
     size_t position;
     TextSpan Span;
-    Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.size())) {}
+    Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
     Token();
 };
 
@@ -139,9 +141,12 @@ public:
 class SyntaxTree
 {
 public:
-    SyntaxTree(SyntaxNode *root, DiagnosticBag _diagnostics) : root(root), Diagnostics(_diagnostics) {};
+    SyntaxTree(SourceText text, SyntaxNode *root, DiagnosticBag _diagnostics) : Text(text), root(root), Diagnostics(_diagnostics) {};
     SyntaxNode *root;
+    SourceText Text;
     DiagnosticBag Diagnostics;
+    static SyntaxTree Parse(std::string text);
+    static SyntaxTree Parse(SourceText text);
 };
 
 #endif
