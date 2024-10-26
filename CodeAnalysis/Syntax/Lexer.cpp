@@ -4,7 +4,6 @@
 #include <cctype>
 #include <stdexcept>
 #include "CodeAnalysis/Diagnostic.h"
-Lexer::Lexer(const std::string &input) : input(input), pos(0), currentChar(input[pos]), lookAhead(input[pos + 1]) {}
 
 std::vector<Token> Lexer::tokenize()
 {
@@ -84,60 +83,43 @@ std::vector<Token> Lexer::tokenize()
                 advance();
             }
             break;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            tokens.push_back(GenerateNumberToken());
+            break;
+        case ' ':
+        case '\t':
+        case '\n':
+        case '\r':
+            GenerateWhitespaceToken();
+            break;
         default:
 
-            if (isdigit(currentChar))
+            // if (isspace(currentChar))
+            // {
+            //     skipWhitespace();
+            // }
+
+            if (isalpha(currentChar))
             {
-                int start = pos;
-                std::string numberText = number();
-                int length = pos - start;
-                int value;
-
-                try
-                {
-                    value = std::stoi(numberText);
-                }
-                catch (const std::invalid_argument &)
-                {
-                    _diagnostics.ReportInvalidNumber(TextSpan(start, length), numberText, "int");
-                    value = 0;
-                }
-
-                tokens.push_back(Token{SyntaxKind::NUMBER, numberText, pos});
+                tokens.push_back(GenerateIdentifierToken());
             }
-
             else if (isspace(currentChar))
             {
-                skipWhitespace();
+                GenerateWhitespaceToken();
             }
-
-            else if (isalpha(currentChar))
-            {
-                std::string result;
-                while (isalpha(currentChar))
-                {
-                    result += currentChar;
-                    advance();
-                }
-
-                if (result == "true")
-                {
-                    tokens.push_back(Token{SyntaxKind::TRUE, "true", pos});
-                }
-                else if (result == "false")
-                {
-                    tokens.push_back(Token{SyntaxKind::FALSE, "false", pos});
-                }
-                else
-                {
-                    tokens.push_back(Token{SyntaxKind::IDENTIFIER, result, pos});
-                }
-            }
-
             else
             {
                 _diagnostics.ReportBadCharacter(pos, currentChar);
-                tokens.push_back(Token{SyntaxKind::BAD_TOKEN, std::string(1, currentChar), pos});
+                // tokens.push_back(Token{SyntaxKind::BAD_TOKEN, std::string(1, currentChar), pos});
                 advance();
             }
 
@@ -151,7 +133,7 @@ std::vector<Token> Lexer::tokenize()
 void Lexer::advance()
 {
     pos++;
-    if (pos < input.size())
+    if (pos < input.Length())
     {
         currentChar = input[pos];
         lookAhead = input[pos + 1];
@@ -162,23 +144,52 @@ void Lexer::advance()
     }
 }
 
-void Lexer::skipWhitespace()
+Token Lexer::GenerateWhitespaceToken()
 {
     while (isspace(currentChar))
     {
         advance();
     }
+    return Token{SyntaxKind::WHITESPACE, " ", pos};
 }
-
-std::string Lexer::number()
+Token Lexer::GenerateNumberToken()
 {
+    size_t start = pos;
     std::string result;
-    while (pos < input.size() && isdigit(currentChar))
+    while (pos < input.Length() && isdigit(currentChar))
     {
         result += currentChar;
         advance();
     }
-    return result;
+
+    int length = pos - start;
+    int value;
+
+    if (isalpha(currentChar))
+    {
+        while (isalnum(currentChar))
+        {
+            result += currentChar;
+            advance();
+        }
+
+        _diagnostics.ReportInvalidNumber(TextSpan(start, pos - start), result, "int");
+        return Token{SyntaxKind::BAD_TOKEN, result, start};
+    }
+    return Token{SyntaxKind::NUMBER, result, pos};
+}
+
+Token Lexer::GenerateIdentifierToken()
+{
+    size_t start = pos;
+    while (isalnum(currentChar))
+    {
+        advance();
+    }
+    int length = pos - start;
+    std::string text = input.ToString(start, length);
+    SyntaxKind kind = checkKeyword(text);
+    return Token{kind, text, start};
 }
 
 SyntaxKind Lexer::checkKeyword(const std::string &keyword)

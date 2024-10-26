@@ -17,13 +17,13 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
     }
     if (auto v = dynamic_cast<BoundVariableExpression *>(node))
     {
-        return _variables[v->Name];
+        return _variables[v->Variable];
     }
 
     if (auto a = dynamic_cast<BoundAssignmentExpression *>(node))
     {
         auto value = EvaluateExpression(a->Expression);
-        _variables[a->Name] = value;
+        _variables[a->Variable] = value;
         return value;
     }
     if (auto u = dynamic_cast<BoundUnaryExpression *>(node))

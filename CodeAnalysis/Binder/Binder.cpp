@@ -2,6 +2,7 @@
 #include "CodeAnalysis/SyntaxTree.h"
 #include "Utils.h"
 #include <iostream>
+#include <algorithm>
 
 BoundExpression *Binder::BindExpression(SyntaxNode *node)
 {
@@ -43,50 +44,36 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
 BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
 {
     std::string name = node->IdentifierToken.value;
-    auto it = _variables.find(name);
+    auto it = std::find_if(_variables.begin(), _variables.end(),
+                           [&name](const auto &variable)
+                           {
+                               return variable.first.Name == name;
+                           });
     if (it == _variables.end())
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
         return new BoundLiteralExpression("0", Type::Integer);
     }
-    auto value = it->second;
-    const std::type_info &type = value.type();
-    if (type == typeid(int))
-    {
-        return new BoundLiteralExpression(name, Type::Integer);
-    }
-    else if (type == typeid(bool))
-    {
-        return new BoundLiteralExpression(name, Type::Boolean);
-    }
-    else
-    {
-        _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
-        return new BoundLiteralExpression("0", Type::Integer);
-    }
+    return new BoundVariableExpression(it->first);
 }
 
 BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node)
 {
     std::string name = node->IdentifierToken.value;
     BoundExpression *boundExpression = BindExpression(node->Expression);
-    std::any defaultValue;
-    if (boundExpression->type == Type::Integer)
+    auto existingVariable = std::find_if(_variables.begin(), _variables.end(),
+                                         [&name](const auto &variable)
+                                         {
+                                             return variable.first.Name == name;
+                                         });
+    if (existingVariable != _variables.end())
     {
-        defaultValue = 0;
+        _variables.erase(existingVariable);
     }
-    else if (boundExpression->type == Type::Boolean)
-    {
-        defaultValue = false;
-    }
-    else
-    {
+    VariableSymbol variable = VariableSymbol(name, boundExpression->type);
 
-        defaultValue = nullptr;
-    }
-
-    _variables[name] = defaultValue;
-    return new BoundAssignmentExpression(name, boundExpression);
+    _variables[variable] = NULL;
+    return new BoundAssignmentExpression(variable, boundExpression);
 }
 BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
 {

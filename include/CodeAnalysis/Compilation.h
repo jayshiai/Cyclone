@@ -18,7 +18,7 @@ class Compilation
 public:
     Compilation(SyntaxTree *syntaxTree) : SyntaxTree(syntaxTree) {}
 
-    EvaluationResult Evaluate(std::unordered_map<std::string, std::any> &variables);
+    EvaluationResult Evaluate(std::unordered_map<VariableSymbol, std::any> &variables);
 
 private:
     SyntaxTree *SyntaxTree;

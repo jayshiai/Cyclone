@@ -54,6 +54,10 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "AmpersandAmpersandToken";
     case SyntaxKind::PIPE_PIPE:
         return "PipePipeToken";
+    case SyntaxKind::WHITESPACE:
+        return "WhitespaceToken";
+    case SyntaxKind::BAD_TOKEN:
+        return "BadToken";
     case SyntaxKind::END_OF_FILE:
         return "EndOfFileToken";
     default:

@@ -5,7 +5,7 @@
 #include "CodeAnalysis/Compilation.h"
 #include <unordered_map>
 
-EvaluationResult Compilation::Evaluate(std::unordered_map<std::string, std::any> &variables)
+EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::any> &variables)
 {
     // Create a binder with the provided variables
     Binder binder(variables);

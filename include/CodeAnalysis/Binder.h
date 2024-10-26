@@ -105,21 +105,44 @@ public:
     Type type;
 };
 
+class VariableSymbol
+{
+public:
+    std::string Name;
+    Type type;
+    VariableSymbol(std::string name, Type type) : Name(name), type(type) {}
+
+    bool operator==(const VariableSymbol &other) const
+    {
+        return Name == other.Name;
+    }
+};
+
+namespace std
+{
+    template <>
+    struct hash<VariableSymbol>
+    {
+        std::size_t operator()(const VariableSymbol &symbol) const
+        {
+            return std::hash<std::string>()(symbol.Name);
+        }
+    };
+}
 class BoundVariableExpression : public BoundExpression
 {
 public:
-    BoundVariableExpression(std::string name, Type type) : BoundExpression(type), Name(name) {};
+    BoundVariableExpression(VariableSymbol variable) : BoundExpression(variable.type), Variable(variable) {};
     BoundNodeKind kind = BoundNodeKind::VariableExpression;
-    std::string Name;
-    Type type;
+    VariableSymbol Variable;
 };
 
 class BoundAssignmentExpression : public BoundExpression
 {
 public:
-    BoundAssignmentExpression(std::string name, BoundExpression *expression) : BoundExpression(expression->type), Name(name), Expression(expression) {};
+    BoundAssignmentExpression(VariableSymbol variable, BoundExpression *expression) : BoundExpression(expression->type), Variable(variable), Expression(expression) {};
     BoundNodeKind kind = BoundNodeKind::AssignmentExpression;
-    std::string Name;
+    VariableSymbol Variable;
     BoundExpression *Expression;
     Type type;
 };
@@ -138,8 +161,8 @@ public:
 class Binder
 {
 public:
-    Binder(std::unordered_map<std::string, std::any> &variables) : _variables(variables) {};
-    std::unordered_map<std::string, std::any> _variables;
+    Binder(std::unordered_map<VariableSymbol, std::any> &variables) : _variables(variables) {};
+    std::unordered_map<VariableSymbol, std::any> _variables;
     BoundExpression *BindExpression(SyntaxNode *node);
     const DiagnosticBag &GetDiagnostics() const
     {
@@ -154,7 +177,5 @@ private:
     BoundExpression *BindNameExpression(NameExpressionNode *node);
     BoundExpression *BindAssignmentExpression(AssignmentExpressionNode *node);
 };
-
-std::string convertTypetoString(Type type);
 
 #endif

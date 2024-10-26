@@ -36,19 +36,18 @@ main()
     std::cout << "Enter an expression: ";
     std::getline(std::cin, input);
 
-    Lexer lexer(input);
+    SourceText text = SourceText::From(input);
+    Lexer lexer(text);
     std::vector<Token> tokens = lexer.tokenize();
     std::cout << "Tokens:" << std::endl;
-
     for (auto &token : tokens)
     {
-        std::cout << "      Type: " << convertSyntaxKindToString(token.Kind) << ", Value: " << token.value << std::endl;
+        std::cout << "  " << convertSyntaxKindToString(token.Kind) << " " << token.value << std::endl;
     }
-
-    Parser parser(tokens);
+    Parser parser(tokens, lexer.GetDiagnostics());
     SyntaxTree Root = parser.parse();
     Compilation compilation(&Root);
-    std::unordered_map<std::string, std::any> variables;
+    std::unordered_map<VariableSymbol, std::any> variables;
     EvaluationResult result = compilation.Evaluate(variables);
 
     std::cout << "Abstract Syntax Tree" << std::endl;

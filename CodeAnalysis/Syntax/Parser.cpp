@@ -1,8 +1,8 @@
 #include "CodeAnalysis/Parser.h"
 #include "CodeAnalysis/SyntaxTree.h"
+#include "CodeAnalysis/Lexer.h"
 #include <iostream>
 #include "Utils.h"
-Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), currentTokenIndex(0), currentToken(tokens[currentTokenIndex]) {}
 
 Token Parser::peek(int offset)
 {
@@ -121,7 +121,7 @@ SyntaxNode *Parser::Expect(SyntaxKind kind)
     else
     {
         _diagnostics.ReportUnexpectedToken(currentToken.Span, convertSyntaxKindToString(currentToken.Kind), convertSyntaxKindToString(kind));
-        return nullptr;
+        return new Token(kind, currentToken.value, currentToken.position);
     }
 }
 SyntaxNode *Parser::ParsePrimaryExpression()
@@ -130,38 +130,50 @@ SyntaxNode *Parser::ParsePrimaryExpression()
     switch (currentToken.Kind)
     {
     case SyntaxKind::LPAREN:
-    {
-        NextToken();
-        SyntaxNode *expression = ParseExpression();
-        Expect(SyntaxKind::RPAREN);
-        return new ParenthesizedExpressionNode(expression);
+        return ParseParenthesizedExpression();
         break;
-    }
     case SyntaxKind::TRUE:
     case SyntaxKind::FALSE:
-    {
-        SyntaxNode *node = new LiteralExpressionNode(currentToken);
-        NextToken();
-        return node;
+        return ParseBooleanLiteral();
         break;
-    }
     case SyntaxKind::NUMBER:
-    {
-        SyntaxNode *node = new LiteralExpressionNode(currentToken);
-        NextToken();
-        return node;
+        return ParseNumberLiteral();
         break;
-    }
     case SyntaxKind::IDENTIFIER:
-    {
-        SyntaxNode *node = new NameExpressionNode(currentToken);
-        NextToken();
-        return node;
+        return ParseNameExpression();
         break;
-    }
+
     default:
         _diagnostics.ReportUnexpectedToken(currentToken.Span, convertSyntaxKindToString(currentToken.Kind), "Primary Expression");
-        return nullptr;
+        return new Token(currentToken.Kind, currentToken.value, currentToken.position);
         break;
     }
+}
+
+SyntaxNode *Parser::ParseParenthesizedExpression()
+{
+    NextToken();
+    SyntaxNode *expression = ParseExpression();
+    Expect(SyntaxKind::RPAREN);
+    return new ParenthesizedExpressionNode(expression);
+}
+
+SyntaxNode *Parser::ParseBooleanLiteral()
+{
+    bool isTrue = currentToken.Kind == SyntaxKind::TRUE;
+    SyntaxNode *node = new LiteralExpressionNode(currentToken, isTrue);
+    NextToken();
+    return node;
+}
+
+SyntaxNode *Parser::ParseNumberLiteral()
+{
+    SyntaxNode *node = new LiteralExpressionNode(currentToken, std::stoi(currentToken.value));
+    NextToken();
+    return node;
+}
+
+SyntaxNode *Parser::ParseNameExpression()
+{
+    return Expect(SyntaxKind::IDENTIFIER);
 }

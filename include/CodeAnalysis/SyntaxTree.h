@@ -4,7 +4,7 @@
 #include "CodeAnalysis/Diagnostic.h"
 #include <vector>
 #include <string>
-
+#include <any>
 enum class SyntaxKind
 {
     NUMBER,
@@ -23,8 +23,10 @@ enum class SyntaxKind
     AMPERSAND_AMPERSAND,
     PIPE_PIPE,
     IDENTIFIER,
+    WHITESPACE,
     END_OF_FILE,
     BAD_TOKEN,
+
     LiteralExpression,
     UnaryExpression,
     BinaryExpression,
@@ -51,14 +53,18 @@ public:
     size_t position;
     TextSpan Span;
     Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.size())) {}
+    Token();
 };
 
 class LiteralExpressionNode : public SyntaxNode
 {
 public:
     Token LiteralToken;
+    std::any Value;
     LiteralExpressionNode(Token LiteralToken)
-        : SyntaxNode(SyntaxKind::LiteralExpression), LiteralToken(LiteralToken) {}
+        : SyntaxNode(SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(LiteralToken.value) {}
+    LiteralExpressionNode(Token LiteralToken, std::any Value)
+        : SyntaxNode(SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(Value) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&LiteralToken))};
@@ -129,6 +135,7 @@ public:
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OperatorToken)), expression};
     }
 };
+
 class SyntaxTree
 {
 public:

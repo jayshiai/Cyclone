@@ -8,7 +8,7 @@
 class Lexer
 {
 public:
-    Lexer(const std::string &input);
+    Lexer(SourceText &text) : input(text), pos(0), currentChar(input[pos]), lookAhead(input[pos + 1])  {};
     std::vector<Token> tokenize();
     const DiagnosticBag &GetDiagnostics() const
     {
@@ -17,13 +17,14 @@ public:
 
 private:
     DiagnosticBag _diagnostics;
-    std::string input;
+    SourceText input;
     size_t pos;
     char currentChar;
     char lookAhead;
     void advance();
-    void skipWhitespace();
-    std::string number();
+    Token GenerateWhitespaceToken();
+    Token GenerateNumberToken();
+    Token GenerateIdentifierToken();
     SyntaxKind checkKeyword(const std::string &keyword);
 };
 

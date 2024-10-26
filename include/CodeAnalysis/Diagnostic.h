@@ -1,21 +1,10 @@
 #ifndef DIAGNOSTIC_H
 #define DIAGNOSTIC_H
-
+#include "CodeAnalysis/SourceText.h"
 #include <string>
 #include <vector>
 #include <sstream>
 #include <iostream>
-struct TextSpan
-{
-    int Start;
-    int Length;
-    int End;
-    TextSpan(int start, int length)
-        : Start(start), Length(length)
-    {
-        End = start + length;
-    }
-};
 
 class Diagnostic
 {
