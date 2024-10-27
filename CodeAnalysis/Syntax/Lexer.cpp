@@ -127,11 +127,11 @@ std::vector<Token> Lexer::tokenize()
         }
     }
     tokens.push_back(Token{SyntaxKind::END_OF_FILE, "", pos});
-    std::cout << "TOKENS: " << std::endl;
-    for (auto token : tokens)
-    {
-        std::cout << "  " << convertSyntaxKindToString(token.Kind) << " " << token.value << std::endl;
-    }
+    // std::cout << "TOKENS: " << std::endl;
+    // for (auto token : tokens)
+    // {
+    //     std::cout << "  " << convertSyntaxKindToString(token.Kind) << " " << token.value << std::endl;
+    // }
     return tokens;
 }
 

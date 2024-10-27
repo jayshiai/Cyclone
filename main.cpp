@@ -10,6 +10,7 @@
 
 const std::string BLUE = "\033[34m";
 const std::string RESET_COLOR = "\033[0m";
+const std::string GREEN = "\033[32m";
 void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
 {
     if (!node)
@@ -30,22 +31,23 @@ void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
         PrintAST(children[i], indent, i == children.size() - 1);
     }
 }
-
 main()
 {
 
     std::string textBuilder;
-    std::cout << "Enter an expression: ";
     bool showTree = false;
+    std::unordered_map<VariableSymbol, std::any> variables;
+
+    Compilation previous = NULL;
     while (true)
     {
         if (textBuilder.size() == 0)
         {
-            std::cout << ">>";
+            std::cout << GREEN << ">> " << RESET_COLOR;
         }
         else
         {
-            std::cout << "|";
+            std::cout << GREEN << "- " << RESET_COLOR;
         }
         std::string input;
         std::getline(std::cin, input);
@@ -68,6 +70,12 @@ main()
                 std::cout << "\033[2J\033[H" << std::flush;
                 continue;
             }
+            else if (input == "#reset")
+            {
+                previous = NULL;
+                variables.clear();
+                continue;
+            }
         }
 
         textBuilder += input + "\n";
@@ -75,17 +83,10 @@ main()
 
         if (!isBlank && Root.Diagnostics.GetDiagnostics().size() > 0)
         {
-            // std::vector<Diagnostic> diagnostics = Root.Diagnostics.GetDiagnostics();
-            // for (auto &diagnostic : diagnostics)
-            // {
-            //     PrintDiagnostic(diagnostic, Root.Text);
-            // }
-            // return 1;
             continue;
         }
 
         Compilation compilation(&Root);
-        std::unordered_map<VariableSymbol, std::any> variables;
         EvaluationResult result = compilation.Evaluate(variables);
 
         if (showTree)

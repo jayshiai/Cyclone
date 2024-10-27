@@ -22,7 +22,7 @@ std::vector<TextLine> SourceText::ParseLines(const std::string &text)
         }
     }
 
-    if (position > lineStart)
+    if (position >= lineStart)
     {
         AddLine(result, *this, position, lineStart, 0);
     }

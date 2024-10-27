@@ -112,6 +112,12 @@ public:
     Type type;
     VariableSymbol(std::string name, Type type) : Name(name), type(type) {}
 
+    friend std::ostream &operator<<(std::ostream &os, const VariableSymbol &var)
+    {
+        os << "VariableSymbol(Name: " << var.Name << ")";
+        return os;
+    }
+
     bool operator==(const VariableSymbol &other) const
     {
         return Name == other.Name;
@@ -162,7 +168,7 @@ class Binder
 {
 public:
     Binder(std::unordered_map<VariableSymbol, std::any> &variables) : _variables(variables) {};
-    std::unordered_map<VariableSymbol, std::any> _variables;
+    std::unordered_map<VariableSymbol, std::any> &_variables;
     BoundExpression *BindExpression(SyntaxNode *node);
     const DiagnosticBag &GetDiagnostics() const
     {

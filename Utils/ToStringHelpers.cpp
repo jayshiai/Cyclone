@@ -97,3 +97,28 @@ void PrintDiagnostic(Diagnostic diagnostic, SourceText Text)
               << RED << error << RESET_COLOR
               << suffix << std::endl;
 }
+
+void PrintVariables(const std::unordered_map<VariableSymbol, std::any> &variables)
+{
+    for (const auto &[key, value] : variables)
+    {
+        std::cout << key << ": ";
+        if (value.type() == typeid(int))
+        {
+            std::cout << std::any_cast<int>(value);
+        }
+        else if (value.type() == typeid(double))
+        {
+            std::cout << std::any_cast<double>(value);
+        }
+        else if (value.type() == typeid(std::string))
+        {
+            std::cout << std::any_cast<std::string>(value);
+        }
+        else
+        {
+            std::cout << "Unknown type";
+        }
+        std::cout << '\n';
+    }
+}

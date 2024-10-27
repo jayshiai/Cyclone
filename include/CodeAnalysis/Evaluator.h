@@ -9,7 +9,7 @@ class Evaluator
 {
 public:
     BoundExpression *_root;
-    std::unordered_map<VariableSymbol, std::any> _variables;
+    std::unordered_map<VariableSymbol, std::any> &_variables;
     Evaluator(BoundExpression *root, std::unordered_map<VariableSymbol, std::any> &variables) : _root(root), _variables(variables) {}
     std::any Evaluate()
     {
