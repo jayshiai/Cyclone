@@ -11,6 +11,34 @@
 const std::string BLUE = "\033[34m";
 const std::string RESET_COLOR = "\033[0m";
 const std::string GREEN = "\033[32m";
+
+std::string bconvertBoundNodeKind(BoundNodeKind kind)
+{
+    switch (kind)
+    {
+    case BoundNodeKind::LiteralExpression:
+        return "LiteralExpression";
+    case BoundNodeKind::UnaryExpression:
+        return "UnaryExpression";
+    case BoundNodeKind::BinaryExpression:
+        return "BinaryExpression";
+    case BoundNodeKind::ParenthesizedExpression:
+        return "ParenthesizedExpression";
+    case BoundNodeKind::VariableExpression:
+        return "VariableExpression";
+    case BoundNodeKind::AssignmentExpression:
+        return "AssignmentExpression";
+    case BoundNodeKind::ExpressionStatement:
+        return "ExpressionStatement";
+    case BoundNodeKind::VariableDeclaration:
+        return "VariableDeclaration";
+    case BoundNodeKind::BlockStatement:
+        return "BlockStatement";
+    default:
+        return "Unknown";
+    }
+}
+
 void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
 {
     if (!node)
@@ -35,10 +63,10 @@ main()
 {
 
     std::string textBuilder;
-    bool showTree = false;
+    bool showTree = true;
     std::unordered_map<VariableSymbol, std::any> variables;
 
-    Compilation previous = NULL;
+    Compilation *previous = nullptr;
     while (true)
     {
         if (textBuilder.size() == 0)
@@ -53,6 +81,7 @@ main()
         std::getline(std::cin, input);
 
         bool isBlank = input.empty();
+
         if (textBuilder.size() == 0)
         {
             if (isBlank)
@@ -72,7 +101,7 @@ main()
             }
             else if (input == "#reset")
             {
-                previous = NULL;
+                previous = nullptr;
                 variables.clear();
                 continue;
             }
@@ -81,21 +110,29 @@ main()
         textBuilder += input + "\n";
         SyntaxTree Root = SyntaxTree::Parse(textBuilder);
 
-        if (!isBlank && Root.Diagnostics.GetDiagnostics().size() > 0)
+        if (!isBlank && Root.Diagnostics.size() > 0)
         {
             continue;
         }
 
-        Compilation compilation(&Root);
-        EvaluationResult result = compilation.Evaluate(variables);
-
+        if (previous == nullptr)
+        {
+            std::cout << "No previous compilation." << std::endl;
+        }
+        else
+        {
+            std::cout << bconvertBoundNodeKind(previous->GlobalScope()->Statement->GetKind()) << std::endl;
+            std::cout << "Previous compilation found." << std::endl;
+        }
+        Compilation *compilation = previous == nullptr ? new Compilation(&Root) : previous->ContinueWith(&Root);
+        std::cout << bconvertBoundNodeKind(compilation->GlobalScope()->Statement->GetKind()) << std::endl;
         if (showTree)
         {
 
             std::cout << BLUE << "Abstract Syntax Tree" << std::endl;
-            PrintAST(Root.root);
-            std::cout << RESET_COLOR << std::endl;
+            Root.Root->WriteTo(std::cout);
         }
+        EvaluationResult result = compilation->Evaluate(variables);
 
         if (result.Diagnostics.size() > 0)
         {
@@ -119,6 +156,7 @@ main()
             {
                 std::cout << "Unexpected type in result." << std::endl;
             }
+            previous = compilation;
         }
 
         textBuilder.clear();

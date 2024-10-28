@@ -4,26 +4,67 @@
 #include "CodeAnalysis/Diagnostic.h"
 #include "CodeAnalysis/Compilation.h"
 #include <unordered_map>
+#include <atomic>
 
+std::string cConvertBoundNodeKind(BoundNodeKind kind)
+{
+    switch (kind)
+    {
+    case BoundNodeKind::LiteralExpression:
+        return "LiteralExpression";
+    case BoundNodeKind::UnaryExpression:
+        return "UnaryExpression";
+    case BoundNodeKind::BinaryExpression:
+        return "BinaryExpression";
+    case BoundNodeKind::ParenthesizedExpression:
+        return "ParenthesizedExpression";
+    case BoundNodeKind::VariableExpression:
+        return "VariableExpression";
+    case BoundNodeKind::AssignmentExpression:
+        return "AssignmentExpression";
+    case BoundNodeKind::ExpressionStatement:
+        return "ExpressionStatement";
+    case BoundNodeKind::VariableDeclaration:
+        return "VariableDeclaration";
+    case BoundNodeKind::BlockStatement:
+        return "BlockStatement";
+    default:
+        return "Unknown";
+    }
+}
 EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::any> &variables)
 {
-    // Create a binder with the provided variables
-    Binder binder(variables);
-    BoundExpression *boundExpression = binder.BindExpression(SyntaxTree->root);
+    std::vector<Diagnostic> diagnostics = syntaxTree->Diagnostics;
+    diagnostics.insert(diagnostics.end(), GlobalScope()->Diagnostics.begin(), GlobalScope()->Diagnostics.end());
 
-    // Combine diagnostics from the SyntaxTree and the binder
-    DiagnosticBag diagnostics;
-    diagnostics.AddRange(SyntaxTree->Diagnostics);
-    diagnostics.AddRange(binder.GetDiagnostics());
-
-    // If any diagnostics exist, return an EvaluationResult with the diagnostics and no result
-    if (!diagnostics.GetDiagnostics().empty())
+    if (diagnostics.size() > 0)
     {
-        return EvaluationResult(diagnostics.GetDiagnostics(), nullptr);
+        return EvaluationResult(diagnostics, std::any());
     }
-
-    // Evaluate the bound expression
-    Evaluator evaluator(boundExpression, variables);
+    Evaluator evaluator = Evaluator(GlobalScope()->Statement, variables);
     std::any value = evaluator.Evaluate();
-    return EvaluationResult({}, value);
+
+    return EvaluationResult(diagnostics, value);
+}
+
+BoundGlobalScope *Compilation::GlobalScope()
+{
+    if (_globalScope == nullptr)
+    {
+        // _globalScope = new BoundGlobalScope(Binder::BindGlobalScope(Previous == nullptr ? nullptr : Previous->GlobalScope(), syntaxTree->Root));
+        BoundGlobalScope *globalScope = new BoundGlobalScope(Binder::BindGlobalScope(Previous == nullptr ? nullptr : Previous->GlobalScope(), syntaxTree->Root));
+
+        std::atomic<BoundGlobalScope *> &atomicGlobalScope = reinterpret_cast<std::atomic<BoundGlobalScope *> &>(_globalScope);
+
+        BoundGlobalScope *expected = nullptr;
+        atomicGlobalScope.compare_exchange_strong(expected, globalScope);
+
+        _globalScope = atomicGlobalScope.load();
+    }
+    return _globalScope;
+};
+
+Compilation *Compilation::ContinueWith(SyntaxTree *syntaxTree)
+{
+    return new Compilation(this, syntaxTree);
 }

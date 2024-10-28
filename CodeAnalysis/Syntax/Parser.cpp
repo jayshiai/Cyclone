@@ -4,6 +4,14 @@
 #include <iostream>
 #include "Utils.h"
 
+Parser::Parser(SourceText text) : Text(text), currentTokenIndex(0)
+{
+    Lexer lexer(text);
+    std::vector<Token> lexedTokens = lexer.tokenize();
+    tokens = lexedTokens;
+    currentToken = tokens[0];
+    _diagnostics.AddRange(lexer.GetDiagnostics());
+}
 Token Parser::peek(int offset)
 {
     if (currentTokenIndex + offset >= tokens.size())
@@ -12,10 +20,57 @@ Token Parser::peek(int offset)
     }
     return tokens[currentTokenIndex + offset];
 }
-SyntaxTree Parser::parse()
+
+CompilationUnitNode *Parser::ParseCompilationUnit()
 {
-    SyntaxNode *root = ParseExpression();
-    return SyntaxTree(Text, root, _diagnostics);
+    StatementSyntax *statement = ParseStatement();
+    Token endOfFileToken = Expect(SyntaxKind::END_OF_FILE);
+    return new CompilationUnitNode(statement, endOfFileToken);
+}
+
+StatementSyntax *Parser::ParseStatement()
+{
+    switch (currentToken.Kind)
+    {
+    case SyntaxKind::OPEN_BRACE:
+        return ParseBlockStatement();
+    case SyntaxKind::LET_KEYWORD:
+    case SyntaxKind::VAR_KEYWORD:
+        return ParseVariableDeclaration();
+    default:
+        return ParseExpressionStatement();
+    }
+}
+
+BlockStatementSyntax *Parser::ParseBlockStatement()
+{
+    std::vector<StatementSyntax *> statements;
+    Token openBraceToken = Expect(SyntaxKind::OPEN_BRACE);
+
+    while (currentToken.Kind != SyntaxKind::CLOSE_BRACE && currentToken.Kind != SyntaxKind::END_OF_FILE)
+    {
+        StatementSyntax *statement = ParseStatement();
+        statements.push_back(statement);
+    }
+
+    Token closeBraceToken = Expect(SyntaxKind::CLOSE_BRACE);
+    return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
+}
+
+StatementSyntax *Parser::ParseVariableDeclaration()
+{
+    SyntaxKind expected = currentToken.Kind == SyntaxKind::LET_KEYWORD ? SyntaxKind::LET_KEYWORD : SyntaxKind::VAR_KEYWORD;
+    Token keyword = Expect(expected);
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    Token equals = Expect(SyntaxKind::EQUALS);
+    SyntaxNode *initializer = ParseExpression();
+    return new VariableDeclarationSyntax(keyword, identifier, equals, initializer);
+}
+
+ExpressionStatementSyntax *Parser::ParseExpressionStatement()
+{
+    SyntaxNode *expression = ParseExpression();
+    return new ExpressionStatementSyntax(expression);
 }
 
 void Parser::NextToken()

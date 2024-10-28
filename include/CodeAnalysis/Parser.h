@@ -13,7 +13,8 @@ public:
         _diagnostics.AddRange(diagnostic);
     };
     Parser(SourceText text, const std::vector<Token> &tokens) : Text(text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0]) {}
-    SyntaxTree parse();
+    Parser(SourceText text);
+    CompilationUnitNode *ParseCompilationUnit();
     const DiagnosticBag &GetDiagnostics() const
     {
         return _diagnostics;
@@ -28,6 +29,11 @@ private:
     Token peek(int offset);
     void NextToken();
     Token Expect(SyntaxKind kind);
+    StatementSyntax *ParseStatement();
+    StatementSyntax *ParseVariableDeclaration();
+    ExpressionStatementSyntax *ParseExpressionStatement();
+    BlockStatementSyntax *ParseBlockStatement();
+
     SyntaxNode *ParseAssignmentExpression();
     SyntaxNode *ParseExpression();
     SyntaxNode *ParseBinaryExpression(int precedence = 0);

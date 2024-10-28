@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <any>
+
 enum class SyntaxKind
 {
     NUMBER,
@@ -16,8 +17,6 @@ enum class SyntaxKind
     DIVIDE,
     LPAREN, // (
     RPAREN, // )
-    TRUE,
-    FALSE,
     BANG,
     EQUALS,
     EQUALS_EQUALS,
@@ -28,6 +27,13 @@ enum class SyntaxKind
     WHITESPACE,
     END_OF_FILE,
     BAD_TOKEN,
+    OPEN_BRACE,
+    CLOSE_BRACE,
+
+    TRUE,
+    FALSE,
+    LET_KEYWORD,
+    VAR_KEYWORD,
 
     LiteralExpression,
     UnaryExpression,
@@ -35,7 +41,15 @@ enum class SyntaxKind
     ParenthesizedExpression,
     NameExpression,
     AssignmentExpression,
+
+    CompilationUnit,
+
+    ExpressionStatement,
+    VariableDeclaration,
+    BlockStatement
 };
+
+std::string convertSyntaxKindToString(SyntaxKind kind);
 
 class SyntaxNode
 {
@@ -43,6 +57,34 @@ public:
     virtual ~SyntaxNode() = default;
     SyntaxKind Kind;
     virtual std::vector<SyntaxNode *> GetChildren() const { return {}; }
+    virtual TextSpan Span() const
+    {
+        const auto &children = GetChildren();
+        if (children.empty())
+        {
+            return TextSpan(0, 0);
+        }
+
+        int start = children.front()->Span().Start;
+        int end = children.back()->Span().End;
+
+        return TextSpan::FromBounds(start, end);
+    }
+
+    void WriteTo(std::ostream &os)
+    {
+        PrettyPrint(os, this);
+    }
+
+    std::string ToString()
+    {
+        std::ostringstream writer;
+        WriteTo(writer);
+        return writer.str();
+    }
+
+private:
+    static void PrettyPrint(std::ostream &os, SyntaxNode *node, std::string indent = "", bool isLast = true);
 
 protected:
     SyntaxNode(SyntaxKind kind) : Kind(kind) {}
@@ -55,9 +97,79 @@ public:
     size_t position;
     TextSpan Span;
     Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
-    Token();
+    Token() : SyntaxNode(SyntaxKind::BAD_TOKEN), Span(TextSpan(0, 0)) {};
 };
 
+// Abstract class representing a statement syntax
+class StatementSyntax : public SyntaxNode
+{
+public:
+    StatementSyntax(SyntaxKind kind) : SyntaxNode(kind) {}
+    virtual ~StatementSyntax() = 0; // Pure virtual destructor to make it abstract
+};
+
+// Definition for pure virtual destructor
+inline StatementSyntax::~StatementSyntax() {}
+
+class VariableDeclarationSyntax : public StatementSyntax
+{
+public:
+    VariableDeclarationSyntax(Token keyword, Token identifier, Token equalsToken, SyntaxNode *initializer)
+        : StatementSyntax(SyntaxKind::VariableDeclaration), Keyword(keyword), Identifier(identifier), EqualsToken(equalsToken), Initializer(initializer) {}
+    Token Identifier;
+    Token EqualsToken;
+    Token Keyword;
+    SyntaxNode *Initializer;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Initializer};
+    }
+};
+
+class ExpressionStatementSyntax : public StatementSyntax
+{
+public:
+    ExpressionStatementSyntax(SyntaxNode *expression)
+        : StatementSyntax(SyntaxKind::ExpressionStatement), Expression(expression) {}
+    SyntaxNode *Expression;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {Expression};
+    }
+};
+class BlockStatementSyntax : public StatementSyntax
+{
+public:
+    BlockStatementSyntax(Token openBraceToken, std::vector<StatementSyntax *> statements, Token closeBraceToken)
+        : StatementSyntax(SyntaxKind::BlockStatement), OpenBraceToken(openBraceToken), Statements(statements), CloseBraceToken(closeBraceToken) {}
+    Token OpenBraceToken;
+    std::vector<StatementSyntax *> Statements;
+    Token CloseBraceToken;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        std::vector<SyntaxNode *> children;
+        children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenBraceToken)));
+        for (auto statement : Statements)
+        {
+            children.push_back(statement);
+        }
+        children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBraceToken)));
+        return children;
+    }
+};
+class CompilationUnitNode : public SyntaxNode
+{
+public:
+    CompilationUnitNode(StatementSyntax *statement, Token endOfFileToken)
+        : SyntaxNode(SyntaxKind::CompilationUnit), Statement(statement), EndOfFileToken(endOfFileToken) {}
+
+    StatementSyntax *Statement;
+    Token EndOfFileToken;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {Statement, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EndOfFileToken))};
+    }
+};
 class LiteralExpressionNode : public SyntaxNode
 {
 public:
@@ -141,12 +253,14 @@ public:
 class SyntaxTree
 {
 public:
-    SyntaxTree(SourceText text, SyntaxNode *root, DiagnosticBag _diagnostics) : Text(text), root(root), Diagnostics(_diagnostics) {};
-    SyntaxNode *root;
     SourceText Text;
-    DiagnosticBag Diagnostics;
+    std::vector<Diagnostic> Diagnostics;
+    CompilationUnitNode *Root;
     static SyntaxTree Parse(std::string text);
     static SyntaxTree Parse(SourceText text);
+
+private:
+    SyntaxTree(SourceText text);
 };
 
 #endif

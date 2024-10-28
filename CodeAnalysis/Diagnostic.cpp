@@ -52,3 +52,24 @@ void DiagnosticBag::Report(const TextSpan &span, const std::string &message)
 {
     _diagnostics.emplace_back(span, message);
 }
+
+void DiagnosticBag::ReportCannotConvert(TextSpan span, std::string fromType, std::string toType)
+{
+    std::ostringstream oss;
+    oss << "Cannot convert type " << fromType << " to " << toType << ".";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportVariableAlreadyDeclared(TextSpan span, std::string name)
+{
+    std::ostringstream oss;
+    oss << "Variable '" << name << "' is already declared.";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportCannotAssign(TextSpan span, std::string name)
+{
+    std::ostringstream oss;
+    oss << "Variable '" << name << "' is read-only and cannot be assigned to.";
+    Report(span, oss.str());
+}

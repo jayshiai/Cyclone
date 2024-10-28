@@ -33,6 +33,11 @@ public:
 
     void ReportUndefinedUnaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &operandType);
 
+    void ReportCannotConvert(TextSpan span, std::string fromType, std::string toType);
+
+    void ReportVariableAlreadyDeclared(TextSpan span, std::string name);
+
+    void ReportCannotAssign(TextSpan span, std::string name);
     void ReportUndefinedBinaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &leftType, const std::string &rightType);
 
     void ReportUndefinedName(const TextSpan &span, const std::string &name);

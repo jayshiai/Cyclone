@@ -3,7 +3,56 @@
 #include "Utils.h"
 #include <iostream>
 #include <algorithm>
+#include <stack>
 
+BoundStatement *Binder::BindStatement(StatementSyntax *node)
+{
+    switch (node->Kind)
+    {
+    case SyntaxKind::ExpressionStatement:
+        return BindExpressionStatement((ExpressionStatementSyntax *)node);
+    case SyntaxKind::VariableDeclaration:
+        return BindVariableDeclaration((VariableDeclarationSyntax *)node);
+    case SyntaxKind::BlockStatement:
+        return BindBlockStatement((BlockStatementSyntax *)node);
+    default:
+        std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
+        return nullptr;
+    }
+}
+
+BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
+{
+    _scope = BoundScope(_scope);
+    std::vector<BoundStatement *> statements;
+
+    for (auto &statement : node->Statements)
+    {
+        BoundStatement *boundStatement = BindStatement(statement);
+        statements.push_back(boundStatement);
+    }
+    return new BoundBlockStatement(statements);
+}
+
+BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
+{
+    std::string name = node->Identifier.value;
+    bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
+    BoundExpression *initializer = BindExpression(node->Initializer);
+    VariableSymbol variable = VariableSymbol(name, isReadOnly, initializer->type);
+    if (!_scope.TryDeclare(variable))
+    {
+        _diagnostics.ReportVariableAlreadyDeclared(node->Identifier.Span, name);
+    }
+
+    return new BoundVariableDeclaration(variable, initializer);
+}
+
+BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
+{
+    BoundExpression *expression = BindExpression(node->Expression);
+    return new BoundExpressionStatement(expression);
+}
 BoundExpression *Binder::BindExpression(SyntaxNode *node)
 {
     switch (node->Kind)
@@ -44,35 +93,36 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
 BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
 {
     std::string name = node->IdentifierToken.value;
-    auto it = std::find_if(_variables.begin(), _variables.end(),
-                           [&name](const auto &variable)
-                           {
-                               return variable.first.Name == name;
-                           });
-    if (it == _variables.end())
+    std::cout << "Binding name expression: " << name << std::endl;
+    VariableSymbol variable(name, false, Type::Unknown);
+    if (!_scope.TryLookup(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
         return new BoundLiteralExpression("0", Type::Integer);
     }
-    return new BoundVariableExpression(it->first);
+    return new BoundVariableExpression(variable);
 }
 
 BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node)
 {
     std::string name = node->IdentifierToken.value;
     BoundExpression *boundExpression = BindExpression(node->Expression);
-    auto existingVariable = std::find_if(_variables.begin(), _variables.end(),
-                                         [&name](const auto &variable)
-                                         {
-                                             return variable.first.Name == name;
-                                         });
-    if (existingVariable != _variables.end())
+    VariableSymbol variable(name, false, Type::Unknown);
+    if (!_scope.TryLookup(name, variable))
     {
-        _variables.erase(existingVariable);
+        _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
+        return boundExpression;
     }
-    VariableSymbol variable = VariableSymbol(name, boundExpression->type);
+    if (variable.IsReadOnly)
+    {
+        _diagnostics.ReportCannotAssign(node->IdentifierToken.Span, name);
+    }
 
-    _variables[variable] = NULL;
+    if (boundExpression->type != variable.type)
+    {
+        _diagnostics.ReportCannotConvert(node->Expression->Span(), convertTypetoString(boundExpression->type), convertTypetoString(variable.type));
+    }
+
     return new BoundAssignmentExpression(variable, boundExpression);
 }
 BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
@@ -92,10 +142,53 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
     BoundExpression *boundLeft = BindExpression(node->left);
     BoundExpression *boundRight = BindExpression(node->right);
     BoundBinaryOperator *boundOperator = BoundBinaryOperator::Bind(node->OperatorToken.Kind, boundLeft->type, boundRight->type);
+
     if (boundOperator == nullptr)
     {
+
         _diagnostics.ReportUndefinedBinaryOperator(node->OperatorToken.Span, node->OperatorToken.value, convertTypetoString(boundLeft->type), convertTypetoString(boundRight->type));
         return boundLeft;
     }
-    return new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
+    BoundBinaryExpression *bi = new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
+    return bi;
+}
+
+BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)
+{
+    BoundScope parentScope = Binder::CreateParentScope(previous);
+    Binder binder(parentScope);
+    BoundStatement *statement = binder.BindStatement(tree->Statement);
+    std::vector<VariableSymbol> variables = parentScope.GetDeclaredVariables();
+    std::vector<Diagnostic> diagnostics = binder.GetDiagnostics().GetDiagnostics();
+
+    if (previous != nullptr)
+    {
+        diagnostics.insert(diagnostics.begin(), previous->Diagnostics.begin(), previous->Diagnostics.end());
+    }
+    return BoundGlobalScope(previous, diagnostics, variables, statement);
+}
+
+BoundScope Binder::CreateParentScope(BoundGlobalScope *previous)
+{
+    std::stack<BoundGlobalScope *> stack;
+    while (previous != nullptr)
+    {
+        stack.push(previous);
+        previous = previous->Previous;
+    }
+
+    BoundScope parent = nullptr;
+
+    while (!stack.empty())
+    {
+        previous = stack.top();
+        stack.pop();
+        BoundScope scope = BoundScope(parent);
+        for (auto &variable : previous->Variables)
+        {
+            scope.TryDeclare(variable);
+        }
+        parent = scope;
+    }
+    return parent;
 }

@@ -2,9 +2,10 @@
 #define COMPILATION_H
 #include "CodeAnalysis/Diagnostic.h"
 #include "CodeAnalysis/SyntaxTree.h"
+#include "CodeAnalysis/Binder.h"
 #include <any>
 #include <unordered_map>
-
+#include <atomic>
 class EvaluationResult
 {
 public:
@@ -16,12 +17,17 @@ public:
 class Compilation
 {
 public:
-    Compilation(SyntaxTree *syntaxTree) : SyntaxTree(syntaxTree) {}
+    Compilation(Compilation *previous, SyntaxTree *syntaxTree) : Previous(previous), syntaxTree(syntaxTree) {}
+    Compilation(SyntaxTree *syntaxTree) : Compilation(nullptr, syntaxTree) {}
+    Compilation *Previous;
 
+    BoundGlobalScope *GlobalScope();
     EvaluationResult Evaluate(std::unordered_map<VariableSymbol, std::any> &variables);
+    Compilation *ContinueWith(SyntaxTree *syntaxTree);
 
 private:
-    SyntaxTree *SyntaxTree;
+    BoundGlobalScope *_globalScope = nullptr;
+    SyntaxTree *syntaxTree;
 };
 
 #endif

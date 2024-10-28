@@ -15,6 +15,46 @@ std::string convertTypetoString(Type type)
     }
 }
 
+// enum class SyntaxKind
+// {
+//     NUMBER,
+//     PLUS,
+//     MINUS,
+//     MULTIPLY,
+//     DIVIDE,
+//     LPAREN, // (
+//     RPAREN, // )
+//     BANG,
+//     EQUALS,
+//     EQUALS_EQUALS,
+//     BANG_EQUALS,
+//     AMPERSAND_AMPERSAND,
+//     PIPE_PIPE,
+//     IDENTIFIER,
+//     WHITESPACE,
+//     END_OF_FILE,
+//     BAD_TOKEN,
+//     OPEN_BRACE,
+//     CLOSE_BRACE,
+
+//     TRUE,
+//     FALSE,
+//     LET_KEYWORD,
+//     VAR_KEYWORD,
+
+//     LiteralExpression,
+//     UnaryExpression,
+//     BinaryExpression,
+//     ParenthesizedExpression,
+//     NameExpression,
+//     AssignmentExpression,
+
+//     CompilationUnit,
+
+//     ExpressionStatement,
+//     VariableDeclaration,
+//     BlockStatement
+// };
 std::string convertSyntaxKindToString(SyntaxKind kind)
 {
     switch (kind)
@@ -60,6 +100,24 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "PipePipeToken";
     case SyntaxKind::WHITESPACE:
         return "WhitespaceToken";
+
+    case SyntaxKind::LET_KEYWORD:
+        return "LetKeyword";
+    case SyntaxKind::VAR_KEYWORD:
+
+        return "VarKeyword";
+    case SyntaxKind::OPEN_BRACE:
+        return "OpenBraceToken";
+    case SyntaxKind::CLOSE_BRACE:
+        return "CloseBraceToken";
+    case SyntaxKind::CompilationUnit:
+        return "CompilationUnit";
+    case SyntaxKind::ExpressionStatement:
+        return "ExpressionStatement";
+    case SyntaxKind::VariableDeclaration:
+        return "VariableDeclaration";
+    case SyntaxKind::BlockStatement:
+        return "BlockStatement";
     case SyntaxKind::BAD_TOKEN:
         return "BadToken";
     case SyntaxKind::END_OF_FILE:

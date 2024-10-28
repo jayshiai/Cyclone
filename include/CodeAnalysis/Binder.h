@@ -11,14 +11,21 @@ enum class BoundNodeKind
     BinaryExpression,
     ParenthesizedExpression,
     VariableExpression,
-    AssignmentExpression
+    AssignmentExpression,
+
+    ExpressionStatement,
+    VariableDeclaration,
+    BlockStatement
 };
 
 enum class Type
 {
     Boolean,
-    Integer
+    Integer,
+    Unknown
 };
+
+std::string convertTypetoString(Type type);
 
 class BoundNode
 {
@@ -33,6 +40,72 @@ public:
     Type type;
     BoundExpression(Type type) : type(type) {}
     virtual ~BoundExpression() {}
+    // Add virtual method to get the kind dynamically
+    virtual BoundNodeKind GetKind() const = 0;
+};
+class BoundStatement : public BoundNode
+{
+public:
+    virtual ~BoundStatement() {}
+    virtual BoundNodeKind GetKind() const = 0;
+};
+class VariableSymbol
+{
+public:
+    std::string Name;
+    Type type;
+    bool IsReadOnly;
+    VariableSymbol() : Name(""), IsReadOnly(false), type(Type::Unknown) {}
+    VariableSymbol(std::string name, bool isReadOnly, Type type) : Name(name), IsReadOnly(isReadOnly), type(type) {}
+
+    friend std::ostream &operator<<(std::ostream &os, const VariableSymbol &var)
+    {
+        os << "VariableSymbol(Name: " << var.Name << ")";
+        return os;
+    }
+
+    bool operator==(const VariableSymbol &other) const
+    {
+        return Name == other.Name;
+    }
+};
+
+namespace std
+{
+    template <>
+    struct hash<VariableSymbol>
+    {
+        std::size_t operator()(const VariableSymbol &symbol) const
+        {
+            return std::hash<std::string>()(symbol.Name);
+        }
+    };
+}
+class BoundVariableDeclaration : public BoundStatement
+{
+public:
+    BoundVariableDeclaration(VariableSymbol variable, BoundExpression *initializer) : Variable(variable), Initializer(initializer) {};
+    VariableSymbol Variable;
+    BoundExpression *Initializer;
+    BoundNodeKind kind = BoundNodeKind::VariableDeclaration;
+    BoundNodeKind GetKind() const override { return kind; }
+};
+class BoundExpressionStatement : public BoundStatement
+{
+public:
+    BoundExpressionStatement(BoundExpression *expression) : Expression(expression) {};
+    BoundExpression *Expression;
+    BoundNodeKind kind = BoundNodeKind::ExpressionStatement;
+    BoundNodeKind GetKind() const override { return kind; }
+};
+
+class BoundBlockStatement : public BoundStatement
+{
+public:
+    BoundBlockStatement(std::vector<BoundStatement *> statements) : Statements(statements) {};
+    std::vector<BoundStatement *> Statements;
+    BoundNodeKind kind = BoundNodeKind::BlockStatement;
+    BoundNodeKind GetKind() const override { return kind; }
 };
 enum class BoundUnaryOperatorKind
 {
@@ -94,6 +167,7 @@ public:
     BoundUnaryOperator *Op;
     BoundExpression *Operand;
     Type type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::UnaryExpression; }
 };
 
 class BoundLiteralExpression : public BoundExpression
@@ -103,44 +177,17 @@ public:
     BoundNodeKind kind = BoundNodeKind::LiteralExpression;
     std::string Value;
     Type type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::LiteralExpression; }
 };
 
-class VariableSymbol
-{
-public:
-    std::string Name;
-    Type type;
-    VariableSymbol(std::string name, Type type) : Name(name), type(type) {}
-
-    friend std::ostream &operator<<(std::ostream &os, const VariableSymbol &var)
-    {
-        os << "VariableSymbol(Name: " << var.Name << ")";
-        return os;
-    }
-
-    bool operator==(const VariableSymbol &other) const
-    {
-        return Name == other.Name;
-    }
-};
-
-namespace std
-{
-    template <>
-    struct hash<VariableSymbol>
-    {
-        std::size_t operator()(const VariableSymbol &symbol) const
-        {
-            return std::hash<std::string>()(symbol.Name);
-        }
-    };
-}
 class BoundVariableExpression : public BoundExpression
 {
 public:
     BoundVariableExpression(VariableSymbol variable) : BoundExpression(variable.type), Variable(variable) {};
     BoundNodeKind kind = BoundNodeKind::VariableExpression;
     VariableSymbol Variable;
+
+    BoundNodeKind GetKind() const override { return BoundNodeKind::VariableExpression; }
 };
 
 class BoundAssignmentExpression : public BoundExpression
@@ -151,32 +198,66 @@ public:
     VariableSymbol Variable;
     BoundExpression *Expression;
     Type type;
+
+    BoundNodeKind GetKind() const override { return BoundNodeKind::AssignmentExpression; }
 };
 
 class BoundBinaryExpression : public BoundExpression
 {
 public:
-    BoundBinaryExpression(BoundExpression *left, BoundBinaryOperator *op, BoundExpression *right) : BoundExpression(op->ResultType), Left(left), Op(op), Right(right) {
-                                                                                                    };
+    BoundBinaryExpression(BoundExpression *left, BoundBinaryOperator *op, BoundExpression *right) : BoundExpression(op->ResultType), Left(left), Op(op), Right(right) {};
     BoundNodeKind kind = BoundNodeKind::BinaryExpression;
     BoundBinaryOperator *Op;
     BoundExpression *Left;
     BoundExpression *Right;
     Type type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::BinaryExpression; }
+};
+
+class BoundScope
+{
+public:
+    BoundScope(BoundScope *parent) : Parent(parent) {}
+    BoundScope *Parent;
+
+    bool TryDeclare(VariableSymbol &variable);
+    bool TryLookup(const std::string &name, VariableSymbol &variable) const;
+    std::vector<VariableSymbol> GetDeclaredVariables() const;
+
+private:
+    std::unordered_map<std::string, VariableSymbol> _variables;
+};
+
+class BoundGlobalScope
+{
+public:
+    BoundGlobalScope(BoundGlobalScope *previous, std::vector<Diagnostic> diagnostics, std::vector<VariableSymbol> variables, BoundStatement *statement) : Previous(previous), Diagnostics(diagnostics), Variables(variables), Statement(statement) {}
+    BoundGlobalScope *Previous;
+    std::vector<Diagnostic> Diagnostics;
+    std::vector<VariableSymbol> Variables;
+    BoundStatement *Statement;
 };
 class Binder
 {
 public:
-    Binder(std::unordered_map<VariableSymbol, std::any> &variables) : _variables(variables) {};
-    std::unordered_map<VariableSymbol, std::any> &_variables;
+    Binder(BoundScope parent) : _scope(BoundScope(parent)) {};
+
     BoundExpression *BindExpression(SyntaxNode *node);
     const DiagnosticBag &GetDiagnostics() const
     {
         return _diagnostics;
     }
+    static BoundGlobalScope BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree);
 
 private:
     DiagnosticBag _diagnostics;
+    BoundScope _scope;
+
+    static BoundScope CreateParentScope(BoundGlobalScope *previous);
+    BoundStatement *BindStatement(StatementSyntax *node);
+    BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
+    BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
+    BoundStatement *BindExpressionStatement(ExpressionStatementSyntax *node);
     BoundExpression *BindLiteralExpression(LiteralExpressionNode *node);
     BoundExpression *BindUnaryExpression(UnaryExpressionNode *node);
     BoundExpression *BindBinaryExpression(BinaryExpressionNode *node);
