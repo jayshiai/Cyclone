@@ -32,11 +32,21 @@ void SyntaxNode::PrettyPrint(std::ostream &os, SyntaxNode *node, std::string ind
     const std::string CYAN = "\033[36m";
     const std::string GRAY = "\033[90m";
 
-    os << indent << GRAY << "|--" << BLUE << convertSyntaxKindToString(node->Kind);
+    os << indent << GRAY << "|--" << BLUE;
 
     if (Token *token = dynamic_cast<Token *>(node))
     {
-        os << " " << token->value;
+        os << GREEN << convertSyntaxKindToString(node->Kind) << " " << token->value;
+        }
+
+    else if (StatementSyntax *stmt = dynamic_cast<StatementSyntax *>(node))
+    {
+        os << YELLOW << convertSyntaxKindToString(stmt->Kind);
+    }
+
+    else
+    {
+        os << convertSyntaxKindToString(node->Kind);
     }
 
     os << RESET_COLOR << std::endl;

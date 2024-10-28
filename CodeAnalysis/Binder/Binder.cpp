@@ -23,7 +23,7 @@ BoundStatement *Binder::BindStatement(StatementSyntax *node)
 
 BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
 {
-    _scope = BoundScope(_scope);
+    _scope = new BoundScope(_scope);
     std::vector<BoundStatement *> statements;
 
     for (auto &statement : node->Statements)
@@ -40,7 +40,7 @@ BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
     bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
     BoundExpression *initializer = BindExpression(node->Initializer);
     VariableSymbol variable = VariableSymbol(name, isReadOnly, initializer->type);
-    if (!_scope.TryDeclare(variable))
+    if (!_scope->TryDeclare(variable))
     {
         _diagnostics.ReportVariableAlreadyDeclared(node->Identifier.Span, name);
     }
@@ -95,7 +95,7 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
     std::string name = node->IdentifierToken.value;
     std::cout << "Binding name expression: " << name << std::endl;
     VariableSymbol variable(name, false, Type::Unknown);
-    if (!_scope.TryLookup(name, variable))
+    if (!_scope->TryLookup(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
         return new BoundLiteralExpression("0", Type::Integer);
@@ -108,7 +108,7 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
     std::string name = node->IdentifierToken.value;
     BoundExpression *boundExpression = BindExpression(node->Expression);
     VariableSymbol variable(name, false, Type::Unknown);
-    if (!_scope.TryLookup(name, variable))
+    if (!_scope->TryLookup(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
         return boundExpression;
@@ -155,10 +155,11 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
 
 BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)
 {
-    BoundScope parentScope = Binder::CreateParentScope(previous);
+    BoundScope *parentScope = Binder::CreateParentScope(previous);
     Binder binder(parentScope);
+
     BoundStatement *statement = binder.BindStatement(tree->Statement);
-    std::vector<VariableSymbol> variables = parentScope.GetDeclaredVariables();
+    std::vector<VariableSymbol> variables = binder._scope->GetDeclaredVariables();
     std::vector<Diagnostic> diagnostics = binder.GetDiagnostics().GetDiagnostics();
 
     if (previous != nullptr)
@@ -168,7 +169,7 @@ BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, Compilation
     return BoundGlobalScope(previous, diagnostics, variables, statement);
 }
 
-BoundScope Binder::CreateParentScope(BoundGlobalScope *previous)
+BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
 {
     std::stack<BoundGlobalScope *> stack;
     while (previous != nullptr)
@@ -177,16 +178,16 @@ BoundScope Binder::CreateParentScope(BoundGlobalScope *previous)
         previous = previous->Previous;
     }
 
-    BoundScope parent = nullptr;
+    BoundScope *parent = nullptr;
 
     while (!stack.empty())
     {
         previous = stack.top();
         stack.pop();
-        BoundScope scope = BoundScope(parent);
+        BoundScope *scope = new BoundScope(parent);
         for (auto &variable : previous->Variables)
         {
-            scope.TryDeclare(variable);
+            scope->TryDeclare(variable);
         }
         parent = scope;
     }

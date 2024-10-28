@@ -115,17 +115,8 @@ main()
             continue;
         }
 
-        if (previous == nullptr)
-        {
-            std::cout << "No previous compilation." << std::endl;
-        }
-        else
-        {
-            std::cout << bconvertBoundNodeKind(previous->GlobalScope()->Statement->GetKind()) << std::endl;
-            std::cout << "Previous compilation found." << std::endl;
-        }
         Compilation *compilation = previous == nullptr ? new Compilation(&Root) : previous->ContinueWith(&Root);
-        std::cout << bconvertBoundNodeKind(compilation->GlobalScope()->Statement->GetKind()) << std::endl;
+
         if (showTree)
         {
 

@@ -240,7 +240,7 @@ public:
 class Binder
 {
 public:
-    Binder(BoundScope parent) : _scope(BoundScope(parent)) {};
+    Binder(BoundScope *parent) : _scope(new BoundScope(parent)) {};
 
     BoundExpression *BindExpression(SyntaxNode *node);
     const DiagnosticBag &GetDiagnostics() const
@@ -251,9 +251,9 @@ public:
 
 private:
     DiagnosticBag _diagnostics;
-    BoundScope _scope;
+    BoundScope *_scope;
 
-    static BoundScope CreateParentScope(BoundGlobalScope *previous);
+    static BoundScope *CreateParentScope(BoundGlobalScope *previous);
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
