@@ -2,6 +2,7 @@
 #define BINDER_H
 
 #include "CodeAnalysis/SyntaxTree.h"
+#include "CodeAnalysis/Symbol.h"
 #include <unordered_map>
 #include <any>
 enum class BoundNodeKind
@@ -23,13 +24,6 @@ enum class BoundNodeKind
     GotoStatement,
     LabelStatement,
     ConditionalGotoStatement,
-};
-
-enum class Type
-{
-    Boolean,
-    Integer,
-    Unknown
 };
 
 enum class BoundUnaryOperatorKind
@@ -60,7 +54,6 @@ enum class BoundBinaryOperatorKind
 
 };
 
-std::string convertTypetoString(Type type);
 std::string convertBoundNodeKindToString(BoundNodeKind kind);
 
 class BoundNode
@@ -69,6 +62,7 @@ public:
     virtual ~BoundNode() {}
     BoundNodeKind kind;
     virtual std::vector<BoundNode *> GetChildren() const { return {}; }
+    virtual BoundNodeKind GetKind() const = 0;
     void WriteTo(std::ostream &os)
     {
         PrettyPrint(os, this);
@@ -92,55 +86,15 @@ private:
 class BoundExpression : public BoundNode
 {
 public:
-    Type type;
-    BoundExpression(Type type) : type(type) {}
+    TypeSymbol type;
+    BoundExpression(TypeSymbol type) : type(type) {}
     virtual ~BoundExpression() {}
-    // Add virtual method to get the kind dynamically
-    virtual BoundNodeKind GetKind() const = 0;
 };
 class BoundStatement : public BoundNode
 {
 public:
     virtual ~BoundStatement() {}
-    virtual BoundNodeKind GetKind() const = 0;
 };
-class VariableSymbol
-{
-public:
-    std::string Name;
-    Type type;
-    bool IsReadOnly;
-    VariableSymbol() : Name(""), IsReadOnly(false), type(Type::Unknown) {}
-    VariableSymbol(std::string name, bool isReadOnly, Type type) : Name(name), IsReadOnly(isReadOnly), type(type) {}
-
-    friend std::ostream &operator<<(std::ostream &os, const VariableSymbol &var)
-    {
-        os << "VariableSymbol(Name: " << var.Name << ")";
-        return os;
-    }
-
-    bool operator==(const VariableSymbol &other) const
-    {
-        return Name == other.Name;
-    }
-
-    std::string ToString() const
-    {
-        return Name;
-    }
-};
-
-namespace std
-{
-    template <>
-    struct hash<VariableSymbol>
-    {
-        std::size_t operator()(const VariableSymbol &symbol) const
-        {
-            return std::hash<std::string>()(symbol.Name);
-        }
-    };
-}
 class BoundVariableDeclaration : public BoundStatement
 {
 public:
@@ -202,12 +156,13 @@ public:
         return {{"Statements", ""}};
     }
 };
-class LabelSymbol
+
+class BoundLabel
 {
 public:
     std::string Name;
-    LabelSymbol(std::string name) : Name(name) {}
-    bool operator==(const LabelSymbol &other) const
+    BoundLabel(std::string name) : Name(name) {}
+    bool operator==(const BoundLabel &other) const
     {
         return Name == other.Name;
     }
@@ -216,7 +171,7 @@ public:
         return Name;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const LabelSymbol &label)
+    friend std::ostream &operator<<(std::ostream &os, const BoundLabel &label)
     {
         os << "LabelSymbol(Name: " << label.Name << ")";
         return os;
@@ -225,9 +180,9 @@ public:
 namespace std
 {
     template <>
-    struct hash<LabelSymbol>
+    struct hash<BoundLabel>
     {
-        std::size_t operator()(const LabelSymbol &symbol) const
+        std::size_t operator()(const BoundLabel &symbol) const
         {
             return std::hash<std::string>()(symbol.Name);
         }
@@ -237,8 +192,8 @@ namespace std
 class BoundLabelStatement : public BoundStatement
 {
 public:
-    BoundLabelStatement(LabelSymbol label) : Label(label) {};
-    LabelSymbol Label;
+    BoundLabelStatement(BoundLabel label) : Label(label) {};
+    BoundLabel Label;
     BoundNodeKind kind = BoundNodeKind::LabelStatement;
     BoundNodeKind GetKind() const override { return kind; }
 
@@ -256,9 +211,9 @@ public:
 class BoundGotoStatement : public BoundStatement
 {
 public:
-    BoundGotoStatement(LabelSymbol label) : Label(label) {};
+    BoundGotoStatement(BoundLabel label) : Label(label) {};
     BoundNodeKind kind = BoundNodeKind::GotoStatement;
-    LabelSymbol Label;
+    BoundLabel Label;
     BoundNodeKind GetKind() const override { return kind; }
 
     std::vector<std::pair<std::string, std::string>> GetProperties() const override
@@ -275,8 +230,8 @@ public:
 class BoundConditionalGotoStatement : public BoundStatement
 {
 public:
-    BoundConditionalGotoStatement(LabelSymbol label, BoundExpression *condition, bool jumpIfTrue = true) : Label(label), Condition(condition), JumpIfTrue(jumpIfTrue) {};
-    LabelSymbol Label;
+    BoundConditionalGotoStatement(BoundLabel label, BoundExpression *condition, bool jumpIfTrue = true) : Label(label), Condition(condition), JumpIfTrue(jumpIfTrue) {};
+    BoundLabel Label;
     BoundExpression *Condition;
     bool JumpIfTrue;
     BoundNodeKind kind = BoundNodeKind::ConditionalGotoStatement;
@@ -365,13 +320,14 @@ class BoundUnaryOperator
 public:
     SyntaxKind syntaxKind;
     BoundUnaryOperatorKind Kind;
-    Type OperandType;
-    Type ResultType;
-    static BoundUnaryOperator *Bind(SyntaxKind syntaxKind, Type operandType);
+    TypeSymbol OperandType;
+    TypeSymbol ResultType;
+    static BoundUnaryOperator *Bind(SyntaxKind syntaxKind, TypeSymbol operandType);
+    std::string ToString() const;
 
 private:
-    BoundUnaryOperator(SyntaxKind syntaxKind, BoundUnaryOperatorKind kind, Type operandType, Type resultType) : syntaxKind(syntaxKind), Kind(kind), OperandType(operandType), ResultType(resultType) {};
-    BoundUnaryOperator(SyntaxKind syntaxKind, BoundUnaryOperatorKind kind, Type operandType) : BoundUnaryOperator(syntaxKind, kind, operandType, operandType) {};
+    BoundUnaryOperator(SyntaxKind syntaxKind, BoundUnaryOperatorKind kind, TypeSymbol operandType, TypeSymbol resultType) : syntaxKind(syntaxKind), Kind(kind), OperandType(operandType), ResultType(resultType) {};
+    BoundUnaryOperator(SyntaxKind syntaxKind, BoundUnaryOperatorKind kind, TypeSymbol operandType) : BoundUnaryOperator(syntaxKind, kind, operandType, operandType) {};
     static const std::vector<BoundUnaryOperator> operators;
 };
 
@@ -380,27 +336,27 @@ class BoundBinaryOperator
 public:
     SyntaxKind syntaxKind;
     BoundBinaryOperatorKind Kind;
-    Type LeftType;
-    Type RightType;
-    Type ResultType;
-    static BoundBinaryOperator *Bind(SyntaxKind syntaxKind, Type leftType, Type rightType);
+    TypeSymbol LeftType;
+    TypeSymbol RightType;
+    TypeSymbol ResultType;
+    static BoundBinaryOperator *Bind(SyntaxKind syntaxKind, TypeSymbol leftType, TypeSymbol rightType);
+    std::string ToString() const;
 
 private:
-    BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, Type leftType, Type rightTpye, Type resultType) : syntaxKind(syntaxKind), Kind(kind), LeftType(leftType), RightType(rightTpye), ResultType(resultType) {};
-    BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, Type operandType, Type resultType) : BoundBinaryOperator(syntaxKind, kind, operandType, operandType, resultType) {};
-    BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, Type type) : BoundBinaryOperator(syntaxKind, kind, type, type, type) {};
+    BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol leftType, TypeSymbol rightTpye, TypeSymbol resultType) : syntaxKind(syntaxKind), Kind(kind), LeftType(leftType), RightType(rightTpye), ResultType(resultType) {};
+    BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol operandType, TypeSymbol resultType) : BoundBinaryOperator(syntaxKind, kind, operandType, operandType, resultType) {};
+    BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol type) : BoundBinaryOperator(syntaxKind, kind, type, type, type) {};
     static const std::vector<BoundBinaryOperator> operators;
 };
 
 class BoundUnaryExpression : public BoundExpression
 {
 public:
-    BoundUnaryExpression(BoundUnaryOperator *op, BoundExpression *operand) : BoundExpression(op->ResultType), Op(op), Operand(operand) {
-                                                                             };
+    BoundUnaryExpression(BoundUnaryOperator *op, BoundExpression *operand) : BoundExpression(op->ResultType), Op(op), Operand(operand), type(op->ResultType) {};
     BoundNodeKind kind = BoundNodeKind::UnaryExpression;
     BoundUnaryOperator *Op;
     BoundExpression *Operand;
-    Type type;
+    TypeSymbol type;
     BoundNodeKind GetKind() const override { return BoundNodeKind::UnaryExpression; }
 
     std::vector<BoundNode *> GetChildren() const override
@@ -410,17 +366,17 @@ public:
 
     std::vector<std::pair<std::string, std::string>> GetProperties() const override
     {
-        return {{"Operator", ""}};
+        return {{"Operator", Op->ToString()}};
     }
 };
 
 class BoundLiteralExpression : public BoundExpression
 {
 public:
-    BoundLiteralExpression(std::string value, Type type) : BoundExpression(type), Value(value) {};
+    BoundLiteralExpression(std::string value, TypeSymbol type) : BoundExpression(type), Value(value), type(type) {};
     BoundNodeKind kind = BoundNodeKind::LiteralExpression;
     std::string Value;
-    Type type;
+    TypeSymbol type;
     BoundNodeKind GetKind() const override { return BoundNodeKind::LiteralExpression; }
 
     std::vector<std::pair<std::string, std::string>> GetProperties() const override
@@ -437,7 +393,7 @@ public:
 class BoundVariableExpression : public BoundExpression
 {
 public:
-    BoundVariableExpression(VariableSymbol variable) : BoundExpression(variable.type), Variable(variable) {};
+    BoundVariableExpression(VariableSymbol variable) : BoundExpression(variable.Type), Variable(variable) {};
     BoundNodeKind kind = BoundNodeKind::VariableExpression;
     VariableSymbol Variable;
 
@@ -457,11 +413,11 @@ public:
 class BoundAssignmentExpression : public BoundExpression
 {
 public:
-    BoundAssignmentExpression(VariableSymbol variable, BoundExpression *expression) : BoundExpression(expression->type), Variable(variable), Expression(expression) {};
+    BoundAssignmentExpression(VariableSymbol variable, BoundExpression *expression) : BoundExpression(expression->type), Variable(variable), Expression(expression), type(expression->type) {};
     BoundNodeKind kind = BoundNodeKind::AssignmentExpression;
     VariableSymbol Variable;
     BoundExpression *Expression;
-    Type type;
+    TypeSymbol type;
 
     BoundNodeKind GetKind() const override { return BoundNodeKind::AssignmentExpression; }
 
@@ -479,12 +435,12 @@ public:
 class BoundBinaryExpression : public BoundExpression
 {
 public:
-    BoundBinaryExpression(BoundExpression *left, BoundBinaryOperator *op, BoundExpression *right) : BoundExpression(op->ResultType), Left(left), Op(op), Right(right) {};
+    BoundBinaryExpression(BoundExpression *left, BoundBinaryOperator *op, BoundExpression *right) : BoundExpression(op->ResultType), Left(left), Op(op), Right(right), type(op->ResultType) {};
     BoundNodeKind kind = BoundNodeKind::BinaryExpression;
     BoundBinaryOperator *Op;
     BoundExpression *Left;
     BoundExpression *Right;
-    Type type;
+    TypeSymbol type;
     BoundNodeKind GetKind() const override { return BoundNodeKind::BinaryExpression; }
 
     std::vector<BoundNode *> GetChildren() const override
@@ -494,7 +450,7 @@ public:
 
     std::vector<std::pair<std::string, std::string>> GetProperties() const override
     {
-        return {{"Operator", ""}};
+        return {{"Operator", Op->ToString()}};
     }
 };
 
@@ -537,7 +493,7 @@ private:
     BoundScope *_scope;
 
     BoundExpression *BindExpression(SyntaxNode *node);
-    BoundExpression *BindExpression(SyntaxNode *node, Type type);
+    BoundExpression *BindExpression(SyntaxNode *node, TypeSymbol type);
 
     static BoundScope *CreateParentScope(BoundGlobalScope *previous);
     BoundStatement *BindStatement(StatementSyntax *node);

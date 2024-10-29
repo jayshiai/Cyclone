@@ -1,7 +1,7 @@
 #include "CodeAnalysis/Binder.h"
 #include "CodeAnalysis/SyntaxTree.h"
 
-BoundUnaryOperator *BoundUnaryOperator::Bind(SyntaxKind syntaxKind, Type operandType)
+BoundUnaryOperator *BoundUnaryOperator::Bind(SyntaxKind syntaxKind, TypeSymbol operandType)
 {
     for (auto op : operators)
     {
@@ -14,8 +14,25 @@ BoundUnaryOperator *BoundUnaryOperator::Bind(SyntaxKind syntaxKind, Type operand
 }
 
 const std::vector<BoundUnaryOperator> BoundUnaryOperator::operators{
-    BoundUnaryOperator(SyntaxKind::BANG, BoundUnaryOperatorKind::LogicalNegation, Type::Boolean),
-    BoundUnaryOperator(SyntaxKind::PLUS, BoundUnaryOperatorKind::Identity, Type::Integer),
-    BoundUnaryOperator(SyntaxKind::MINUS, BoundUnaryOperatorKind::Negation, Type::Integer),
-    BoundUnaryOperator(SyntaxKind::TILDE, BoundUnaryOperatorKind::OnesComplement, Type::Integer),
+    BoundUnaryOperator(SyntaxKind::BANG, BoundUnaryOperatorKind::LogicalNegation, TypeSymbol::Boolean),
+    BoundUnaryOperator(SyntaxKind::PLUS, BoundUnaryOperatorKind::Identity, TypeSymbol::Integer),
+    BoundUnaryOperator(SyntaxKind::MINUS, BoundUnaryOperatorKind::Negation, TypeSymbol::Integer),
+    BoundUnaryOperator(SyntaxKind::TILDE, BoundUnaryOperatorKind::OnesComplement, TypeSymbol::Integer),
 };
+
+std::string BoundUnaryOperator::ToString() const
+{
+    switch (Kind)
+    {
+    case BoundUnaryOperatorKind::Identity:
+        return "+";
+    case BoundUnaryOperatorKind::Negation:
+        return "-";
+    case BoundUnaryOperatorKind::LogicalNegation:
+        return "!";
+    case BoundUnaryOperatorKind::OnesComplement:
+        return "~";
+    default:
+        return "Unknown";
+    }
+}

@@ -38,7 +38,7 @@ std::string convertBoundNodeKind(BoundNodeKind kind)
 
 std::any Evaluator::Evaluate()
 {
-    std::unordered_map<LabelSymbol, int> labelToIndex;
+    std::unordered_map<BoundLabel, int> labelToIndex;
 
     for (int i = 0; i < _root->Statements.size(); i++)
     {
@@ -187,17 +187,17 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
     case BoundBinaryOperatorKind::Division:
         return std::any_cast<int>(left) / std::any_cast<int>(right);
     case BoundBinaryOperatorKind::BitwiseAnd:
-        if (n->Op->LeftType == Type::Boolean && n->Op->RightType == Type::Boolean)
+        if (n->Op->LeftType == TypeSymbol::Boolean && n->Op->RightType == TypeSymbol::Boolean)
         {
             return std::any_cast<bool>(left) & std::any_cast<bool>(right);
         }
         return std::any_cast<int>(left) & std::any_cast<int>(right);
     case BoundBinaryOperatorKind::BitwiseOr:
-        if (n->Op->LeftType == Type::Boolean && n->Op->RightType == Type::Boolean)
+        if (n->Op->LeftType == TypeSymbol::Boolean && n->Op->RightType == TypeSymbol::Boolean)
             return std::any_cast<bool>(left) | std::any_cast<bool>(right);
         return std::any_cast<int>(left) | std::any_cast<int>(right);
     case BoundBinaryOperatorKind::BitwiseXor:
-        if (n->Op->LeftType == Type::Boolean && n->Op->RightType == Type::Boolean)
+        if (n->Op->LeftType == TypeSymbol::Boolean && n->Op->RightType == TypeSymbol::Boolean)
             return std::any_cast<bool>(left) ^ std::any_cast<bool>(right);
         return std::any_cast<int>(left) ^ std::any_cast<int>(right);
     case BoundBinaryOperatorKind::LogicalAnd:

@@ -11,7 +11,7 @@ BoundStatement *Lowerer::RewriteIfStatement(BoundIfStatement *node)
 {
     if (node->ElseStatement == nullptr)
     {
-        LabelSymbol *endLabel = GenerateLabel();
+        BoundLabel *endLabel = GenerateLabel();
         BoundStatement *gotoFalse = new BoundConditionalGotoStatement(*endLabel, node->Condition, false);
         BoundStatement *endLabelStatement = new BoundLabelStatement(*endLabel);
         BoundBlockStatement *result = new BoundBlockStatement({node->ThenStatement, gotoFalse, endLabelStatement});
@@ -20,8 +20,8 @@ BoundStatement *Lowerer::RewriteIfStatement(BoundIfStatement *node)
     else
     {
 
-        LabelSymbol *elseLabel = GenerateLabel();
-        LabelSymbol *endLabel = GenerateLabel();
+        BoundLabel *elseLabel = GenerateLabel();
+        BoundLabel *endLabel = GenerateLabel();
         BoundStatement *gotoFalse = new BoundConditionalGotoStatement(*elseLabel, node->Condition, false);
         BoundStatement *gotoEnd = new BoundGotoStatement(*endLabel);
         BoundStatement *elseLabelStatement = new BoundLabelStatement(*elseLabel);
@@ -33,9 +33,9 @@ BoundStatement *Lowerer::RewriteIfStatement(BoundIfStatement *node)
 
 BoundStatement *Lowerer::RewriteWhileStatement(BoundWhileStatement *node)
 {
-    LabelSymbol *continueLabel = GenerateLabel();
-    LabelSymbol *checkLabel = GenerateLabel();
-    LabelSymbol *endLabel = GenerateLabel();
+    BoundLabel *continueLabel = GenerateLabel();
+    BoundLabel *checkLabel = GenerateLabel();
+    BoundLabel *endLabel = GenerateLabel();
 
     BoundGotoStatement *gotoCheck = new BoundGotoStatement(*checkLabel);
     BoundLabelStatement *continueLabelStatement = new BoundLabelStatement(*continueLabel);
@@ -51,12 +51,12 @@ BoundStatement *Lowerer::RewriteForStatement(BoundForStatement *node)
 {
     BoundVariableDeclaration *variableDeclaration = new BoundVariableDeclaration(node->Variable, node->LowerBound);
     BoundVariableExpression *variableExpression = new BoundVariableExpression(node->Variable);
-    VariableSymbol *upperBoundSymbol = new VariableSymbol("upperBound", true, Type::Integer);
+    VariableSymbol *upperBoundSymbol = new VariableSymbol("upperBound", true, TypeSymbol::Integer);
     BoundVariableDeclaration *upperBoundDeclaration = new BoundVariableDeclaration(*upperBoundSymbol, node->UpperBound);
-    BoundBinaryOperator *lessOrEquals = BoundBinaryOperator::Bind(SyntaxKind::LESS_EQUALS, Type::Integer, Type::Integer);
+    BoundBinaryOperator *lessOrEquals = BoundBinaryOperator::Bind(SyntaxKind::LESS_EQUALS, TypeSymbol::Integer, TypeSymbol::Integer);
     BoundBinaryExpression *condition = new BoundBinaryExpression(variableExpression, lessOrEquals, new BoundVariableExpression(*upperBoundSymbol));
 
-    BoundExpressionStatement *increment = new BoundExpressionStatement(new BoundAssignmentExpression(node->Variable, new BoundBinaryExpression(variableExpression, BoundBinaryOperator::Bind(SyntaxKind::PLUS, Type::Integer, Type::Integer), new BoundLiteralExpression("1", Type::Integer))));
+    BoundExpressionStatement *increment = new BoundExpressionStatement(new BoundAssignmentExpression(node->Variable, new BoundBinaryExpression(variableExpression, BoundBinaryOperator::Bind(SyntaxKind::PLUS, TypeSymbol::Integer, TypeSymbol::Integer), new BoundLiteralExpression("1", TypeSymbol::Integer))));
 
     BoundBlockStatement *whileBody = new BoundBlockStatement({node->Body, increment});
     BoundWhileStatement *whileStatement = new BoundWhileStatement(condition, whileBody);
@@ -93,7 +93,7 @@ BoundBlockStatement *Lowerer::Flatten(BoundStatement *node)
     return new BoundBlockStatement(statements);
 }
 
-LabelSymbol *Lowerer::GenerateLabel()
+BoundLabel *Lowerer::GenerateLabel()
 {
-    return new LabelSymbol("Label" + std::to_string(labelCount++));
+    return new BoundLabel("Label" + std::to_string(labelCount++));
 }

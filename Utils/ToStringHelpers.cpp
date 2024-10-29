@@ -2,19 +2,6 @@
 #include "CodeAnalysis/Binder.h"
 #include <string>
 
-std::string convertTypetoString(Type type)
-{
-    switch (type)
-    {
-    case Type::Boolean:
-        return "Boolean";
-    case Type::Integer:
-        return "Integer";
-    default:
-        return "Unknown";
-    }
-}
-
 // enum class SyntaxKind
 // {
 //     NUMBER,

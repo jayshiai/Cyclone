@@ -29,7 +29,7 @@ BoundStatement *Binder::BindStatement(StatementSyntax *node)
 
 BoundStatement *Binder::BindIfStatement(IfStatementSyntax *node)
 {
-    BoundExpression *condition = BindExpression(node->Condition, Type::Boolean);
+    BoundExpression *condition = BindExpression(node->Condition, TypeSymbol::Boolean);
 
     BoundStatement *thenStatement = BindStatement(node->ThenStatement);
     BoundStatement *elseStatement = node->ElseClause == nullptr ? nullptr : BindStatement(node->ElseClause->ElseStatement);
@@ -38,17 +38,17 @@ BoundStatement *Binder::BindIfStatement(IfStatementSyntax *node)
 
 BoundStatement *Binder::BindWhileStatement(WhileStatementSyntax *node)
 {
-    BoundExpression *condition = BindExpression(node->Condition, Type::Boolean);
+    BoundExpression *condition = BindExpression(node->Condition, TypeSymbol::Boolean);
     BoundStatement *body = BindStatement(node->Body);
     return new BoundWhileStatement(condition, body);
 }
 
 BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
 {
-    BoundExpression *lowerBound = BindExpression(node->LowerBound, Type::Integer);
-    BoundExpression *upperBound = BindExpression(node->UpperBound, Type::Integer);
+    BoundExpression *lowerBound = BindExpression(node->LowerBound, TypeSymbol::Integer);
+    BoundExpression *upperBound = BindExpression(node->UpperBound, TypeSymbol::Integer);
     _scope = new BoundScope(_scope);
-    VariableSymbol variable(node->Identifier.value, false, Type::Integer);
+    VariableSymbol variable(node->Identifier.value, false, TypeSymbol::Integer);
     if (!_scope->TryDeclare(variable))
     {
         _diagnostics.ReportVariableAlreadyDeclared(node->Identifier.Span, node->Identifier.value);
@@ -91,12 +91,12 @@ BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
     return new BoundExpressionStatement(expression);
 }
 
-BoundExpression *Binder::BindExpression(SyntaxNode *node, Type type)
+BoundExpression *Binder::BindExpression(SyntaxNode *node, TypeSymbol type)
 {
     BoundExpression *result = BindExpression(node);
-    if (type != Type::Unknown && result->type != type)
+    if (type != TypeSymbol::Error && result->type != type)
     {
-        _diagnostics.ReportCannotConvert(node->Span(), convertTypetoString(result->type), convertTypetoString(type));
+        _diagnostics.ReportCannotConvert(node->Span(), result->type.ToString(), type.ToString());
     }
     return result;
 }
@@ -129,9 +129,9 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
     {
     case SyntaxKind::TRUE_KEYWORD:
     case SyntaxKind::FALSE_KEYWORD:
-        return new BoundLiteralExpression(node->LiteralToken.value, Type::Boolean);
+        return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Boolean);
     case SyntaxKind::NUMBER:
-        return new BoundLiteralExpression(node->LiteralToken.value, Type::Integer);
+        return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Integer);
     default:
         _diagnostics.ReportUnexpectedToken(node->LiteralToken.Span, convertSyntaxKindToString(node->LiteralToken.Kind), "Literal Expression");
         return nullptr;
@@ -143,13 +143,13 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
     if (name.empty())
     {
 
-        return new BoundLiteralExpression("0", Type::Integer);
+        return new BoundLiteralExpression("0", TypeSymbol::Integer);
     }
-    VariableSymbol variable(name, false, Type::Unknown);
+    VariableSymbol variable(name, false, TypeSymbol::Error);
     if (!_scope->TryLookup(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
-        return new BoundLiteralExpression("0", Type::Integer);
+        return new BoundLiteralExpression("0", TypeSymbol::Integer);
     }
     return new BoundVariableExpression(variable);
 }
@@ -158,7 +158,7 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
 {
     std::string name = node->IdentifierToken.value;
     BoundExpression *boundExpression = BindExpression(node->Expression);
-    VariableSymbol variable(name, false, Type::Unknown);
+    VariableSymbol variable(name, false, TypeSymbol::Error);
     if (!_scope->TryLookup(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
@@ -169,9 +169,9 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
         _diagnostics.ReportCannotAssign(node->IdentifierToken.Span, name);
     }
 
-    if (boundExpression->type != variable.type)
+    if (boundExpression->type != variable.Type)
     {
-        _diagnostics.ReportCannotConvert(node->Expression->Span(), convertTypetoString(boundExpression->type), convertTypetoString(variable.type));
+        _diagnostics.ReportCannotConvert(node->Expression->Span(), boundExpression->type.ToString(), variable.Type.ToString());
     }
 
     return new BoundAssignmentExpression(variable, boundExpression);
@@ -182,7 +182,7 @@ BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
     BoundUnaryOperator *boundOperator = BoundUnaryOperator::Bind(node->OperatorToken.Kind, boundOperand->type);
     if (boundOperator == nullptr)
     {
-        _diagnostics.ReportUndefinedUnaryOperator(node->OperatorToken.Span, node->OperatorToken.value, convertTypetoString(boundOperand->type));
+        _diagnostics.ReportUndefinedUnaryOperator(node->OperatorToken.Span, node->OperatorToken.value, boundOperand->type.ToString());
         return boundOperand;
     }
     return new BoundUnaryExpression(boundOperator, boundOperand);
@@ -197,7 +197,7 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
     if (boundOperator == nullptr)
     {
 
-        _diagnostics.ReportUndefinedBinaryOperator(node->OperatorToken.Span, node->OperatorToken.value, convertTypetoString(boundLeft->type), convertTypetoString(boundRight->type));
+        _diagnostics.ReportUndefinedBinaryOperator(node->OperatorToken.Span, node->OperatorToken.value, boundLeft->type.ToString(), boundRight->type.ToString());
         return boundLeft;
     }
     BoundBinaryExpression *bi = new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
@@ -245,6 +245,27 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
     return parent;
 }
 
+// enum class BoundNodeKind
+// {
+//     LiteralExpression,
+//     UnaryExpression,
+//     BinaryExpression,
+//     ParenthesizedExpression,
+//     VariableExpression,
+//     AssignmentExpression,
+
+//     ExpressionStatement,
+//     VariableDeclaration,
+//     BlockStatement,
+//     IfStatement,
+//     WhileStatement,
+//     ForStatement,
+
+//     GotoStatement,
+//     LabelStatement,
+//     ConditionalGotoStatement,
+// };
+
 std::string convertBoundNodeKindToString(BoundNodeKind kind)
 {
     switch (kind)
@@ -271,6 +292,14 @@ std::string convertBoundNodeKindToString(BoundNodeKind kind)
         return "UnaryExpression";
     case BoundNodeKind::BinaryExpression:
         return "BinaryExpression";
+    case BoundNodeKind::ParenthesizedExpression:
+        return "ParenthesizedExpression";
+    case BoundNodeKind::GotoStatement:
+        return "GotoStatement";
+    case BoundNodeKind::LabelStatement:
+        return "LabelStatement";
+    case BoundNodeKind::ConditionalGotoStatement:
+        return "ConditionalGotoStatement";
     default:
         return "Unknown";
     }
@@ -287,18 +316,33 @@ void BoundNode::PrettyPrint(std::ostream &os, BoundNode *node, std::string inden
     const std::string CYAN = "\033[36m";
     const std::string GRAY = "\033[90m";
 
-    os << indent << "|--" << convertBoundNodeKindToString(node->kind);
+    os << indent << GRAY << "|--";
+
+    std::string kind = convertBoundNodeKindToString(node->GetKind());
+
+    if (kind.find("Expression") != std::string::npos)
+    {
+        os << CYAN << " " << kind;
+    }
+    else if (kind.find("Statement") != std::string::npos)
+    {
+        os << MAGENTA << " " << kind;
+    }
+    else
+    {
+        os << RESET_COLOR << " " << kind;
+    }
 
     bool firstProperty = true;
     for (const auto &prop : node->GetProperties())
     {
         if (!firstProperty)
             os << ",";
-        os << " " << prop.first << " = " << prop.second;
+        os << YELLOW << " " << prop.first << " = " << GREEN << prop.second;
         firstProperty = false;
     }
 
-    os << std::endl;
+    os << GRAY << std::endl;
 
     std::string childIndent = indent + (isLast ? "   " : "|  ");
     const auto &children = node->GetChildren();
@@ -306,4 +350,5 @@ void BoundNode::PrettyPrint(std::ostream &os, BoundNode *node, std::string inden
     {
         PrettyPrint(os, children[i], childIndent, i == children.size() - 1);
     }
+    os << RESET_COLOR;
 }

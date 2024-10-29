@@ -63,9 +63,9 @@ main()
 {
 
     std::string textBuilder;
-    bool showTree = true;
+    bool showTree = false;
     std::unordered_map<VariableSymbol, std::any> variables;
-
+    bool showProgram = true;
     Compilation *previous = nullptr;
     while (true)
     {
@@ -92,6 +92,12 @@ main()
             {
                 showTree = !showTree;
                 std::cout << showTree ? "Showing parse trees." : "Not showing parse trees";
+                continue;
+            }
+            else if (input == "#showProgram")
+            {
+                showProgram = !showProgram;
+                std::cout << showProgram ? "Showing program." : "Not showing program";
                 continue;
             }
             else if (input == "#cls")
@@ -122,6 +128,12 @@ main()
 
             std::cout << BLUE << "Abstract Syntax Tree" << std::endl;
             Root.Root->WriteTo(std::cout);
+        }
+
+        if (showProgram)
+        {
+            std::cout << BLUE << "Program" << std::endl;
+            compilation->EmitTree(std::cout);
         }
         EvaluationResult result = compilation->Evaluate(variables);
 

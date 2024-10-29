@@ -42,6 +42,6 @@ protected:
 
 private:
     static BoundBlockStatement *Flatten(BoundStatement *node);
-    LabelSymbol *GenerateLabel();
+    BoundLabel *GenerateLabel();
 };
 #endif
