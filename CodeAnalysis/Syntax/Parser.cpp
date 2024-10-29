@@ -189,6 +189,7 @@ int Parser::GetUnaryPrecedence(SyntaxKind kind)
     case SyntaxKind::PLUS:
     case SyntaxKind::MINUS:
     case SyntaxKind::BANG:
+    case SyntaxKind::TILDE:
         return 6;
     default:
         return 0;
@@ -212,9 +213,12 @@ int Parser::GetBinaryPrecedence(SyntaxKind kind)
     case SyntaxKind::GREATER:
     case SyntaxKind::GREATER_EQUALS:
         return 3;
+    case SyntaxKind::AMPERSAND:
     case SyntaxKind::AMPERSAND_AMPERSAND:
         return 2;
+    case SyntaxKind::PIPE:
     case SyntaxKind::PIPE_PIPE:
+    case SyntaxKind::HAT:
         return 1;
     default:
         return 0;

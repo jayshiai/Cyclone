@@ -25,7 +25,10 @@ public:
     EvaluationResult Evaluate(std::unordered_map<VariableSymbol, std::any> &variables);
     Compilation *ContinueWith(SyntaxTree *syntaxTree);
 
+    void EmitTree(std::ostream &os);
+
 private:
+    BoundBlockStatement *GetStatement();
     BoundGlobalScope *_globalScope = nullptr;
     SyntaxTree *syntaxTree;
 };

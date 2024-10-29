@@ -49,11 +49,24 @@ std::vector<Token> Lexer::tokenize()
             tokens.push_back(Token{SyntaxKind::CLOSE_BRACE, "}", pos});
             advance();
             break;
+        case '~':
+            tokens.push_back(Token{SyntaxKind::TILDE, "~", pos});
+            advance();
+            break;
+        case '^':
+            tokens.push_back(Token{SyntaxKind::HAT, "^", pos});
+            advance();
+            break;
         case '&':
             if (lookAhead == '&')
             {
                 tokens.push_back(Token{SyntaxKind::AMPERSAND_AMPERSAND, "&&", pos});
                 advance();
+                advance();
+            }
+            else
+            {
+                tokens.push_back(Token{SyntaxKind::AMPERSAND, "&", pos});
                 advance();
             }
             break;
@@ -62,6 +75,11 @@ std::vector<Token> Lexer::tokenize()
             {
                 tokens.push_back(Token{SyntaxKind::PIPE_PIPE, "||", pos});
                 advance();
+                advance();
+            }
+            else
+            {
+                tokens.push_back(Token{SyntaxKind::PIPE, "|", pos});
                 advance();
             }
             break;

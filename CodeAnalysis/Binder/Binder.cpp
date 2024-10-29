@@ -244,3 +244,66 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
     }
     return parent;
 }
+
+std::string convertBoundNodeKindToString(BoundNodeKind kind)
+{
+    switch (kind)
+    {
+    case BoundNodeKind::VariableDeclaration:
+        return "VariableDeclaration";
+    case BoundNodeKind::ExpressionStatement:
+        return "ExpressionStatement";
+    case BoundNodeKind::BlockStatement:
+        return "BlockStatement";
+    case BoundNodeKind::IfStatement:
+        return "IfStatement";
+    case BoundNodeKind::WhileStatement:
+        return "WhileStatement";
+    case BoundNodeKind::ForStatement:
+        return "ForStatement";
+    case BoundNodeKind::LiteralExpression:
+        return "LiteralExpression";
+    case BoundNodeKind::VariableExpression:
+        return "VariableExpression";
+    case BoundNodeKind::AssignmentExpression:
+        return "AssignmentExpression";
+    case BoundNodeKind::UnaryExpression:
+        return "UnaryExpression";
+    case BoundNodeKind::BinaryExpression:
+        return "BinaryExpression";
+    default:
+        return "Unknown";
+    }
+}
+
+void BoundNode::PrettyPrint(std::ostream &os, BoundNode *node, std::string indent, bool isLast)
+{
+    const std::string RESET_COLOR = "\033[0m";
+    const std::string RED = "\033[31m";
+    const std::string GREEN = "\033[32m";
+    const std::string YELLOW = "\033[33m";
+    const std::string BLUE = "\033[34m";
+    const std::string MAGENTA = "\033[35m";
+    const std::string CYAN = "\033[36m";
+    const std::string GRAY = "\033[90m";
+
+    os << indent << "|--" << convertBoundNodeKindToString(node->kind);
+
+    bool firstProperty = true;
+    for (const auto &prop : node->GetProperties())
+    {
+        if (!firstProperty)
+            os << ",";
+        os << " " << prop.first << " = " << prop.second;
+        firstProperty = false;
+    }
+
+    os << std::endl;
+
+    std::string childIndent = indent + (isLast ? "   " : "|  ");
+    const auto &children = node->GetChildren();
+    for (size_t i = 0; i < children.size(); ++i)
+    {
+        PrettyPrint(os, children[i], childIndent, i == children.size() - 1);
+    }
+}

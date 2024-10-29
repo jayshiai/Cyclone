@@ -35,77 +35,71 @@ std::string convertBoundNodeKind(BoundNodeKind kind)
         return "Unknown";
     }
 }
-void Evaluator::EvaluateStatement(BoundStatement *node)
+
+std::any Evaluator::Evaluate()
 {
-    switch (node->GetKind())
+    std::unordered_map<LabelSymbol, int> labelToIndex;
+
+    for (int i = 0; i < _root->Statements.size(); i++)
     {
-    case BoundNodeKind::BlockStatement:
-        EvaluateBlockStatement((BoundBlockStatement *)node);
-        break;
-    case BoundNodeKind::ExpressionStatement:
-        EvaluateExpressionStatement((BoundExpressionStatement *)node);
-        break;
-    case BoundNodeKind::VariableDeclaration:
-        EvaluateVariableDeclaration((BoundVariableDeclaration *)node);
-        break;
-    case BoundNodeKind::IfStatement:
-        EvaluateIfStatement((BoundIfStatement *)node);
-        break;
-    case BoundNodeKind::WhileStatement:
-        EvaluateWhileStatement((BoundWhileStatement *)node);
-        break;
-    case BoundNodeKind::ForStatement:
-        EvaluateForStatement((BoundForStatement *)node);
-        break;
-    default:
-        throw std::runtime_error("Unexpected node kind::Statement");
+        if (_root->Statements[i]->GetKind() == BoundNodeKind::LabelStatement)
+        {
+            BoundLabelStatement *label = static_cast<BoundLabelStatement *>(_root->Statements[i]);
+            labelToIndex[label->Label] = i + 1;
+        }
     }
+
+    int index = 0;
+    while (index < _root->Statements.size())
+    {
+        BoundStatement *s = _root->Statements[index];
+
+        switch (s->GetKind())
+        {
+        case BoundNodeKind::VariableDeclaration:
+            EvaluateVariableDeclaration((BoundVariableDeclaration *)s);
+            index++;
+            break;
+        case BoundNodeKind::ExpressionStatement:
+            EvaluateExpressionStatement((BoundExpressionStatement *)s);
+            index++;
+            break;
+        case BoundNodeKind::GotoStatement:
+        {
+            BoundGotoStatement *gs = (BoundGotoStatement *)s;
+            index = labelToIndex[gs->Label];
+            break;
+        }
+        case BoundNodeKind::ConditionalGotoStatement:
+        {
+            BoundConditionalGotoStatement *cgs = (BoundConditionalGotoStatement *)s;
+            bool condition = std::any_cast<bool>(EvaluateExpression(cgs->Condition));
+            if ((cgs->JumpIfFalse && !condition) || (!cgs->JumpIfFalse && condition))
+            {
+                index = labelToIndex[cgs->Label];
+            }
+            else
+            {
+                index++;
+            }
+            break;
+        }
+        case BoundNodeKind::LabelStatement:
+            index++;
+            break;
+        default:
+            throw std::runtime_error("Unexpected node kind");
+        }
+    }
+
+    return _lastValue;
 }
 
-void Evaluator::EvaluateIfStatement(BoundIfStatement *node)
-{
-    if (std::any_cast<bool>(EvaluateExpression(node->Condition)))
-    {
-        EvaluateStatement(node->ThenStatement);
-    }
-    else if (node->ElseStatement != nullptr)
-    {
-        EvaluateStatement(node->ElseStatement);
-    }
-}
-
-void Evaluator::EvaluateWhileStatement(BoundWhileStatement *node)
-{
-    while (std::any_cast<bool>(EvaluateExpression(node->Condition)))
-    {
-        EvaluateStatement(node->Body);
-    }
-}
-
-void Evaluator::EvaluateForStatement(BoundForStatement *node)
-{
-    auto lowerBound = std::any_cast<int>(EvaluateExpression(node->LowerBound));
-    auto upperBound = std::any_cast<int>(EvaluateExpression(node->UpperBound));
-    _variables[node->Variable] = lowerBound;
-    for (int i = lowerBound; i <= upperBound; i++)
-    {
-        _variables[node->Variable] = i;
-        EvaluateStatement(node->Body);
-    }
-}
 void Evaluator::EvaluateVariableDeclaration(BoundVariableDeclaration *node)
 {
     std::any value = EvaluateExpression(node->Initializer);
     _variables[node->Variable] = value;
     _lastValue = value;
-}
-
-void Evaluator::EvaluateBlockStatement(BoundBlockStatement *node)
-{
-    for (auto &statement : node->Statements)
-    {
-        EvaluateStatement(statement);
-    }
 }
 
 void Evaluator::EvaluateExpressionStatement(BoundExpressionStatement *node)
@@ -170,6 +164,8 @@ std::any Evaluator::EvaluateUnaryExpression(BoundUnaryExpression *n)
         return -std::any_cast<int>(operand);
     case BoundUnaryOperatorKind::LogicalNegation:
         return !std::any_cast<bool>(operand);
+    case BoundUnaryOperatorKind::OnesComplement:
+        return ~std::any_cast<int>(operand);
     default:
         throw std::runtime_error("Unexpected unary operator");
     }
@@ -190,6 +186,20 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
         return std::any_cast<int>(left) * std::any_cast<int>(right);
     case BoundBinaryOperatorKind::Division:
         return std::any_cast<int>(left) / std::any_cast<int>(right);
+    case BoundBinaryOperatorKind::BitwiseAnd:
+        if (n->Op->LeftType == Type::Boolean && n->Op->RightType == Type::Boolean)
+        {
+            return std::any_cast<bool>(left) & std::any_cast<bool>(right);
+        }
+        return std::any_cast<int>(left) & std::any_cast<int>(right);
+    case BoundBinaryOperatorKind::BitwiseOr:
+        if (n->Op->LeftType == Type::Boolean && n->Op->RightType == Type::Boolean)
+            return std::any_cast<bool>(left) | std::any_cast<bool>(right);
+        return std::any_cast<int>(left) | std::any_cast<int>(right);
+    case BoundBinaryOperatorKind::BitwiseXor:
+        if (n->Op->LeftType == Type::Boolean && n->Op->RightType == Type::Boolean)
+            return std::any_cast<bool>(left) ^ std::any_cast<bool>(right);
+        return std::any_cast<int>(left) ^ std::any_cast<int>(right);
     case BoundBinaryOperatorKind::LogicalAnd:
         return std::any_cast<bool>(left) && std::any_cast<bool>(right);
     case BoundBinaryOperatorKind::LogicalOr:

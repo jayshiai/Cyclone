@@ -25,6 +25,11 @@ enum class SyntaxKind
     GREATER_EQUALS,
     EQUALS_EQUALS,
     BANG_EQUALS,
+    AMPERSAND,
+    TILDE,
+    HAT,
+    PIPE,
+
     AMPERSAND_AMPERSAND,
     PIPE_PIPE,
     IDENTIFIER,

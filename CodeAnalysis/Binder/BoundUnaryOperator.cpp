@@ -16,4 +16,6 @@ BoundUnaryOperator *BoundUnaryOperator::Bind(SyntaxKind syntaxKind, Type operand
 const std::vector<BoundUnaryOperator> BoundUnaryOperator::operators{
     BoundUnaryOperator(SyntaxKind::BANG, BoundUnaryOperatorKind::LogicalNegation, Type::Boolean),
     BoundUnaryOperator(SyntaxKind::PLUS, BoundUnaryOperatorKind::Identity, Type::Integer),
-    BoundUnaryOperator(SyntaxKind::MINUS, BoundUnaryOperatorKind::Negation, Type::Integer)};
+    BoundUnaryOperator(SyntaxKind::MINUS, BoundUnaryOperatorKind::Negation, Type::Integer),
+    BoundUnaryOperator(SyntaxKind::TILDE, BoundUnaryOperatorKind::OnesComplement, Type::Integer),
+};

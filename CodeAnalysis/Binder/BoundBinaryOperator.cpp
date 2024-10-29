@@ -22,6 +22,10 @@ const std::vector<BoundBinaryOperator> BoundBinaryOperator::operators{
     BoundBinaryOperator(SyntaxKind::MULTIPLY, BoundBinaryOperatorKind::Multiplication, Type::Integer),
     BoundBinaryOperator(SyntaxKind::DIVIDE, BoundBinaryOperatorKind::Division, Type::Integer),
 
+    BoundBinaryOperator(SyntaxKind::AMPERSAND, BoundBinaryOperatorKind::BitwiseAnd, Type::Integer),
+    BoundBinaryOperator(SyntaxKind::PIPE, BoundBinaryOperatorKind::BitwiseOr, Type::Integer),
+    BoundBinaryOperator(SyntaxKind::HAT, BoundBinaryOperatorKind::BitwiseXor, Type::Integer),
+
     BoundBinaryOperator(SyntaxKind::EQUALS_EQUALS, BoundBinaryOperatorKind::Equals, Type::Integer, Type::Boolean),
     BoundBinaryOperator(SyntaxKind::BANG_EQUALS, BoundBinaryOperatorKind::NotEquals, Type::Integer, Type::Boolean),
 
@@ -29,6 +33,10 @@ const std::vector<BoundBinaryOperator> BoundBinaryOperator::operators{
     BoundBinaryOperator(SyntaxKind::LESS_EQUALS, BoundBinaryOperatorKind::LessOrEquals, Type::Integer, Type::Boolean),
     BoundBinaryOperator(SyntaxKind::GREATER, BoundBinaryOperatorKind::Greater, Type::Integer, Type::Boolean),
     BoundBinaryOperator(SyntaxKind::GREATER_EQUALS, BoundBinaryOperatorKind::GreaterOrEquals, Type::Integer, Type::Boolean),
+
+    BoundBinaryOperator(SyntaxKind::AMPERSAND, BoundBinaryOperatorKind::BitwiseAnd, Type::Boolean),
+    BoundBinaryOperator(SyntaxKind::PIPE, BoundBinaryOperatorKind::BitwiseOr, Type::Boolean),
+    BoundBinaryOperator(SyntaxKind::HAT, BoundBinaryOperatorKind::BitwiseXor, Type::Boolean),
 
     BoundBinaryOperator(SyntaxKind::AMPERSAND_AMPERSAND, BoundBinaryOperatorKind::LogicalAnd, Type::Boolean),
     BoundBinaryOperator(SyntaxKind::PIPE_PIPE, BoundBinaryOperatorKind::LogicalOr, Type::Boolean),

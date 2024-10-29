@@ -19,6 +19,10 @@ enum class BoundNodeKind
     IfStatement,
     WhileStatement,
     ForStatement,
+
+    GotoStatement,
+    LabelStatement,
+    ConditionalGotoStatement,
 };
 
 enum class Type
@@ -32,7 +36,8 @@ enum class BoundUnaryOperatorKind
 {
     Identity,
     Negation,
-    LogicalNegation
+    LogicalNegation,
+    OnesComplement,
 };
 
 enum class BoundBinaryOperatorKind
@@ -48,17 +53,40 @@ enum class BoundBinaryOperatorKind
     Less,
     LessOrEquals,
     Greater,
-    GreaterOrEquals
+    GreaterOrEquals,
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
 
 };
 
 std::string convertTypetoString(Type type);
+std::string convertBoundNodeKindToString(BoundNodeKind kind);
 
 class BoundNode
 {
 public:
     virtual ~BoundNode() {}
     BoundNodeKind kind;
+    virtual std::vector<BoundNode *> GetChildren() const { return {}; }
+    void WriteTo(std::ostream &os)
+    {
+        PrettyPrint(os, this);
+    }
+
+    virtual std::vector<std::pair<std::string, std::string>> GetProperties() const
+    {
+        return {};
+    }
+
+    friend std::ostream &operator<<(std::ostream &out, BoundNode &node)
+    {
+        node.WriteTo(out);
+        return out;
+    }
+
+private:
+    static void PrettyPrint(std::ostream &os, BoundNode *node, std::string indent = "", bool isLast = true);
 };
 
 class BoundExpression : public BoundNode
@@ -95,6 +123,11 @@ public:
     {
         return Name == other.Name;
     }
+
+    std::string ToString() const
+    {
+        return Name;
+    }
 };
 
 namespace std
@@ -116,6 +149,16 @@ public:
     BoundExpression *Initializer;
     BoundNodeKind kind = BoundNodeKind::VariableDeclaration;
     BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Initializer};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Variable", Variable.ToString()}};
+    }
 };
 class BoundExpressionStatement : public BoundStatement
 {
@@ -124,6 +167,16 @@ public:
     BoundExpression *Expression;
     BoundNodeKind kind = BoundNodeKind::ExpressionStatement;
     BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Expression};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Expression", ""}};
+    }
 };
 
 class BoundBlockStatement : public BoundStatement
@@ -133,6 +186,111 @@ public:
     std::vector<BoundStatement *> Statements;
     BoundNodeKind kind = BoundNodeKind::BlockStatement;
     BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        std::vector<BoundNode *> children;
+        for (auto &statement : Statements)
+        {
+            children.push_back(statement);
+        }
+        return children;
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Statements", ""}};
+    }
+};
+class LabelSymbol
+{
+public:
+    std::string Name;
+    LabelSymbol(std::string name) : Name(name) {}
+    bool operator==(const LabelSymbol &other) const
+    {
+        return Name == other.Name;
+    }
+    std::string ToString() const
+    {
+        return Name;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const LabelSymbol &label)
+    {
+        os << "LabelSymbol(Name: " << label.Name << ")";
+        return os;
+    }
+};
+namespace std
+{
+    template <>
+    struct hash<LabelSymbol>
+    {
+        std::size_t operator()(const LabelSymbol &symbol) const
+        {
+            return std::hash<std::string>()(symbol.Name);
+        }
+    };
+}
+
+class BoundLabelStatement : public BoundStatement
+{
+public:
+    BoundLabelStatement(LabelSymbol label) : Label(label) {};
+    LabelSymbol Label;
+    BoundNodeKind kind = BoundNodeKind::LabelStatement;
+    BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Label", Label.ToString()}};
+    }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
+};
+
+class BoundGotoStatement : public BoundStatement
+{
+public:
+    BoundGotoStatement(LabelSymbol label) : Label(label) {};
+    BoundNodeKind kind = BoundNodeKind::GotoStatement;
+    LabelSymbol Label;
+    BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Label", Label.ToString()}};
+    }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
+};
+
+class BoundConditionalGotoStatement : public BoundStatement
+{
+public:
+    BoundConditionalGotoStatement(LabelSymbol label, BoundExpression *condition, bool jumpIfFalse = false) : Label(label), Condition(condition), JumpIfFalse(jumpIfFalse) {};
+    LabelSymbol Label;
+    BoundExpression *Condition;
+    bool JumpIfFalse;
+    BoundNodeKind kind = BoundNodeKind::ConditionalGotoStatement;
+    BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Label", Label.ToString()}, {"Condition", ""}};
+    }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Condition};
+    }
 };
 
 class BoundIfStatement : public BoundStatement
@@ -144,6 +302,21 @@ public:
     BoundStatement *ElseStatement;
     BoundNodeKind kind = BoundNodeKind::IfStatement;
     BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        std::vector<BoundNode *> children = {Condition, ThenStatement};
+        if (ElseStatement != nullptr)
+        {
+            children.push_back(ElseStatement);
+        }
+        return children;
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Condition", ""}};
+    }
 };
 
 class BoundWhileStatement : public BoundStatement
@@ -154,6 +327,16 @@ public:
     BoundStatement *Body;
     BoundNodeKind kind = BoundNodeKind::WhileStatement;
     BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Condition, Body};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Condition", ""}};
+    }
 };
 
 class BoundForStatement : public BoundStatement
@@ -166,6 +349,16 @@ public:
     BoundStatement *Body;
     BoundNodeKind kind = BoundNodeKind::ForStatement;
     BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {LowerBound, UpperBound, Body};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Variable", Variable.ToString()}};
+    }
 };
 class BoundUnaryOperator
 {
@@ -209,6 +402,16 @@ public:
     BoundExpression *Operand;
     Type type;
     BoundNodeKind GetKind() const override { return BoundNodeKind::UnaryExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Operand};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Operator", ""}};
+    }
 };
 
 class BoundLiteralExpression : public BoundExpression
@@ -219,6 +422,16 @@ public:
     std::string Value;
     Type type;
     BoundNodeKind GetKind() const override { return BoundNodeKind::LiteralExpression; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Value", Value}};
+    }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
 };
 
 class BoundVariableExpression : public BoundExpression
@@ -229,6 +442,16 @@ public:
     VariableSymbol Variable;
 
     BoundNodeKind GetKind() const override { return BoundNodeKind::VariableExpression; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Variable", Variable.ToString()}};
+    }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
 };
 
 class BoundAssignmentExpression : public BoundExpression
@@ -241,6 +464,16 @@ public:
     Type type;
 
     BoundNodeKind GetKind() const override { return BoundNodeKind::AssignmentExpression; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Variable", Variable.ToString()}};
+    }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Expression};
+    }
 };
 
 class BoundBinaryExpression : public BoundExpression
@@ -253,6 +486,16 @@ public:
     BoundExpression *Right;
     Type type;
     BoundNodeKind GetKind() const override { return BoundNodeKind::BinaryExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Left, Right};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Operator", ""}};
+    }
 };
 
 class BoundScope
@@ -283,7 +526,7 @@ class Binder
 public:
     Binder(BoundScope *parent) : _scope(new BoundScope(parent)) {};
 
-        const DiagnosticBag &GetDiagnostics() const
+    const DiagnosticBag &GetDiagnostics() const
     {
         return _diagnostics;
     }

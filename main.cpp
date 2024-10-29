@@ -145,7 +145,14 @@ main()
             }
             else
             {
-                std::cout << "Unexpected type in result." << std::endl;
+                try
+                {
+                    std::cout << "Result: " << std::any_cast<std::string>(result.Value) << std::endl;
+                }
+                catch (const std::bad_any_cast &e)
+                {
+                    std::cout << "Unexpected type in result." << std::endl;
+                }
             }
             previous = compilation;
         }

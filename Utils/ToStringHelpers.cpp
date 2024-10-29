@@ -26,8 +26,17 @@ std::string convertTypetoString(Type type)
 //     RPAREN, // )
 //     BANG,
 //     EQUALS,
+//     LESS,
+//     LESS_EQUALS,
+//     GREATER,
+//     GREATER_EQUALS,
 //     EQUALS_EQUALS,
 //     BANG_EQUALS,
+//     AMPERSAND,
+//     TILDE,
+//     HAT,
+//     PIPE,
+
 //     AMPERSAND_AMPERSAND,
 //     PIPE_PIPE,
 //     IDENTIFIER,
@@ -41,6 +50,11 @@ std::string convertTypetoString(Type type)
 //     FALSE,
 //     LET_KEYWORD,
 //     VAR_KEYWORD,
+//     ELSE_KEYWORD,
+//     IF_KEYWORD,
+//     WHILE_KEYWORD,
+//     FOR_KEYWORD,
+//     TO_KEYWORD,
 
 //     LiteralExpression,
 //     UnaryExpression,
@@ -50,10 +64,15 @@ std::string convertTypetoString(Type type)
 //     AssignmentExpression,
 
 //     CompilationUnit,
+//     ElseClause,
 
 //     ExpressionStatement,
 //     VariableDeclaration,
-//     BlockStatement
+//     BlockStatement,
+//     IfStatement,
+//     WhileStatement,
+//     ForStatement,
+
 // };
 std::string convertSyntaxKindToString(SyntaxKind kind)
 {
@@ -94,6 +113,24 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "EqualsEqualsToken";
     case SyntaxKind::BANG_EQUALS:
         return "BangEqualsToken";
+
+    case SyntaxKind::LESS:
+        return "LessToken";
+    case SyntaxKind::LESS_EQUALS:
+        return "LessEqualsToken";
+    case SyntaxKind::GREATER:
+        return "GreaterToken";
+    case SyntaxKind::GREATER_EQUALS:
+        return "GreaterEqualsToken";
+
+    case SyntaxKind::AMPERSAND:
+        return "AmpersandToken";
+    case SyntaxKind::TILDE:
+        return "TildeToken";
+    case SyntaxKind::HAT:
+        return "HatToken";
+    case SyntaxKind::PIPE:
+        return "PipeToken";
     case SyntaxKind::AMPERSAND_AMPERSAND:
         return "AmpersandAmpersandToken";
     case SyntaxKind::PIPE_PIPE:

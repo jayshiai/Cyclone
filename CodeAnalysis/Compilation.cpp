@@ -3,6 +3,7 @@
 #include "CodeAnalysis/SyntaxTree.h"
 #include "CodeAnalysis/Diagnostic.h"
 #include "CodeAnalysis/Compilation.h"
+#include "CodeAnalysis/Lowerer.h"
 #include <unordered_map>
 #include <atomic>
 
@@ -41,7 +42,10 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     {
         return EvaluationResult(diagnostics, std::any());
     }
-    Evaluator evaluator = Evaluator(GlobalScope()->Statement, variables);
+    // Evaluator evaluator = Evaluator(GlobalScope()->Statement, variables);
+    BoundBlockStatement *statement = GetStatement();
+    Evaluator evaluator = Evaluator(statement, variables);
+
     std::any value = evaluator.Evaluate();
 
     return EvaluationResult(diagnostics, value);
@@ -63,6 +67,18 @@ BoundGlobalScope *Compilation::GlobalScope()
     }
     return _globalScope;
 };
+
+void Compilation::EmitTree(std::ostream &os)
+{
+    BoundBlockStatement *statement = GetStatement();
+    statement->WriteTo(os);
+}
+
+BoundBlockStatement *Compilation::GetStatement()
+{
+    BoundStatement *statement = GlobalScope()->Statement;
+    return Lowerer::Lower(statement);
+}
 
 Compilation *Compilation::ContinueWith(SyntaxTree *syntaxTree)
 {
