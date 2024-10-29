@@ -48,14 +48,10 @@ BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
     BoundExpression *lowerBound = BindExpression(node->LowerBound, TypeSymbol::Integer);
     BoundExpression *upperBound = BindExpression(node->UpperBound, TypeSymbol::Integer);
     _scope = new BoundScope(_scope);
-    VariableSymbol variable(node->Identifier.value, false, TypeSymbol::Integer);
-    if (!_scope->TryDeclare(variable))
-    {
-        _diagnostics.ReportVariableAlreadyDeclared(node->Identifier.Span, node->Identifier.value);
-    }
+    VariableSymbol *variable = BindVariable(node->Identifier, false, TypeSymbol::Integer);
     BoundStatement *body = BindStatement(node->Body);
     _scope = _scope->Parent;
-    return new BoundForStatement(variable, lowerBound, upperBound, body);
+    return new BoundForStatement(*variable, lowerBound, upperBound, body);
 }
 
 BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
@@ -73,18 +69,27 @@ BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
 
 BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
 {
-    std::string name = node->Identifier.value;
+
     bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
     BoundExpression *initializer = BindExpression(node->Initializer);
-    VariableSymbol variable = VariableSymbol(name, isReadOnly, initializer->type);
-    if (!_scope->TryDeclare(variable))
-    {
-        _diagnostics.ReportVariableAlreadyDeclared(node->Identifier.Span, name);
-    }
+    VariableSymbol *variable = BindVariable(node->Identifier, isReadOnly, initializer->type);
 
-    return new BoundVariableDeclaration(variable, initializer);
+    return new BoundVariableDeclaration(*variable, initializer);
 }
 
+VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymbol type)
+{
+    std::string name = identifier.value;
+    bool declare = name != "" || !name.empty();
+    VariableSymbol *variable = new VariableSymbol(name, isReadOnly, type);
+
+    if (declare && !_scope->TryDeclare(*variable))
+    {
+        _diagnostics.ReportVariableAlreadyDeclared(identifier.Span, name);
+    }
+
+    return variable;
+}
 BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
 {
     BoundExpression *expression = BindExpression(node->Expression);
@@ -94,7 +99,7 @@ BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
 BoundExpression *Binder::BindExpression(SyntaxNode *node, TypeSymbol type)
 {
     BoundExpression *result = BindExpression(node);
-    if (type != TypeSymbol::Error && result->type != type)
+    if (type != TypeSymbol::Error && result->type != type && result->type != TypeSymbol::Error)
     {
         _diagnostics.ReportCannotConvert(node->Span(), result->type.ToString(), type.ToString());
     }
@@ -143,13 +148,13 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
     if (name.empty())
     {
 
-        return new BoundLiteralExpression("0", TypeSymbol::Integer);
+        return new BoundErrorExpression();
     }
     VariableSymbol variable(name, false, TypeSymbol::Error);
     if (!_scope->TryLookup(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
-        return new BoundLiteralExpression("0", TypeSymbol::Integer);
+        return new BoundErrorExpression();
     }
     return new BoundVariableExpression(variable);
 }
@@ -179,11 +184,16 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
 BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
 {
     BoundExpression *boundOperand = BindExpression(node->expression);
+
+    if (boundOperand->type == TypeSymbol::Error)
+    {
+        return new BoundErrorExpression();
+    }
     BoundUnaryOperator *boundOperator = BoundUnaryOperator::Bind(node->OperatorToken.Kind, boundOperand->type);
     if (boundOperator == nullptr)
     {
         _diagnostics.ReportUndefinedUnaryOperator(node->OperatorToken.Span, node->OperatorToken.value, boundOperand->type.ToString());
-        return boundOperand;
+        return new BoundErrorExpression();
     }
     return new BoundUnaryExpression(boundOperator, boundOperand);
 }
@@ -192,16 +202,21 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
 {
     BoundExpression *boundLeft = BindExpression(node->left);
     BoundExpression *boundRight = BindExpression(node->right);
+
+    if (boundLeft->type == TypeSymbol::Error || boundRight->type == TypeSymbol::Error)
+    {
+        return new BoundErrorExpression();
+    }
     BoundBinaryOperator *boundOperator = BoundBinaryOperator::Bind(node->OperatorToken.Kind, boundLeft->type, boundRight->type);
 
     if (boundOperator == nullptr)
     {
 
         _diagnostics.ReportUndefinedBinaryOperator(node->OperatorToken.Span, node->OperatorToken.value, boundLeft->type.ToString(), boundRight->type.ToString());
-        return boundLeft;
+        return new BoundErrorExpression();
     }
-    BoundBinaryExpression *bi = new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
-    return bi;
+
+    return new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
 }
 
 BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)

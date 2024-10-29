@@ -122,6 +122,8 @@ BoundExpression *BoundTreeRewriter::RewriteExpression(BoundExpression *node)
 {
     switch (node->GetKind())
     {
+    case BoundNodeKind::ErrorExpression:
+        return RewriteErrorExpression((BoundErrorExpression *)node);
     case BoundNodeKind::UnaryExpression:
         return RewriteUnaryExpression((BoundUnaryExpression *)node);
     case BoundNodeKind::BinaryExpression:
@@ -136,6 +138,11 @@ BoundExpression *BoundTreeRewriter::RewriteExpression(BoundExpression *node)
         throw std::runtime_error("Unexpected node: " + convertBoundNodeKindToString(node->GetKind()));
         return node;
     }
+}
+
+BoundExpression *BoundTreeRewriter::RewriteErrorExpression(BoundErrorExpression *node)
+{
+    return node;
 }
 
 BoundExpression *BoundTreeRewriter::RewriteUnaryExpression(BoundUnaryExpression *node)

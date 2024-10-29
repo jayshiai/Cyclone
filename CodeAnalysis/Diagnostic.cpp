@@ -19,7 +19,10 @@ void DiagnosticBag::ReportBadCharacter(int position, char character)
     oss << "Bad character input: '" << character << "'.";
     Report(span, oss.str());
 }
-
+void DiagnosticBag::ReportUnterminatedString(TextSpan span)
+{
+    Report(span, "Unterminated string literal.");
+}
 void DiagnosticBag::ReportUnexpectedToken(const TextSpan &span, const std::string &actualKind, const std::string &expectedKind)
 {
     std::ostringstream oss;

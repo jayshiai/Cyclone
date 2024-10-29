@@ -28,7 +28,7 @@ public:
     void ReportInvalidNumber(const TextSpan &span, const std::string &text, const std::string &type);
 
     void ReportBadCharacter(int position, char character);
-
+    void ReportUnterminatedString(TextSpan span);
     void ReportUnexpectedToken(const TextSpan &span, const std::string &actualKind, const std::string &expectedKind);
 
     void ReportUndefinedUnaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &operandType);

@@ -12,6 +12,7 @@ enum class BoundNodeKind
     BinaryExpression,
     ParenthesizedExpression,
     VariableExpression,
+    ErrorExpression,
     AssignmentExpression,
 
     ExpressionStatement,
@@ -348,7 +349,26 @@ private:
     BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol type) : BoundBinaryOperator(syntaxKind, kind, type, type, type) {};
     static const std::vector<BoundBinaryOperator> operators;
 };
+class BoundErrorExpression : public BoundExpression
+{
+public:
+    BoundNodeKind kind = BoundNodeKind::ErrorExpression;
+    TypeSymbol type = TypeSymbol::Error;
 
+    BoundNodeKind GetKind() const override { return BoundNodeKind::ErrorExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {};
+    }
+
+    BoundErrorExpression() : BoundExpression(TypeSymbol::Error) {}
+};
 class BoundUnaryExpression : public BoundExpression
 {
 public:
@@ -499,6 +519,9 @@ private:
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
+
+    VariableSymbol *BindVariable(Token identifier, bool isReadOnly, TypeSymbol type);
+
     BoundStatement *BindExpressionStatement(ExpressionStatementSyntax *node);
     BoundStatement *BindIfStatement(IfStatementSyntax *node);
     BoundStatement *BindWhileStatement(WhileStatementSyntax *node);
