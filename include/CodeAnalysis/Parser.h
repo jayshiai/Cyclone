@@ -30,6 +30,10 @@ private:
     void NextToken();
     Token Expect(SyntaxKind kind);
     StatementSyntax *ParseStatement();
+    StatementSyntax *ParseIfStatement();
+    ElseClauseSyntax *ParseElseClause();
+    StatementSyntax *ParseWhileStatement();
+    StatementSyntax *ParseForStatement();
     StatementSyntax *ParseVariableDeclaration();
     ExpressionStatementSyntax *ParseExpressionStatement();
     BlockStatementSyntax *ParseBlockStatement();

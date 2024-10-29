@@ -19,6 +19,10 @@ enum class SyntaxKind
     RPAREN, // )
     BANG,
     EQUALS,
+    LESS,
+    LESS_EQUALS,
+    GREATER,
+    GREATER_EQUALS,
     EQUALS_EQUALS,
     BANG_EQUALS,
     AMPERSAND_AMPERSAND,
@@ -34,6 +38,11 @@ enum class SyntaxKind
     FALSE,
     LET_KEYWORD,
     VAR_KEYWORD,
+    ELSE_KEYWORD,
+    IF_KEYWORD,
+    WHILE_KEYWORD,
+    FOR_KEYWORD,
+    TO_KEYWORD,
 
     LiteralExpression,
     UnaryExpression,
@@ -43,10 +52,15 @@ enum class SyntaxKind
     AssignmentExpression,
 
     CompilationUnit,
+    ElseClause,
 
     ExpressionStatement,
     VariableDeclaration,
-    BlockStatement
+    BlockStatement,
+    IfStatement,
+    WhileStatement,
+    ForStatement,
+
 };
 
 std::string convertSyntaxKindToString(SyntaxKind kind);
@@ -98,6 +112,11 @@ public:
     TextSpan Span;
     Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
     Token() : SyntaxNode(SyntaxKind::BAD_TOKEN), Span(TextSpan(0, 0)) {};
+
+    bool operator==(const Token &other) const
+    {
+        return Kind == other.Kind && value == other.value && position == other.position;
+    }
 };
 
 // Abstract class representing a statement syntax
@@ -155,6 +174,73 @@ public:
         }
         children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBraceToken)));
         return children;
+    }
+};
+
+class ForStatementSyntax : public StatementSyntax
+{
+public:
+    ForStatementSyntax(Token keyword, Token identifier, Token equalsToken, SyntaxNode *lowerBound, Token toKeyword, SyntaxNode *upperBound, StatementSyntax *body)
+        : StatementSyntax(SyntaxKind::ForStatement), Keyword(keyword), Identifier(identifier), EqualsToken(equalsToken), LowerBound(lowerBound), ToKeyword(toKeyword), UpperBound(upperBound), Body(body) {}
+    Token Keyword;
+    Token Identifier;
+    Token EqualsToken;
+    SyntaxNode *LowerBound;
+    Token ToKeyword;
+    SyntaxNode *UpperBound;
+    StatementSyntax *Body;
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), LowerBound, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ToKeyword)), UpperBound, Body};
+    }
+};
+
+class ElseClauseSyntax : public SyntaxNode
+{
+public:
+    ElseClauseSyntax(Token elseKeyword, StatementSyntax *elseStatement)
+        : SyntaxNode(SyntaxKind::ElseClause), ElseKeyword(elseKeyword), ElseStatement(elseStatement) {}
+
+    Token ElseKeyword;
+    StatementSyntax *ElseStatement;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ElseKeyword)), ElseStatement};
+    }
+};
+
+class IfStatementSyntax : public StatementSyntax
+{
+public:
+    IfStatementSyntax(Token ifkeyword, SyntaxNode *condition, StatementSyntax *thenStatement, ElseClauseSyntax *elseClause)
+        : StatementSyntax(SyntaxKind::IfStatement), IfKeyword(ifkeyword), Condition(condition), ThenStatement(thenStatement), ElseClause(elseClause) {}
+    Token IfKeyword;
+    SyntaxNode *Condition;
+    StatementSyntax *ThenStatement;
+    ElseClauseSyntax *ElseClause;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        std::vector<SyntaxNode *> children = {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IfKeyword)), Condition, ThenStatement};
+        if (ElseClause != nullptr)
+        {
+            children.push_back(ElseClause);
+        }
+        return children;
+    }
+};
+
+class WhileStatementSyntax : public StatementSyntax
+{
+public:
+    WhileStatementSyntax(Token whileKeyword, SyntaxNode *condition, StatementSyntax *body)
+        : StatementSyntax(SyntaxKind::WhileStatement), WhileKeyword(whileKeyword), Condition(condition), Body(body) {}
+    Token WhileKeyword;
+    SyntaxNode *Condition;
+    StatementSyntax *Body;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&WhileKeyword)), Condition, Body};
     }
 };
 class CompilationUnitNode : public SyntaxNode

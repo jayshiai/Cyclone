@@ -15,7 +15,10 @@ enum class BoundNodeKind
 
     ExpressionStatement,
     VariableDeclaration,
-    BlockStatement
+    BlockStatement,
+    IfStatement,
+    WhileStatement,
+    ForStatement,
 };
 
 enum class Type
@@ -23,6 +26,30 @@ enum class Type
     Boolean,
     Integer,
     Unknown
+};
+
+enum class BoundUnaryOperatorKind
+{
+    Identity,
+    Negation,
+    LogicalNegation
+};
+
+enum class BoundBinaryOperatorKind
+{
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
+    LogicalAnd,
+    LogicalOr,
+    Equals,
+    NotEquals,
+    Less,
+    LessOrEquals,
+    Greater,
+    GreaterOrEquals
+
 };
 
 std::string convertTypetoString(Type type);
@@ -107,25 +134,39 @@ public:
     BoundNodeKind kind = BoundNodeKind::BlockStatement;
     BoundNodeKind GetKind() const override { return kind; }
 };
-enum class BoundUnaryOperatorKind
+
+class BoundIfStatement : public BoundStatement
 {
-    Identity,
-    Negation,
-    LogicalNegation
+public:
+    BoundIfStatement(BoundExpression *condition, BoundStatement *thenStatement, BoundStatement *elseStatement) : Condition(condition), ThenStatement(thenStatement), ElseStatement(elseStatement) {};
+    BoundExpression *Condition;
+    BoundStatement *ThenStatement;
+    BoundStatement *ElseStatement;
+    BoundNodeKind kind = BoundNodeKind::IfStatement;
+    BoundNodeKind GetKind() const override { return kind; }
 };
 
-enum class BoundBinaryOperatorKind
+class BoundWhileStatement : public BoundStatement
 {
-    Addition,
-    Subtraction,
-    Multiplication,
-    Division,
-    LogicalAnd,
-    LogicalOr,
-    Equals,
-    NotEquals
+public:
+    BoundWhileStatement(BoundExpression *condition, BoundStatement *body) : Condition(condition), Body(body) {};
+    BoundExpression *Condition;
+    BoundStatement *Body;
+    BoundNodeKind kind = BoundNodeKind::WhileStatement;
+    BoundNodeKind GetKind() const override { return kind; }
 };
 
+class BoundForStatement : public BoundStatement
+{
+public:
+    BoundForStatement(VariableSymbol variable, BoundExpression *lowerBound, BoundExpression *upperBound, BoundStatement *body) : Variable(variable), LowerBound(lowerBound), UpperBound(upperBound), Body(body) {};
+    VariableSymbol Variable;
+    BoundExpression *LowerBound;
+    BoundExpression *UpperBound;
+    BoundStatement *Body;
+    BoundNodeKind kind = BoundNodeKind::ForStatement;
+    BoundNodeKind GetKind() const override { return kind; }
+};
 class BoundUnaryOperator
 {
 public:
@@ -242,8 +283,7 @@ class Binder
 public:
     Binder(BoundScope *parent) : _scope(new BoundScope(parent)) {};
 
-    BoundExpression *BindExpression(SyntaxNode *node);
-    const DiagnosticBag &GetDiagnostics() const
+        const DiagnosticBag &GetDiagnostics() const
     {
         return _diagnostics;
     }
@@ -253,11 +293,18 @@ private:
     DiagnosticBag _diagnostics;
     BoundScope *_scope;
 
+    BoundExpression *BindExpression(SyntaxNode *node);
+    BoundExpression *BindExpression(SyntaxNode *node, Type type);
+
     static BoundScope *CreateParentScope(BoundGlobalScope *previous);
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
     BoundStatement *BindExpressionStatement(ExpressionStatementSyntax *node);
+    BoundStatement *BindIfStatement(IfStatementSyntax *node);
+    BoundStatement *BindWhileStatement(WhileStatementSyntax *node);
+    BoundStatement *BindForStatement(ForStatementSyntax *node);
+
     BoundExpression *BindLiteralExpression(LiteralExpressionNode *node);
     BoundExpression *BindUnaryExpression(UnaryExpressionNode *node);
     BoundExpression *BindBinaryExpression(BinaryExpressionNode *node);

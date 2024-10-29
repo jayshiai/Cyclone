@@ -19,6 +19,11 @@ struct TextSpan
         int length = end - start;
         return TextSpan(start, length);
     }
+
+    std::string ToString() const
+    {
+        return std::to_string(Start) + " " + std::to_string(Length);
+    }
 };
 
 class TextLine;

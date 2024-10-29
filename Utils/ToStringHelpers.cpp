@@ -104,8 +104,18 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
     case SyntaxKind::LET_KEYWORD:
         return "LetKeyword";
     case SyntaxKind::VAR_KEYWORD:
-
         return "VarKeyword";
+    case SyntaxKind::IF_KEYWORD:
+        return "IfKeyword";
+    case SyntaxKind::ELSE_KEYWORD:
+        return "ElseKeyword";
+    case SyntaxKind::WHILE_KEYWORD:
+        return "WhileKeyword";
+    case SyntaxKind::FOR_KEYWORD:
+        return "ForKeyword";
+    case SyntaxKind::TO_KEYWORD:
+        return "ToKeyword";
+
     case SyntaxKind::OPEN_BRACE:
         return "OpenBraceToken";
     case SyntaxKind::CLOSE_BRACE:
@@ -118,6 +128,13 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "VariableDeclaration";
     case SyntaxKind::BlockStatement:
         return "BlockStatement";
+    case SyntaxKind::IfStatement:
+        return "IfStatement";
+    case SyntaxKind::WhileStatement:
+        return "WhileStatement";
+    case SyntaxKind::ForStatement:
+        return "ForStatement";
+
     case SyntaxKind::BAD_TOKEN:
         return "BadToken";
     case SyntaxKind::END_OF_FILE:

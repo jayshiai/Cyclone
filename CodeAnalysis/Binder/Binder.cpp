@@ -15,10 +15,47 @@ BoundStatement *Binder::BindStatement(StatementSyntax *node)
         return BindVariableDeclaration((VariableDeclarationSyntax *)node);
     case SyntaxKind::BlockStatement:
         return BindBlockStatement((BlockStatementSyntax *)node);
+    case SyntaxKind::IfStatement:
+        return BindIfStatement((IfStatementSyntax *)node);
+    case SyntaxKind::WhileStatement:
+        return BindWhileStatement((WhileStatementSyntax *)node);
+    case SyntaxKind::ForStatement:
+        return BindForStatement((ForStatementSyntax *)node);
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;
     }
+}
+
+BoundStatement *Binder::BindIfStatement(IfStatementSyntax *node)
+{
+    BoundExpression *condition = BindExpression(node->Condition, Type::Boolean);
+
+    BoundStatement *thenStatement = BindStatement(node->ThenStatement);
+    BoundStatement *elseStatement = node->ElseClause == nullptr ? nullptr : BindStatement(node->ElseClause->ElseStatement);
+    return new BoundIfStatement(condition, thenStatement, elseStatement);
+}
+
+BoundStatement *Binder::BindWhileStatement(WhileStatementSyntax *node)
+{
+    BoundExpression *condition = BindExpression(node->Condition, Type::Boolean);
+    BoundStatement *body = BindStatement(node->Body);
+    return new BoundWhileStatement(condition, body);
+}
+
+BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
+{
+    BoundExpression *lowerBound = BindExpression(node->LowerBound, Type::Integer);
+    BoundExpression *upperBound = BindExpression(node->UpperBound, Type::Integer);
+    _scope = new BoundScope(_scope);
+    VariableSymbol variable(node->Identifier.value, false, Type::Integer);
+    if (!_scope->TryDeclare(variable))
+    {
+        _diagnostics.ReportVariableAlreadyDeclared(node->Identifier.Span, node->Identifier.value);
+    }
+    BoundStatement *body = BindStatement(node->Body);
+    _scope = _scope->Parent;
+    return new BoundForStatement(variable, lowerBound, upperBound, body);
 }
 
 BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
@@ -52,6 +89,16 @@ BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
 {
     BoundExpression *expression = BindExpression(node->Expression);
     return new BoundExpressionStatement(expression);
+}
+
+BoundExpression *Binder::BindExpression(SyntaxNode *node, Type type)
+{
+    BoundExpression *result = BindExpression(node);
+    if (type != Type::Unknown && result->type != type)
+    {
+        _diagnostics.ReportCannotConvert(node->Span(), convertTypetoString(result->type), convertTypetoString(type));
+    }
+    return result;
 }
 BoundExpression *Binder::BindExpression(SyntaxNode *node)
 {
@@ -93,7 +140,11 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
 BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
 {
     std::string name = node->IdentifierToken.value;
-    std::cout << "Binding name expression: " << name << std::endl;
+    if (name.empty())
+    {
+
+        return new BoundLiteralExpression("0", Type::Integer);
+    }
     VariableSymbol variable(name, false, Type::Unknown);
     if (!_scope->TryLookup(name, variable))
     {

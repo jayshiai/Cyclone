@@ -25,6 +25,12 @@ std::string convertBoundNodeKind(BoundNodeKind kind)
         return "VariableDeclaration";
     case BoundNodeKind::BlockStatement:
         return "BlockStatement";
+    case BoundNodeKind::IfStatement:
+        return "IfStatement";
+    case BoundNodeKind::WhileStatement:
+        return "WhileStatement";
+    case BoundNodeKind::ForStatement:
+        return "ForStatement";
     default:
         return "Unknown";
     }
@@ -42,11 +48,51 @@ void Evaluator::EvaluateStatement(BoundStatement *node)
     case BoundNodeKind::VariableDeclaration:
         EvaluateVariableDeclaration((BoundVariableDeclaration *)node);
         break;
+    case BoundNodeKind::IfStatement:
+        EvaluateIfStatement((BoundIfStatement *)node);
+        break;
+    case BoundNodeKind::WhileStatement:
+        EvaluateWhileStatement((BoundWhileStatement *)node);
+        break;
+    case BoundNodeKind::ForStatement:
+        EvaluateForStatement((BoundForStatement *)node);
+        break;
     default:
         throw std::runtime_error("Unexpected node kind::Statement");
     }
 }
 
+void Evaluator::EvaluateIfStatement(BoundIfStatement *node)
+{
+    if (std::any_cast<bool>(EvaluateExpression(node->Condition)))
+    {
+        EvaluateStatement(node->ThenStatement);
+    }
+    else if (node->ElseStatement != nullptr)
+    {
+        EvaluateStatement(node->ElseStatement);
+    }
+}
+
+void Evaluator::EvaluateWhileStatement(BoundWhileStatement *node)
+{
+    while (std::any_cast<bool>(EvaluateExpression(node->Condition)))
+    {
+        EvaluateStatement(node->Body);
+    }
+}
+
+void Evaluator::EvaluateForStatement(BoundForStatement *node)
+{
+    auto lowerBound = std::any_cast<int>(EvaluateExpression(node->LowerBound));
+    auto upperBound = std::any_cast<int>(EvaluateExpression(node->UpperBound));
+    _variables[node->Variable] = lowerBound;
+    for (int i = lowerBound; i <= upperBound; i++)
+    {
+        _variables[node->Variable] = i;
+        EvaluateStatement(node->Body);
+    }
+}
 void Evaluator::EvaluateVariableDeclaration(BoundVariableDeclaration *node)
 {
     std::any value = EvaluateExpression(node->Initializer);
@@ -82,7 +128,6 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
     case BoundNodeKind::UnaryExpression:
         return EvaluateUnaryExpression((BoundUnaryExpression *)node);
     case BoundNodeKind::BinaryExpression:
-        std::cout << "WOWO" << std::endl;
         return EvaluateBinaryExpression((BoundBinaryExpression *)node);
     default:
         throw std::runtime_error("Unexpected node kind");
@@ -149,6 +194,14 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
         return std::any_cast<bool>(left) && std::any_cast<bool>(right);
     case BoundBinaryOperatorKind::LogicalOr:
         return std::any_cast<bool>(left) || std::any_cast<bool>(right);
+    case BoundBinaryOperatorKind::Less:
+        return std::any_cast<int>(left) < std::any_cast<int>(right);
+    case BoundBinaryOperatorKind::LessOrEquals:
+        return std::any_cast<int>(left) <= std::any_cast<int>(right);
+    case BoundBinaryOperatorKind::Greater:
+        return std::any_cast<int>(left) > std::any_cast<int>(right);
+    case BoundBinaryOperatorKind::GreaterOrEquals:
+        return std::any_cast<int>(left) >= std::any_cast<int>(right);
     case BoundBinaryOperatorKind::Equals:
         if (left.type() == typeid(int) && right.type() == typeid(int))
             return std::any_cast<int>(left) == std::any_cast<int>(right);

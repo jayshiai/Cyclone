@@ -37,6 +37,12 @@ StatementSyntax *Parser::ParseStatement()
     case SyntaxKind::LET_KEYWORD:
     case SyntaxKind::VAR_KEYWORD:
         return ParseVariableDeclaration();
+    case SyntaxKind::IF_KEYWORD:
+        return ParseIfStatement();
+    case SyntaxKind::WHILE_KEYWORD:
+        return ParseWhileStatement();
+    case SyntaxKind::FOR_KEYWORD:
+        return ParseForStatement();
     default:
         return ParseExpressionStatement();
     }
@@ -49,8 +55,14 @@ BlockStatementSyntax *Parser::ParseBlockStatement()
 
     while (currentToken.Kind != SyntaxKind::CLOSE_BRACE && currentToken.Kind != SyntaxKind::END_OF_FILE)
     {
+        Token startToken = currentToken;
         StatementSyntax *statement = ParseStatement();
         statements.push_back(statement);
+
+        if (currentToken == startToken)
+        {
+            NextToken();
+        }
     }
 
     Token closeBraceToken = Expect(SyntaxKind::CLOSE_BRACE);
@@ -67,6 +79,45 @@ StatementSyntax *Parser::ParseVariableDeclaration()
     return new VariableDeclarationSyntax(keyword, identifier, equals, initializer);
 }
 
+StatementSyntax *Parser::ParseIfStatement()
+{
+    Token ifKeyword = Expect(SyntaxKind::IF_KEYWORD);
+    SyntaxNode *condition = ParseExpression();
+    StatementSyntax *thenStatement = ParseStatement();
+    ElseClauseSyntax *elseClause = ParseElseClause();
+    return new IfStatementSyntax(ifKeyword, condition, thenStatement, elseClause);
+}
+
+ElseClauseSyntax *Parser::ParseElseClause()
+{
+    if (currentToken.Kind != SyntaxKind::ELSE_KEYWORD)
+    {
+        return nullptr;
+    }
+    Token elseKeyword = Expect(SyntaxKind::ELSE_KEYWORD);
+    StatementSyntax *elseStatement = ParseStatement();
+    return new ElseClauseSyntax(elseKeyword, elseStatement);
+}
+
+StatementSyntax *Parser::ParseWhileStatement()
+{
+    Token whileKeyword = Expect(SyntaxKind::WHILE_KEYWORD);
+    SyntaxNode *condition = ParseExpression();
+    StatementSyntax *body = ParseStatement();
+    return new WhileStatementSyntax(whileKeyword, condition, body);
+}
+
+StatementSyntax *Parser::ParseForStatement()
+{
+    Token keyword = Expect(SyntaxKind::FOR_KEYWORD);
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    Token equals = Expect(SyntaxKind::EQUALS);
+    SyntaxNode *lowerBound = ParseExpression();
+    Token toKeyword = Expect(SyntaxKind::TO_KEYWORD);
+    SyntaxNode *upperBound = ParseExpression();
+    StatementSyntax *body = ParseStatement();
+    return new ForStatementSyntax(keyword, identifier, equals, lowerBound, toKeyword, upperBound, body);
+}
 ExpressionStatementSyntax *Parser::ParseExpressionStatement()
 {
     SyntaxNode *expression = ParseExpression();
@@ -156,6 +207,10 @@ int Parser::GetBinaryPrecedence(SyntaxKind kind)
         return 4;
     case SyntaxKind::EQUALS_EQUALS:
     case SyntaxKind::BANG_EQUALS:
+    case SyntaxKind::LESS:
+    case SyntaxKind::LESS_EQUALS:
+    case SyntaxKind::GREATER:
+    case SyntaxKind::GREATER_EQUALS:
         return 3;
     case SyntaxKind::AMPERSAND_AMPERSAND:
         return 2;

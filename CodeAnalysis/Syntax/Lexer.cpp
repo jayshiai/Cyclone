@@ -91,6 +91,32 @@ std::vector<Token> Lexer::tokenize()
                 advance();
             }
             break;
+        case '<':
+            if (lookAhead == '=')
+            {
+                tokens.push_back(Token{SyntaxKind::LESS_EQUALS, "<=", pos});
+                advance();
+                advance();
+            }
+            else
+            {
+                tokens.push_back(Token{SyntaxKind::LESS, "<", pos});
+                advance();
+            }
+            break;
+        case '>':
+            if (lookAhead == '=')
+            {
+                tokens.push_back(Token{SyntaxKind::GREATER_EQUALS, ">=", pos});
+                advance();
+                advance();
+            }
+            else
+            {
+                tokens.push_back(Token{SyntaxKind::GREATER, ">", pos});
+                advance();
+            }
+            break;
         case '0':
         case '1':
         case '2':
@@ -215,5 +241,15 @@ SyntaxKind Lexer::checkKeyword(const std::string &keyword)
         return SyntaxKind::LET_KEYWORD;
     else if (keyword == "var")
         return SyntaxKind::VAR_KEYWORD;
+    else if (keyword == "if")
+        return SyntaxKind::IF_KEYWORD;
+    else if (keyword == "else")
+        return SyntaxKind::ELSE_KEYWORD;
+    else if (keyword == "while")
+        return SyntaxKind::WHILE_KEYWORD;
+    else if (keyword == "for")
+        return SyntaxKind::FOR_KEYWORD;
+    else if (keyword == "to")
+        return SyntaxKind::TO_KEYWORD;
     return SyntaxKind::IDENTIFIER;
 }
