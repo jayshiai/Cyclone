@@ -246,8 +246,8 @@ SyntaxNode *Parser::ParsePrimaryExpression()
     case SyntaxKind::LPAREN:
         return ParseParenthesizedExpression();
         break;
-    case SyntaxKind::TRUE:
-    case SyntaxKind::FALSE:
+    case SyntaxKind::TRUE_KEYWORD:
+    case SyntaxKind::FALSE_KEYWORD:
         return ParseBooleanLiteral();
         break;
     case SyntaxKind::NUMBER:
@@ -270,7 +270,7 @@ SyntaxNode *Parser::ParseParenthesizedExpression()
 
 SyntaxNode *Parser::ParseBooleanLiteral()
 {
-    bool isTrue = currentToken.Kind == SyntaxKind::TRUE;
+    bool isTrue = currentToken.Kind == SyntaxKind::TRUE_KEYWORD;
     SyntaxNode *node = new LiteralExpressionNode(currentToken, isTrue);
     NextToken();
     return node;

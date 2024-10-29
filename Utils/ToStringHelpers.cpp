@@ -46,8 +46,8 @@ std::string convertTypetoString(Type type)
 //     OPEN_BRACE,
 //     CLOSE_BRACE,
 
-//     TRUE,
-//     FALSE,
+//     TRUE_KEYWORD,
+//     FALSE_KEYWORD,
 //     LET_KEYWORD,
 //     VAR_KEYWORD,
 //     ELSE_KEYWORD,
@@ -85,8 +85,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "OpetatorToken";
     case SyntaxKind::NUMBER:
         return "NumberToken";
-    case SyntaxKind::TRUE:
-    case SyntaxKind::FALSE:
+    case SyntaxKind::TRUE_KEYWORD:
+    case SyntaxKind::FALSE_KEYWORD:
         return "BooleanToken";
     case SyntaxKind::NameExpression:
         return "NameExpression";

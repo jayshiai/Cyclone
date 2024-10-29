@@ -252,9 +252,9 @@ Token Lexer::GenerateIdentifierToken()
 SyntaxKind Lexer::checkKeyword(const std::string &keyword)
 {
     if (keyword == "true")
-        return SyntaxKind::TRUE;
+        return SyntaxKind::TRUE_KEYWORD;
     else if (keyword == "false")
-        return SyntaxKind::FALSE;
+        return SyntaxKind::FALSE_KEYWORD;
     else if (keyword == "let")
         return SyntaxKind::LET_KEYWORD;
     else if (keyword == "var")

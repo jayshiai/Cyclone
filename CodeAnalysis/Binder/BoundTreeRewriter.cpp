@@ -106,7 +106,7 @@ BoundStatement *BoundTreeRewriter::RewriteConditionalGotoStatement(BoundConditio
     if (condition == node->Condition)
         return node;
 
-    return new BoundConditionalGotoStatement(node->Label, condition, node->JumpIfFalse);
+    return new BoundConditionalGotoStatement(node->Label, condition, node->JumpIfTrue);
 }
 
 BoundStatement *BoundTreeRewriter::RewriteExpressionStatement(BoundExpressionStatement *node)

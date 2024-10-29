@@ -21,6 +21,17 @@ SyntaxTree::SyntaxTree(SourceText text) : Text(text)
     Root = root;
 }
 
+std::vector<Token> SyntaxTree::ParseTokens(std::string text)
+{
+    SourceText sourceText = SourceText::From(text);
+    return ParseTokens(sourceText);
+}
+
+std::vector<Token> SyntaxTree::ParseTokens(SourceText text)
+{
+    Lexer lexer(text);
+    return lexer.tokenize();
+}
 void SyntaxNode::PrettyPrint(std::ostream &os, SyntaxNode *node, std::string indent, bool isLast)
 {
     const std::string RESET_COLOR = "\033[0m";
@@ -37,7 +48,7 @@ void SyntaxNode::PrettyPrint(std::ostream &os, SyntaxNode *node, std::string ind
     if (Token *token = dynamic_cast<Token *>(node))
     {
         os << GREEN << convertSyntaxKindToString(node->Kind) << " " << token->value;
-        }
+    }
 
     else if (StatementSyntax *stmt = dynamic_cast<StatementSyntax *>(node))
     {

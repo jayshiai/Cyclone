@@ -74,7 +74,7 @@ std::any Evaluator::Evaluate()
         {
             BoundConditionalGotoStatement *cgs = (BoundConditionalGotoStatement *)s;
             bool condition = std::any_cast<bool>(EvaluateExpression(cgs->Condition));
-            if ((cgs->JumpIfFalse && !condition) || (!cgs->JumpIfFalse && condition))
+            if ((condition == cgs->JumpIfTrue))
             {
                 index = labelToIndex[cgs->Label];
             }

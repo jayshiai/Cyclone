@@ -275,10 +275,10 @@ public:
 class BoundConditionalGotoStatement : public BoundStatement
 {
 public:
-    BoundConditionalGotoStatement(LabelSymbol label, BoundExpression *condition, bool jumpIfFalse = false) : Label(label), Condition(condition), JumpIfFalse(jumpIfFalse) {};
+    BoundConditionalGotoStatement(LabelSymbol label, BoundExpression *condition, bool jumpIfTrue = true) : Label(label), Condition(condition), JumpIfTrue(jumpIfTrue) {};
     LabelSymbol Label;
     BoundExpression *Condition;
-    bool JumpIfFalse;
+    bool JumpIfTrue;
     BoundNodeKind kind = BoundNodeKind::ConditionalGotoStatement;
     BoundNodeKind GetKind() const override { return kind; }
 

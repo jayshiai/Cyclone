@@ -39,8 +39,8 @@ enum class SyntaxKind
     OPEN_BRACE,
     CLOSE_BRACE,
 
-    TRUE,
-    FALSE,
+    TRUE_KEYWORD,
+    FALSE_KEYWORD,
     LET_KEYWORD,
     VAR_KEYWORD,
     ELSE_KEYWORD,
@@ -349,6 +349,8 @@ public:
     CompilationUnitNode *Root;
     static SyntaxTree Parse(std::string text);
     static SyntaxTree Parse(SourceText text);
+    static std::vector<Token> ParseTokens(std::string text);
+    static std::vector<Token> ParseTokens(SourceText text);
 
 private:
     SyntaxTree(SourceText text);

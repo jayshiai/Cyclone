@@ -127,8 +127,8 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
 
     switch (node->LiteralToken.Kind)
     {
-    case SyntaxKind::TRUE:
-    case SyntaxKind::FALSE:
+    case SyntaxKind::TRUE_KEYWORD:
+    case SyntaxKind::FALSE_KEYWORD:
         return new BoundLiteralExpression(node->LiteralToken.value, Type::Boolean);
     case SyntaxKind::NUMBER:
         return new BoundLiteralExpression(node->LiteralToken.value, Type::Integer);
