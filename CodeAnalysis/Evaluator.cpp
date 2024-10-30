@@ -176,6 +176,8 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
     switch (n->Op->Kind)
     {
     case BoundBinaryOperatorKind::Addition:
+        if (n->Op->LeftType == TypeSymbol::String && n->Op->RightType == TypeSymbol::String)
+            return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
         return std::any_cast<int>(left) + std::any_cast<int>(right);
     case BoundBinaryOperatorKind::Subtraction:
         return std::any_cast<int>(left) - std::any_cast<int>(right);
