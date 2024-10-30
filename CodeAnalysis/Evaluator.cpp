@@ -130,14 +130,11 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
 
 std::any Evaluator::EvaluateLiteralExpression(BoundLiteralExpression *n)
 {
-    if (n->Value == "true")
-    {
-        return std::any(true);
-    }
-    else if (n->Value == "false")
-        return std::any(false);
-    else
-        return std::any(std::stoi(n->Value));
+    if (n->type == TypeSymbol::Boolean)
+        return n->Value == "true";
+    if (n->type == TypeSymbol::String)
+        return n->Value;
+    return std::stoi(n->Value);
 }
 
 std::any Evaluator::EvaluateVariableExpression(BoundVariableExpression *n)

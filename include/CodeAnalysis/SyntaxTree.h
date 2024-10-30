@@ -11,6 +11,8 @@
 enum class SyntaxKind
 {
     NUMBER,
+    STRING,
+
     PLUS,
     MINUS,
     MULTIPLY,
@@ -94,7 +96,15 @@ public:
     {
         PrettyPrint(os, this);
     }
-
+    // Token GetLastToken()
+    // {
+    //     auto children = GetChildren();
+    //     if (children.empty())
+    //     {
+    //         return Token();
+    //     }
+    //     return children.back()->GetLastToken();
+    // }
     std::string ToString()
     {
         std::ostringstream writer;

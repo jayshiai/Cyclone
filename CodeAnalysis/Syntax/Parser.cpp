@@ -253,6 +253,9 @@ SyntaxNode *Parser::ParsePrimaryExpression()
     case SyntaxKind::NUMBER:
         return ParseNumberLiteral();
         break;
+    case SyntaxKind::STRING:
+        return ParseStringLiteral();
+        break;
     case SyntaxKind::IDENTIFIER:
     default:
         return ParseNameExpression();
@@ -276,6 +279,11 @@ SyntaxNode *Parser::ParseBooleanLiteral()
     return node;
 }
 
+SyntaxNode *Parser::ParseStringLiteral()
+{
+    Token stringToken = Expect(SyntaxKind::STRING);
+    return new LiteralExpressionNode(stringToken);
+}
 SyntaxNode *Parser::ParseNumberLiteral()
 {
     SyntaxNode *node = new LiteralExpressionNode(currentToken, std::stoi(currentToken.value));

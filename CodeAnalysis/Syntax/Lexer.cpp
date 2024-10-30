@@ -135,6 +135,9 @@ std::vector<Token> Lexer::tokenize()
                 advance();
             }
             break;
+        case '"':
+            tokens.push_back(GenerateStringToken());
+            break;
         case '0':
         case '1':
         case '2':
@@ -199,6 +202,23 @@ void Lexer::advance()
     {
         currentChar = '\0';
     }
+}
+
+Token Lexer::GenerateStringToken()
+{
+    size_t start = pos;
+    advance();
+    while (currentChar != '"')
+    {
+        if (currentChar == '\0')
+        {
+            _diagnostics.ReportUnterminatedString(TextSpan(start, pos - start));
+            return Token{SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+        }
+        advance();
+    }
+    advance();
+    return Token{SyntaxKind::STRING, input.ToString(start, pos - start), start};
 }
 
 Token Lexer::GenerateWhitespaceToken()

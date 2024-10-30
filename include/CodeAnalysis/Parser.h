@@ -45,6 +45,7 @@ private:
     SyntaxNode *ParseParenthesizedExpression();
     SyntaxNode *ParseBooleanLiteral();
     SyntaxNode *ParseNumberLiteral();
+    SyntaxNode *ParseStringLiteral();
     SyntaxNode *ParseNameExpression();
     int GetBinaryPrecedence(SyntaxKind kind);
     int GetUnaryPrecedence(SyntaxKind kind);
