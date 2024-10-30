@@ -72,6 +72,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "OpetatorToken";
     case SyntaxKind::NUMBER:
         return "NumberToken";
+    case SyntaxKind::STRING:
+        return "StringToken";
     case SyntaxKind::TRUE_KEYWORD:
     case SyntaxKind::FALSE_KEYWORD:
         return "BooleanToken";

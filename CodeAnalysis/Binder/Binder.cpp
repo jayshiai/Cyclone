@@ -137,9 +137,11 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
         return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Boolean);
     case SyntaxKind::NUMBER:
         return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Integer);
+    case SyntaxKind::STRING:
+        return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::String);
     default:
         _diagnostics.ReportUnexpectedToken(node->LiteralToken.Span, convertSyntaxKindToString(node->LiteralToken.Kind), "Literal Expression");
-        return nullptr;
+        return new BoundErrorExpression();
     }
 }
 BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
