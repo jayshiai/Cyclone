@@ -207,18 +207,65 @@ void Lexer::advance()
 Token Lexer::GenerateStringToken()
 {
     size_t start = pos;
+
+    std::string result;
+    bool done = false;
     advance();
-    while (currentChar != '"')
+    // while (currentChar != '"')
+    // {
+    //     if (currentChar == '\0')
+    //     {
+    //         _diagnostics.ReportUnterminatedString(TextSpan(start, pos - start));
+    //         return Token{SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+    //     }
+    //     advance();
+    // }
+
+    while (!done)
     {
-        if (currentChar == '\0')
+        switch (currentChar)
         {
+        case '\0':
+        case '\r':
+        case '\n':
             _diagnostics.ReportUnterminatedString(TextSpan(start, pos - start));
             return Token{SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+        case '"':
+            done = true;
+            break;
+        case '\\':
+            advance();
+            switch (currentChar)
+            {
+            case 'n':
+                result += '\n';
+                break;
+            case 't':
+                result += '\t';
+                break;
+            case 'r':
+                result += '\r';
+                break;
+            case '\\':
+                result += '\\';
+                break;
+            case '"':
+                result += '"';
+                break;
+            default:
+                _diagnostics.ReportBadCharacter(pos - 1, currentChar);
+                break;
+            }
+            advance();
+            break;
+        default:
+            result += currentChar;
+            advance();
+            break;
         }
-        advance();
     }
     advance();
-    return Token{SyntaxKind::STRING, input.ToString(start, pos - start), start};
+    return Token{SyntaxKind::STRING, result, start};
 }
 
 Token Lexer::GenerateWhitespaceToken()
