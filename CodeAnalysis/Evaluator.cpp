@@ -152,7 +152,6 @@ std::any Evaluator::EvaluateVariableExpression(BoundVariableExpression *n)
     }
     else if (n->Variable.GetKind() == SymbolKind::LocalVariable)
     {
-
         std::unordered_map<VariableSymbol, std::any> locals = _locals.top();
         return locals[n->Variable];
     }
@@ -319,6 +318,8 @@ void Evaluator::Assign(VariableSymbol variable, std::any value)
     else
     {
         std::unordered_map<VariableSymbol, std::any> locals = _locals.top();
+        _locals.pop();
         locals[variable] = value;
+        _locals.push(locals);
     }
 }
