@@ -58,14 +58,14 @@ MemberSyntax *Parser::ParseFunctionDeclaration()
     Token functionKeyword = Expect(SyntaxKind::FUNCTION_KEYWORD);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
     Token openParenthesis = Expect(SyntaxKind::LPAREN);
-    SeparatedSyntaxList<ParameterNode *> parameters = ParseParameterList();
+    SeparatedSyntaxList<ParameterNode> parameters = ParseParameterList();
     Token closeParenthesis = Expect(SyntaxKind::RPAREN);
     TypeClauseNode *type = ParseOptionalTypeClause();
     BlockStatementSyntax *body = ParseBlockStatement();
     return new FunctionDeclarationSyntax(functionKeyword, identifier, openParenthesis, parameters, closeParenthesis, type, body);
 }
 
-SeparatedSyntaxList<ParameterNode *> Parser::ParseParameterList()
+SeparatedSyntaxList<ParameterNode> Parser::ParseParameterList()
 {
     std::vector<SyntaxNode *> nodesAndSeparators;
     while (currentToken.Kind != SyntaxKind::RPAREN && currentToken.Kind != SyntaxKind::END_OF_FILE)
@@ -79,7 +79,7 @@ SeparatedSyntaxList<ParameterNode *> Parser::ParseParameterList()
             nodesAndSeparators.push_back(comma);
         }
     }
-    return SeparatedSyntaxList<ParameterNode *>(nodesAndSeparators);
+    return SeparatedSyntaxList<ParameterNode>(nodesAndSeparators);
 }
 
 ParameterNode *Parser::ParseParameter()

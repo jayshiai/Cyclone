@@ -54,7 +54,7 @@ private:
     MemberSyntax *ParseMember();
     MemberSyntax *ParseGlobalStatement();
     MemberSyntax *ParseFunctionDeclaration();
-    SeparatedSyntaxList<ParameterNode *> ParseParameterList();
+    SeparatedSyntaxList<ParameterNode> ParseParameterList();
     ParameterNode *ParseParameter();
 
     TypeClauseNode *ParseOptionalTypeClause();

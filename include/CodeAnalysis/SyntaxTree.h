@@ -155,6 +155,99 @@ public:
 // Definition for pure virtual destructor
 inline StatementSyntax::~StatementSyntax() {}
 
+class SeparatedSyntaxListBase
+{
+public:
+    virtual ~SeparatedSyntaxListBase() = default;
+    virtual std::vector<SyntaxNode *> GetWithSeparators() const = 0;
+};
+
+template <typename T>
+class SeparatedSyntaxList : public SeparatedSyntaxListBase
+{
+    static_assert(std::is_base_of<SyntaxNode, T>::value, "T must be a derived class of SyntaxNode.");
+
+private:
+    std::vector<SyntaxNode *> nodesAndSeparators;
+
+public:
+    SeparatedSyntaxList(std::vector<SyntaxNode *> nodesAndSeparators)
+        : nodesAndSeparators(std::move(nodesAndSeparators)) {}
+
+    int Count() const
+    {
+        return (nodesAndSeparators.size() + 1) / 2;
+    }
+
+    T *operator[](int index) const
+    {
+        return static_cast<T *>(nodesAndSeparators[index * 2]);
+    }
+
+    Token *GetSeparator(int index) const
+    {
+        if (index == Count() - 1)
+            return nullptr;
+        return static_cast<Token *>(nodesAndSeparators[index * 2 + 1]);
+    }
+
+    std::vector<SyntaxNode *> GetWithSeparators() const override
+    {
+        return nodesAndSeparators;
+    }
+
+    // Iterator to allow ranged-for loop support
+    class Iterator
+    {
+    private:
+        const SeparatedSyntaxList &list;
+        int index;
+
+    public:
+        Iterator(const SeparatedSyntaxList &list, int index) : list(list), index(index) {}
+
+        T *operator*() const
+        {
+            return list[index];
+        }
+
+        Iterator &operator++()
+        {
+            ++index;
+            return *this;
+        }
+
+        bool operator!=(const Iterator &other) const
+        {
+            return index != other.index;
+        }
+    };
+
+    Iterator begin() const
+    {
+        return Iterator(*this, 0);
+    }
+
+    Iterator end() const
+    {
+        return Iterator(*this, Count());
+    }
+};
+
+class TypeClauseNode : public SyntaxNode
+{
+public:
+    Token ColonToken;
+    Token IdentifierToken;
+    TypeClauseNode(Token ColonToken, Token IdentifierToken)
+        : SyntaxNode(SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ColonToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken))};
+    }
+};
+
 class VariableDeclarationSyntax : public StatementSyntax
 {
 public:
@@ -289,6 +382,21 @@ public:
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {Statement};
+    }
+};
+
+class ParameterNode : public SyntaxNode
+{
+public:
+    Token IdentifierToken;
+    TypeClauseNode *Type;
+
+    ParameterNode(Token IdentifierToken, TypeClauseNode *Type)
+        : SyntaxNode(SyntaxKind::Parameter), IdentifierToken(IdentifierToken), Type(Type) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken)), Type};
     }
 };
 
@@ -428,85 +536,6 @@ public:
     }
 };
 
-class SeparatedSyntaxListBase
-{
-public:
-    virtual ~SeparatedSyntaxListBase() = default;
-    virtual std::vector<SyntaxNode *> GetWithSeparators() const = 0;
-};
-
-template <typename T>
-class SeparatedSyntaxList : public SeparatedSyntaxListBase
-{
-    static_assert(std::is_base_of<SyntaxNode, T>::value, "T must be a derived class of SyntaxNode.");
-
-private:
-    std::vector<SyntaxNode *> nodesAndSeparators;
-
-public:
-    SeparatedSyntaxList(std::vector<SyntaxNode *> nodesAndSeparators)
-        : nodesAndSeparators(std::move(nodesAndSeparators)) {}
-
-    int Count() const
-    {
-        return (nodesAndSeparators.size() + 1) / 2;
-    }
-
-    T *operator[](int index) const
-    {
-        return static_cast<T *>(nodesAndSeparators[index * 2]);
-    }
-
-    Token *GetSeparator(int index) const
-    {
-        if (index == Count() - 1)
-            return nullptr;
-        return static_cast<Token *>(nodesAndSeparators[index * 2 + 1]);
-    }
-
-    std::vector<SyntaxNode *> GetWithSeparators() const override
-    {
-        return nodesAndSeparators;
-    }
-
-    // Iterator to allow ranged-for loop support
-    class Iterator
-    {
-    private:
-        const SeparatedSyntaxList &list;
-        int index;
-
-    public:
-        Iterator(const SeparatedSyntaxList &list, int index) : list(list), index(index) {}
-
-        T *operator*() const
-        {
-            return list[index];
-        }
-
-        Iterator &operator++()
-        {
-            ++index;
-            return *this;
-        }
-
-        bool operator!=(const Iterator &other) const
-        {
-            return index != other.index;
-        }
-    };
-
-    Iterator begin() const
-    {
-        return Iterator(*this, 0);
-    }
-
-    Iterator end() const
-    {
-        return Iterator(*this, Count());
-    }
-};
-
 class CallExpressionNode : public SyntaxNode
 {
 public:
@@ -533,35 +562,6 @@ public:
         }
         children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseParenthesisToken)));
         return children;
-    }
-};
-
-class TypeClauseNode : public SyntaxNode
-{
-public:
-    Token ColonToken;
-    Token IdentifierToken;
-    TypeClauseNode(Token ColonToken, Token IdentifierToken)
-        : SyntaxNode(SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken) {}
-
-    std::vector<SyntaxNode *> GetChildren() const override
-    {
-        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ColonToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken))};
-    }
-};
-
-class ParameterNode : public SyntaxNode
-{
-public:
-    Token IdentifierToken;
-    TypeClauseNode *Type;
-
-    ParameterNode(Token IdentifierToken, TypeClauseNode *Type)
-        : SyntaxNode(SyntaxKind::Parameter), IdentifierToken(IdentifierToken), Type(Type) {}
-
-    std::vector<SyntaxNode *> GetChildren() const override
-    {
-        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken)), Type};
     }
 };
 
