@@ -258,9 +258,45 @@ SyntaxNode *Parser::ParsePrimaryExpression()
         break;
     case SyntaxKind::IDENTIFIER:
     default:
-        return ParseNameExpression();
+        return ParseNameOrCallExpression();
         break;
     }
+}
+
+SyntaxNode *Parser::ParseNameOrCallExpression()
+{
+    if (peek(0).Kind == SyntaxKind::IDENTIFIER && peek(1).Kind == SyntaxKind::LPAREN)
+    {
+        return ParseCallExpression();
+    }
+
+    return ParseNameExpression();
+}
+
+SyntaxNode *Parser::ParseCallExpression()
+{
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    Token openParenthesis = Expect(SyntaxKind::LPAREN);
+    SeparatedSyntaxList<SyntaxNode> arguments = ParseArguments();
+    Token closeParenthesis = Expect(SyntaxKind::RPAREN);
+    return new CallExpressionNode(identifier, openParenthesis, arguments, closeParenthesis);
+}
+
+SeparatedSyntaxList<SyntaxNode> Parser::ParseArguments()
+{
+    std::vector<SyntaxNode *> nodesAndSeparators;
+    while (currentToken.Kind != SyntaxKind::RPAREN && currentToken.Kind != SyntaxKind::END_OF_FILE)
+    {
+        SyntaxNode *expression = ParseExpression();
+        nodesAndSeparators.push_back(expression);
+
+        if (currentToken.Kind != SyntaxKind::RPAREN)
+        {
+            Token *comma = new Token(Expect(SyntaxKind::COMMA));
+            nodesAndSeparators.push_back(comma);
+        }
+    }
+    return SeparatedSyntaxList<SyntaxNode>(nodesAndSeparators);
 }
 
 SyntaxNode *Parser::ParseParenthesizedExpression()

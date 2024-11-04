@@ -2,7 +2,7 @@
 #define SYMBOL_H
 #include <string>
 #include <ostream>
-
+#include <vector>
 enum class SymbolKind
 {
     Variable,
@@ -35,6 +35,7 @@ public:
     static const TypeSymbol Boolean;
     static const TypeSymbol String;
     static const TypeSymbol Error;
+    static const TypeSymbol Void;
     virtual SymbolKind GetKind() const override
     {
         return SymbolKind::Type;
@@ -103,4 +104,58 @@ namespace std
         }
     };
 }
+
+class ParameterSymbol : public VariableSymbol
+{
+
+public:
+    SymbolKind GetKind() const override
+    {
+        return SymbolKind::Parameter;
+    }
+
+    ParameterSymbol(std::string name, TypeSymbol type) : VariableSymbol(name, true, type) {}
+};
+
+class FunctionSymbol : public Symbol
+{
+public:
+    SymbolKind GetKind() const override
+    {
+        return SymbolKind::Function;
+    }
+
+    FunctionSymbol(std::string name, std::vector<ParameterSymbol> parameters, TypeSymbol type) : Symbol(name), Parameters(parameters), Type(type) {}
+    FunctionSymbol() : Symbol(""), Parameters({}), Type(TypeSymbol::Error) {};
+    std::vector<ParameterSymbol> Parameters;
+    TypeSymbol Type;
+    friend std::ostream &operator<<(std::ostream &os, const FunctionSymbol &func)
+    {
+        os << "FunctionSymbol(Name: " << func.Name << ")";
+        return os;
+    }
+
+    std::string ToString() const
+    {
+        return Name;
+    }
+
+    bool operator==(const FunctionSymbol &other) const
+    {
+        return Name == other.Name;
+    }
+};
+
+class BuiltInFunctions
+{
+public:
+    static const FunctionSymbol Print;
+    static const FunctionSymbol Input;
+    static const FunctionSymbol Random;
+
+    static std::vector<FunctionSymbol> GetAll()
+    {
+        return {Print, Input, Random};
+    }
+};
 #endif

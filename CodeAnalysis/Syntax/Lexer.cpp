@@ -49,6 +49,10 @@ std::vector<Token> Lexer::tokenize()
             tokens.push_back(Token{SyntaxKind::CLOSE_BRACE, "}", pos});
             advance();
             break;
+        case ',':
+            tokens.push_back(Token{SyntaxKind::COMMA, ",", pos});
+            advance();
+            break;
         case '~':
             tokens.push_back(Token{SyntaxKind::TILDE, "~", pos});
             advance();

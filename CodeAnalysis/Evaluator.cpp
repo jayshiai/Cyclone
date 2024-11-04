@@ -1,4 +1,5 @@
 #include "CodeAnalysis/Evaluator.h"
+#include "CodeAnalysis/Symbol.h"
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
@@ -123,6 +124,10 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
         return EvaluateUnaryExpression((BoundUnaryExpression *)node);
     case BoundNodeKind::BinaryExpression:
         return EvaluateBinaryExpression((BoundBinaryExpression *)node);
+    case BoundNodeKind::CallExpression:
+        return EvaluateCallExpression((BoundCallExpression *)node);
+    case BoundNodeKind::ConversionExpression:
+        return EvaluateConversionExpression((BoundConversionExpression *)node);
     default:
         throw std::runtime_error("Unexpected node kind");
     }
@@ -226,4 +231,49 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
     default:
         throw std::runtime_error("Unexpected binary operator");
     }
+}
+
+std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
+{
+    if (n->Function == BuiltInFunctions::Input)
+    {
+        std::string input;
+        std::cin >> input;
+        return input;
+    }
+    else if (n->Function == BuiltInFunctions::Print)
+    {
+        std::string output = std::any_cast<std::string>(EvaluateExpression(n->Arguments[0]));
+        std::cout << output;
+        return output;
+    }
+    else if (n->Function == BuiltInFunctions::Random)
+    {
+        int max = std::any_cast<int>(EvaluateExpression(n->Arguments[0]));
+        return rand() % max;
+    }
+    else
+    {
+        throw std::runtime_error("Unknown function: " + n->Function.Name);
+    }
+}
+
+std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
+{
+    auto value = EvaluateExpression(n->Expression);
+    if (n->type == TypeSymbol::Boolean)
+        return std::any_cast<bool>(value);
+    else if (n->type == TypeSymbol::String)
+        return std::to_string(std::any_cast<int>(value));
+    else if (n->type == TypeSymbol::Integer)
+    {
+        if (n->Expression->type == TypeSymbol::Boolean)
+            return std::any_cast<bool>(value);
+        else if (n->Expression->type == TypeSymbol::String)
+            return std::stoi(std::any_cast<std::string>(value));
+        else if (n->Expression->type == TypeSymbol::Integer)
+            return std::any_cast<int>(value);
+    }
+    else
+        throw std::runtime_error("Unexpected conversion: " + n->type.Name);
 }

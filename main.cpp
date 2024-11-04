@@ -86,7 +86,8 @@ main()
         {
             if (isBlank)
             {
-                break;
+
+                continue;
             }
             else if (input == "#showTree")
             {
@@ -104,6 +105,10 @@ main()
             {
                 std::cout << "\033[2J\033[H" << std::flush;
                 continue;
+            }
+            else if (input == "#exit")
+            {
+                break;
             }
             else if (input == "#reset")
             {

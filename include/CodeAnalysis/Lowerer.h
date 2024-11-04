@@ -26,6 +26,8 @@ protected:
     virtual BoundExpression *RewriteLiteralExpression(BoundLiteralExpression *node);
     virtual BoundExpression *RewriteVariableExpression(BoundVariableExpression *node);
     virtual BoundExpression *RewriteAssignmentExpression(BoundAssignmentExpression *node);
+    virtual BoundExpression *RewriteCallExpression(BoundCallExpression *node);
+    virtual BoundExpression *RewriteConversionExpression(BoundConversionExpression *node);
 };
 
 class Lowerer : public BoundTreeRewriter

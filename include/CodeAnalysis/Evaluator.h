@@ -24,6 +24,8 @@ private:
     std::any EvaluateAssignmentExpression(BoundAssignmentExpression *node);
     std::any EvaluateUnaryExpression(BoundUnaryExpression *node);
     std::any EvaluateBinaryExpression(BoundBinaryExpression *node);
+    std::any EvaluateCallExpression(BoundCallExpression *node);
+    std::any EvaluateConversionExpression(BoundConversionExpression *node);
     std::any _lastValue = "";
 };
 

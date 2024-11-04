@@ -1,5 +1,6 @@
 #include "CodeAnalysis/Binder.h"
 #include "CodeAnalysis/SyntaxTree.h"
+#include "CodeAnalysis/Symbol.h"
 #include "Utils.h"
 #include <iostream>
 #include <algorithm>
@@ -83,7 +84,7 @@ VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymb
     bool declare = name != "" || !name.empty();
     VariableSymbol *variable = new VariableSymbol(name, isReadOnly, type);
 
-    if (declare && !_scope->TryDeclare(*variable))
+    if (declare && !_scope->TryDeclareVariable(*variable))
     {
         _diagnostics.ReportVariableAlreadyDeclared(identifier.Span, name);
     }
@@ -92,7 +93,7 @@ VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymb
 }
 BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
 {
-    BoundExpression *expression = BindExpression(node->Expression);
+    BoundExpression *expression = BindExpression(node->Expression, true);
     return new BoundExpressionStatement(expression);
 }
 
@@ -105,7 +106,19 @@ BoundExpression *Binder::BindExpression(SyntaxNode *node, TypeSymbol type)
     }
     return result;
 }
-BoundExpression *Binder::BindExpression(SyntaxNode *node)
+BoundExpression *Binder::BindExpression(SyntaxNode *node, bool canBeVoid)
+{
+    BoundExpression *result = BindExpressionInternal(node);
+
+    if (!canBeVoid && result->type == TypeSymbol::Void)
+    {
+        _diagnostics.ReportExpressionMustHaveValue(node->Span());
+        return new BoundErrorExpression();
+    }
+    return result;
+}
+
+BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
 {
     switch (node->Kind)
     {
@@ -121,6 +134,8 @@ BoundExpression *Binder::BindExpression(SyntaxNode *node)
         return BindBinaryExpression((BinaryExpressionNode *)node);
     case SyntaxKind::ParenthesizedExpression:
         return BindExpression(((ParenthesizedExpressionNode *)node)->expression);
+    case SyntaxKind::CallExpression:
+        return BindCallExpression((CallExpressionNode *)node);
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;
@@ -153,7 +168,7 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
         return new BoundErrorExpression();
     }
     VariableSymbol variable(name, false, TypeSymbol::Error);
-    if (!_scope->TryLookup(name, variable))
+    if (!_scope->TryLookupVariable(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
         return new BoundErrorExpression();
@@ -166,7 +181,7 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
     std::string name = node->IdentifierToken.value;
     BoundExpression *boundExpression = BindExpression(node->Expression);
     VariableSymbol variable(name, false, TypeSymbol::Error);
-    if (!_scope->TryLookup(name, variable))
+    if (!_scope->TryLookupVariable(name, variable))
     {
         _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
         return boundExpression;
@@ -221,6 +236,76 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
     return new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
 }
 
+TypeSymbol Binder::LookupType(std::string name)
+{
+    if (name == "bool")
+    {
+        return TypeSymbol::Boolean;
+    }
+    if (name == "int")
+    {
+        return TypeSymbol::Integer;
+    }
+    if (name == "string")
+    {
+        return TypeSymbol::String;
+    }
+    return TypeSymbol::Error;
+}
+BoundExpression *Binder::BindConversion(TypeSymbol type, SyntaxNode *node)
+{
+    BoundExpression *expression = BindExpression(node);
+    Conversion conversion = Conversion::Classify(expression->type, type);
+    if (!conversion.Exists)
+    {
+        _diagnostics.ReportCannotConvert(node->Span(), expression->type.ToString(), type.ToString());
+        return new BoundErrorExpression();
+    }
+
+    return new BoundConversionExpression(type, expression);
+}
+BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
+{
+    if (node->Arguments.Count() == 1)
+    {
+        TypeSymbol type = LookupType(node->IdentifierToken.value);
+        if (type != TypeSymbol::Error)
+            return BindConversion(type, node->Arguments[0]);
+    }
+
+    std::vector<BoundExpression *> boundArguments;
+
+    for (auto argument : node->Arguments)
+    {
+        boundArguments.push_back(BindExpression(argument));
+    }
+
+    FunctionSymbol function;
+    if (!_scope->TryLookupFunction(node->IdentifierToken.value, function))
+    {
+        _diagnostics.ReportUndefinedFunction(node->IdentifierToken.Span, node->IdentifierToken.value);
+        return new BoundErrorExpression();
+    }
+
+    if (node->Arguments.Count() != function.Parameters.size())
+    {
+        _diagnostics.ReportWrongArgumentCount(node->Span(), node->IdentifierToken.value, function.Parameters.size(), node->Arguments.Count());
+        return new BoundErrorExpression();
+    }
+
+    for (int i = 0; i < node->Arguments.Count(); i++)
+    {
+        BoundExpression *argument = boundArguments[i];
+        ParameterSymbol parameter = function.Parameters[i];
+        if (argument->type != parameter.Type)
+        {
+            _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Span(), parameter.Name, parameter.Type.ToString(), argument->type.ToString());
+            return new BoundErrorExpression();
+        }
+    }
+
+    return new BoundCallExpression(function, boundArguments);
+}
 BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)
 {
     BoundScope *parentScope = Binder::CreateParentScope(previous);
@@ -237,6 +322,16 @@ BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, Compilation
     return BoundGlobalScope(previous, diagnostics, variables, statement);
 }
 
+BoundScope *Binder::CreateRootScope()
+{
+    BoundScope *result = new BoundScope(nullptr);
+    for (auto &function : BuiltInFunctions::GetAll())
+    {
+        result->TryDeclareFunction(function);
+    }
+
+    return result;
+}
 BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
 {
     std::stack<BoundGlobalScope *> stack;
@@ -246,7 +341,7 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
         previous = previous->Previous;
     }
 
-    BoundScope *parent = nullptr;
+    BoundScope *parent = CreateRootScope();
 
     while (!stack.empty())
     {
@@ -255,7 +350,7 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
         BoundScope *scope = new BoundScope(parent);
         for (auto &variable : previous->Variables)
         {
-            scope->TryDeclare(variable);
+            scope->TryDeclareVariable(variable);
         }
         parent = scope;
     }
@@ -317,6 +412,13 @@ std::string convertBoundNodeKindToString(BoundNodeKind kind)
         return "LabelStatement";
     case BoundNodeKind::ConditionalGotoStatement:
         return "ConditionalGotoStatement";
+    case BoundNodeKind::CallExpression:
+        return "CallExpression";
+    case BoundNodeKind::ConversionExpression:
+        return "ConversionExpression";
+
+    case BoundNodeKind::ErrorExpression:
+        return "ErrorExpression";
     default:
         return "Unknown";
     }
@@ -368,4 +470,39 @@ void BoundNode::PrettyPrint(std::ostream &os, BoundNode *node, std::string inden
         PrettyPrint(os, children[i], childIndent, i == children.size() - 1);
     }
     os << RESET_COLOR;
+}
+
+const Conversion Conversion::None = Conversion(false /*exists*/, false /*isIdentity*/, false /*isImplicit*/);
+const Conversion Conversion::Identity = Conversion(true /*exists*/, true /*isIdentity*/, true /*isImplicit*/);
+const Conversion Conversion::Implicit = Conversion(true /*exists*/, false /*isIdentity*/, true /*isImplicit*/);
+const Conversion Conversion::Explicit = Conversion(true /*exists*/, false /*isIdentity*/, false /*isImplicit*/);
+
+Conversion Conversion::Classify(TypeSymbol from, TypeSymbol to)
+{
+    if (from == to)
+    {
+        return Conversion::Identity;
+    }
+
+    if (from == TypeSymbol::String)
+    {
+        if (to == TypeSymbol::Integer || to == TypeSymbol::Boolean)
+        {
+            return Conversion::Explicit;
+        }
+    }
+
+    if (from == TypeSymbol::Integer || from == TypeSymbol::Boolean)
+    {
+        if (to == TypeSymbol::String)
+        {
+            return Conversion::Explicit;
+        }
+    }
+
+    if (from == TypeSymbol::Error || to == TypeSymbol::Error)
+    {
+        return Conversion::None;
+    }
+    return Conversion::None;
 }

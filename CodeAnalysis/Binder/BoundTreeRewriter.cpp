@@ -134,6 +134,10 @@ BoundExpression *BoundTreeRewriter::RewriteExpression(BoundExpression *node)
         return RewriteVariableExpression((BoundVariableExpression *)node);
     case BoundNodeKind::AssignmentExpression:
         return RewriteAssignmentExpression((BoundAssignmentExpression *)node);
+    case BoundNodeKind::CallExpression:
+        return RewriteCallExpression((BoundCallExpression *)node);
+    case BoundNodeKind::ConversionExpression:
+        return RewriteConversionExpression((BoundConversionExpression *)node);
     default:
         throw std::runtime_error("Unexpected node: " + convertBoundNodeKindToString(node->GetKind()));
         return node;
@@ -163,6 +167,49 @@ BoundExpression *BoundTreeRewriter::RewriteBinaryExpression(BoundBinaryExpressio
         return node;
 
     return new BoundBinaryExpression(left, node->Op, right);
+}
+
+BoundExpression *BoundTreeRewriter::RewriteCallExpression(BoundCallExpression *node)
+{
+
+    std::vector<BoundExpression *> *builder = nullptr;
+
+    for (size_t i = 0; i < node->Arguments.size(); i++)
+    {
+        BoundExpression *oldArgument = node->Arguments[i];
+        BoundExpression *newArgument = RewriteExpression(oldArgument);
+
+        if (newArgument != oldArgument)
+        {
+            if (builder == nullptr)
+            {
+                builder = new std::vector<BoundExpression *>();
+                builder->reserve(node->Arguments.size());
+
+                for (size_t j = 0; j < i; j++)
+                    builder->push_back(node->Arguments[j]);
+            }
+        }
+
+        if (builder != nullptr)
+            builder->push_back(newArgument);
+    }
+
+    if (builder == nullptr)
+        return node;
+
+    BoundCallExpression *result = new BoundCallExpression(node->Function, *builder);
+    delete builder;
+    return result;
+}
+
+BoundExpression *BoundTreeRewriter::RewriteConversionExpression(BoundConversionExpression *node)
+{
+    BoundExpression *expression = RewriteExpression(node->Expression);
+    if (expression == node->Expression)
+        return node;
+
+    return new BoundConversionExpression(node->type, expression);
 }
 
 BoundExpression *BoundTreeRewriter::RewriteLiteralExpression(BoundLiteralExpression *node)

@@ -32,6 +32,7 @@
 //     BAD_TOKEN,
 //     OPEN_BRACE,
 //     CLOSE_BRACE,
+//     COMMA,
 
 //     TRUE_KEYWORD,
 //     FALSE_KEYWORD,
@@ -49,7 +50,7 @@
 //     ParenthesizedExpression,
 //     NameExpression,
 //     AssignmentExpression,
-
+//     CallExpression,
 //     CompilationUnit,
 //     ElseClause,
 
@@ -89,6 +90,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "BinaryExpression";
     case SyntaxKind::ParenthesizedExpression:
         return "ParenthesizedExpression";
+    case SyntaxKind::CallExpression:
+        return "CallExpression";
     case SyntaxKind::IDENTIFIER:
         return "IdentifierToken";
     case SyntaxKind::LPAREN:
@@ -146,6 +149,9 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "OpenBraceToken";
     case SyntaxKind::CLOSE_BRACE:
         return "CloseBraceToken";
+    case SyntaxKind::COMMA:
+        return "CommaToken";
+
     case SyntaxKind::CompilationUnit:
         return "CompilationUnit";
     case SyntaxKind::ExpressionStatement:

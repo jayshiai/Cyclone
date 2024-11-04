@@ -40,6 +40,7 @@ enum class SyntaxKind
     BAD_TOKEN,
     OPEN_BRACE,
     CLOSE_BRACE,
+    COMMA,
 
     TRUE_KEYWORD,
     FALSE_KEYWORD,
@@ -57,6 +58,7 @@ enum class SyntaxKind
     ParenthesizedExpression,
     NameExpression,
     AssignmentExpression,
+    CallExpression,
 
     CompilationUnit,
     ElseClause,
@@ -127,6 +129,8 @@ public:
     TextSpan Span;
     Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
     Token() : SyntaxNode(SyntaxKind::BAD_TOKEN), Span(TextSpan(0, 0)) {};
+    Token(const Token &other)
+        : SyntaxNode(other.Kind), value(other.value), position(other.position), Span(other.Span) {}
 
     bool operator==(const Token &other) const
     {
@@ -348,6 +352,114 @@ public:
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OperatorToken)), expression};
+    }
+};
+
+class SeparatedSyntaxListBase
+{
+public:
+    virtual ~SeparatedSyntaxListBase() = default;
+    virtual std::vector<SyntaxNode *> GetWithSeparators() const = 0;
+};
+
+template <typename T>
+class SeparatedSyntaxList : public SeparatedSyntaxListBase
+{
+    static_assert(std::is_base_of<SyntaxNode, T>::value, "T must be a derived class of SyntaxNode.");
+
+private:
+    std::vector<SyntaxNode *> nodesAndSeparators;
+
+public:
+    SeparatedSyntaxList(std::vector<SyntaxNode *> nodesAndSeparators)
+        : nodesAndSeparators(std::move(nodesAndSeparators)) {}
+
+    int Count() const
+    {
+        return (nodesAndSeparators.size() + 1) / 2;
+    }
+
+    T *operator[](int index) const
+    {
+        return static_cast<T *>(nodesAndSeparators[index * 2]);
+    }
+
+    Token *GetSeparator(int index) const
+    {
+        if (index == Count() - 1)
+            return nullptr;
+        return static_cast<Token *>(nodesAndSeparators[index * 2 + 1]);
+    }
+
+    std::vector<SyntaxNode *> GetWithSeparators() const override
+    {
+        return nodesAndSeparators;
+    }
+
+    // Iterator to allow ranged-for loop support
+    class Iterator
+    {
+    private:
+        const SeparatedSyntaxList &list;
+        int index;
+
+    public:
+        Iterator(const SeparatedSyntaxList &list, int index) : list(list), index(index) {}
+
+        T *operator*() const
+        {
+            return list[index];
+        }
+
+        Iterator &operator++()
+        {
+            ++index;
+            return *this;
+        }
+
+        bool operator!=(const Iterator &other) const
+        {
+            return index != other.index;
+        }
+    };
+
+    Iterator begin() const
+    {
+        return Iterator(*this, 0);
+    }
+
+    Iterator end() const
+    {
+        return Iterator(*this, Count());
+    }
+};
+
+class CallExpressionNode : public SyntaxNode
+{
+public:
+    Token IdentifierToken;
+    Token OpenParenthesisToken;
+    SeparatedSyntaxList<SyntaxNode> Arguments;
+    Token CloseParenthesisToken;
+    CallExpressionNode(Token IdentifierToken, Token OpenParenthesisToken, SeparatedSyntaxList<SyntaxNode> Arguments, Token CloseParenthesisToken)
+        : SyntaxNode(SyntaxKind::CallExpression), IdentifierToken(IdentifierToken), OpenParenthesisToken(OpenParenthesisToken), Arguments(Arguments), CloseParenthesisToken(CloseParenthesisToken) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        std::vector<SyntaxNode *> children = {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenParenthesisToken))};
+        int index = 0;
+        for (auto argument : Arguments)
+        {
+            children.push_back(argument);
+            Token *separator = Arguments.GetSeparator(index);
+            if (separator != nullptr)
+            {
+                children.push_back(separator);
+            }
+            ++index;
+        }
+        children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseParenthesisToken)));
+        return children;
     }
 };
 

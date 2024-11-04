@@ -76,3 +76,29 @@ void DiagnosticBag::ReportCannotAssign(TextSpan span, std::string name)
     oss << "Variable '" << name << "' is read-only and cannot be assigned to.";
     Report(span, oss.str());
 }
+
+void DiagnosticBag::ReportUndefinedFunction(const TextSpan &span, const std::string &name)
+{
+    std::ostringstream oss;
+    oss << "Function '" << name << "' doesn't exist.";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount)
+{
+    std::ostringstream oss;
+    oss << "Function '" << name << "' requires " << expectedCount << " arguments but was given " << actualCount << ".";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportWrongArgumentType(const TextSpan &span, const std::string &name, const std::string &expectedType, const std::string &actualType)
+{
+    std::ostringstream oss;
+    oss << "Parameter '" << name << "' requires a value of type " << expectedType << " but was given a value of type " << actualType << ".";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportExpressionMustHaveValue(const TextSpan &span)
+{
+    Report(span, "Expression must have a value.");
+}

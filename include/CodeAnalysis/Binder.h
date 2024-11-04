@@ -14,6 +14,8 @@ enum class BoundNodeKind
     VariableExpression,
     ErrorExpression,
     AssignmentExpression,
+    CallExpression,
+    ConversionExpression,
 
     ExpressionStatement,
     VariableDeclaration,
@@ -474,18 +476,63 @@ public:
     }
 };
 
+class BoundCallExpression : public BoundExpression
+{
+public:
+    BoundCallExpression(FunctionSymbol function, std::vector<BoundExpression *> arguments) : BoundExpression(function.Type), Function(function), Arguments(arguments), type(function.Type) {};
+    BoundNodeKind kind = BoundNodeKind::CallExpression;
+    FunctionSymbol Function;
+    std::vector<BoundExpression *> Arguments;
+    TypeSymbol type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::CallExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Function", Function.ToString()}};
+    }
+};
+
+class BoundConversionExpression : public BoundExpression
+{
+public:
+    BoundConversionExpression(TypeSymbol type, BoundExpression *expression) : BoundExpression(type), Expression(expression), type(type) {};
+    BoundNodeKind kind = BoundNodeKind::ConversionExpression;
+    TypeSymbol type;
+    BoundExpression *Expression;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::ConversionExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Expression};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {};
+    }
+};
+
 class BoundScope
 {
 public:
     BoundScope(BoundScope *parent) : Parent(parent) {}
     BoundScope *Parent;
 
-    bool TryDeclare(VariableSymbol &variable);
-    bool TryLookup(const std::string &name, VariableSymbol &variable) const;
+    bool TryDeclareVariable(VariableSymbol &variable);
+    bool TryLookupVariable(const std::string &name, VariableSymbol &variable) const;
+    bool TryDeclareFunction(FunctionSymbol &function);
+    bool TryLookupFunction(const std::string &name, FunctionSymbol &function) const;
     std::vector<VariableSymbol> GetDeclaredVariables() const;
+    std::vector<FunctionSymbol> GetDeclaredFunctions() const;
 
 private:
     std::unordered_map<std::string, VariableSymbol> _variables;
+    std::unordered_map<std::string, FunctionSymbol> _functions;
 };
 
 class BoundGlobalScope
@@ -512,10 +559,13 @@ private:
     DiagnosticBag _diagnostics;
     BoundScope *_scope;
 
-    BoundExpression *BindExpression(SyntaxNode *node);
+    TypeSymbol LookupType(std::string name);
+    BoundExpression *BindExpression(SyntaxNode *node, bool canBeVoid = false);
     BoundExpression *BindExpression(SyntaxNode *node, TypeSymbol type);
+    BoundExpression *BindExpressionInternal(SyntaxNode *node);
 
     static BoundScope *CreateParentScope(BoundGlobalScope *previous);
+    static BoundScope *CreateRootScope();
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
@@ -532,6 +582,26 @@ private:
     BoundExpression *BindBinaryExpression(BinaryExpressionNode *node);
     BoundExpression *BindNameExpression(NameExpressionNode *node);
     BoundExpression *BindAssignmentExpression(AssignmentExpressionNode *node);
+    BoundExpression *BindCallExpression(CallExpressionNode *node);
+    BoundExpression *BindConversion(TypeSymbol type, SyntaxNode *node);
 };
 
+class Conversion
+{
+public:
+    static const Conversion None;
+    static const Conversion Identity;
+    static const Conversion Implicit;
+    static const Conversion Explicit;
+
+    bool Exists;
+    bool IsIdentity;
+    bool IsImplicit;
+    bool IsExplicit;
+
+    static Conversion Classify(TypeSymbol from, TypeSymbol to);
+
+private:
+    Conversion(bool exists, bool inIdentity, bool isImplicit) : Exists(exists), IsIdentity(inIdentity), IsImplicit(isImplicit), IsExplicit(exists && !isImplicit) {}
+};
 #endif

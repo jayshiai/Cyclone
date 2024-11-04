@@ -42,6 +42,11 @@ public:
 
     void ReportUndefinedName(const TextSpan &span, const std::string &name);
 
+    void ReportUndefinedFunction(const TextSpan &span, const std::string &name);
+    void ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount);
+    void ReportWrongArgumentType(const TextSpan &span, const std::string &name, const std::string &expectedType, const std::string &actualType);
+    void ReportExpressionMustHaveValue(const TextSpan &span);
+
     const std::vector<Diagnostic> &GetDiagnostics() const
     {
         return _diagnostics;
