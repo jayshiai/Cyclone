@@ -1,10 +1,12 @@
 #include "CodeAnalysis/Binder.h"
 #include "CodeAnalysis/SyntaxTree.h"
 #include "CodeAnalysis/Symbol.h"
+#include "CodeAnalysis/Lowerer.h"
 #include "Utils.h"
 #include <iostream>
 #include <algorithm>
 #include <stack>
+#include <unordered_set>
 
 BoundStatement *Binder::BindStatement(StatementSyntax *node)
 {
@@ -68,25 +70,17 @@ BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
     return new BoundBlockStatement(statements);
 }
 
-BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
-{
-
-    bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
-    BoundExpression *initializer = BindExpression(node->Initializer);
-    VariableSymbol *variable = BindVariable(node->Identifier, isReadOnly, initializer->type);
-
-    return new BoundVariableDeclaration(*variable, initializer);
-}
-
 VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymbol type)
 {
     std::string name = identifier.value;
     bool declare = name != "" || !name.empty();
-    VariableSymbol *variable = new VariableSymbol(name, isReadOnly, type);
+    VariableSymbol *variable = (_function == nullptr)
+                                   ? static_cast<VariableSymbol *>(new GlobalVariableSymbol(name, isReadOnly, type))
+                                   : static_cast<VariableSymbol *>(new LocalVariableSymbol(name, isReadOnly, type));
 
     if (declare && !_scope->TryDeclareVariable(*variable))
     {
-        _diagnostics.ReportVariableAlreadyDeclared(identifier.Span, name);
+        _diagnostics.ReportSymbolAlreadyDeclared(identifier.Span, name);
     }
 
     return variable;
@@ -99,12 +93,8 @@ BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
 
 BoundExpression *Binder::BindExpression(SyntaxNode *node, TypeSymbol type)
 {
-    BoundExpression *result = BindExpression(node);
-    if (type != TypeSymbol::Error && result->type != type && result->type != TypeSymbol::Error)
-    {
-        _diagnostics.ReportCannotConvert(node->Span(), result->type.ToString(), type.ToString());
-    }
-    return result;
+
+    return BindConversion(node, type);
 }
 BoundExpression *Binder::BindExpression(SyntaxNode *node, bool canBeVoid)
 {
@@ -191,12 +181,9 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
         _diagnostics.ReportCannotAssign(node->IdentifierToken.Span, name);
     }
 
-    if (boundExpression->type != variable.Type)
-    {
-        _diagnostics.ReportCannotConvert(node->Expression->Span(), boundExpression->type.ToString(), variable.Type.ToString());
-    }
+    BoundExpression *convertedExpression = BindConversion(node->Expression->Span(), boundExpression, variable.Type);
 
-    return new BoundAssignmentExpression(variable, boundExpression);
+    return new BoundAssignmentExpression(variable, convertedExpression);
 }
 BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
 {
@@ -236,41 +223,13 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
     return new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
 }
 
-TypeSymbol Binder::LookupType(std::string name)
-{
-    if (name == "bool")
-    {
-        return TypeSymbol::Boolean;
-    }
-    if (name == "int")
-    {
-        return TypeSymbol::Integer;
-    }
-    if (name == "string")
-    {
-        return TypeSymbol::String;
-    }
-    return TypeSymbol::Error;
-}
-BoundExpression *Binder::BindConversion(TypeSymbol type, SyntaxNode *node)
-{
-    BoundExpression *expression = BindExpression(node);
-    Conversion conversion = Conversion::Classify(expression->type, type);
-    if (!conversion.Exists)
-    {
-        _diagnostics.ReportCannotConvert(node->Span(), expression->type.ToString(), type.ToString());
-        return new BoundErrorExpression();
-    }
-
-    return new BoundConversionExpression(type, expression);
-}
 BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
 {
     if (node->Arguments.Count() == 1)
     {
         TypeSymbol type = LookupType(node->IdentifierToken.value);
-        if (type != TypeSymbol::Error)
-            return BindConversion(type, node->Arguments[0]);
+        if (type != TypeSymbol::Null)
+            return BindConversion(node->Arguments[0], type, true);
     }
 
     std::vector<BoundExpression *> boundArguments;
@@ -309,9 +268,23 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
 BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)
 {
     BoundScope *parentScope = Binder::CreateParentScope(previous);
-    Binder binder(parentScope);
+    Binder binder(parentScope, nullptr);
 
-    BoundStatement *statement = binder.BindStatement(tree->Statement);
+    std::vector<BoundStatement *> statements;
+    for (auto *member : tree->Members)
+    {
+
+        if (auto *function = dynamic_cast<FunctionDeclarationSyntax *>(member))
+        {
+            binder.BindFunctionDeclaration(function);
+        }
+        if (auto *memberStatement = dynamic_cast<GlobalStatementSyntax *>(member))
+        {
+            BoundStatement *statement = binder.BindStatement(memberStatement->Statement);
+            statements.push_back(statement);
+        }
+    }
+    std::vector<FunctionSymbol> functions = binder._scope->GetDeclaredFunctions();
     std::vector<VariableSymbol> variables = binder._scope->GetDeclaredVariables();
     std::vector<Diagnostic> diagnostics = binder.GetDiagnostics().GetDiagnostics();
 
@@ -319,7 +292,71 @@ BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, Compilation
     {
         diagnostics.insert(diagnostics.begin(), previous->Diagnostics.begin(), previous->Diagnostics.end());
     }
-    return BoundGlobalScope(previous, diagnostics, variables, statement);
+    return BoundGlobalScope(previous, diagnostics, variables, functions, statements);
+}
+
+BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
+{
+    BoundScope parentScope = CreateParentScope(globalScope);
+    std::unordered_map<FunctionSymbol, BoundBlockStatement *> functions = {};
+    std::vector<Diagnostic> diagnostics = {};
+
+    BoundGlobalScope *scope = globalScope;
+
+    while (scope != nullptr)
+    {
+        for (auto &function : scope->Functions)
+        {
+            Binder binder(&parentScope, &function);
+            BoundStatement *body = binder.BindStatement(function.Declaration->Body);
+            BoundBlockStatement *loweredBody = Lowerer::Lower(body);
+            functions[function] = loweredBody;
+
+            diagnostics.insert(diagnostics.end(), binder.GetDiagnostics().GetDiagnostics().begin(), binder.GetDiagnostics().GetDiagnostics().end());
+        }
+
+        scope = scope->Previous;
+    }
+
+    BoundBlockStatement *statement = Lowerer::Lower(new BoundBlockStatement(globalScope->Statements));
+    return new BoundProgram(diagnostics, functions, statement);
+}
+
+void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
+{
+    std::vector<ParameterSymbol> parameters;
+    std::unordered_set<std::string> seenParameterNames;
+
+    for (const auto &parameter : node->Parameters)
+    {
+        std::string parameterName = parameter->IdentifierToken.value;
+        TypeSymbol boundType = BindTypeClause(parameter->Type);
+        TypeSymbol parameterType = boundType != TypeSymbol::Null ? boundType : TypeSymbol::Void;
+
+        if (seenParameterNames.find(parameterName) != seenParameterNames.end())
+        {
+            _diagnostics.ReportParameterAlreadyDeclared(parameter->IdentifierToken.Span, parameterName);
+        }
+        else
+        {
+            seenParameterNames.insert(parameterName);
+            parameters.push_back(ParameterSymbol(parameterName, parameterType));
+        }
+    }
+
+    TypeSymbol boundResultType = BindTypeClause(node->Type);
+    TypeSymbol returnType = boundResultType != TypeSymbol::Null ? boundResultType : TypeSymbol::Void;
+    if (returnType != TypeSymbol::Void)
+    {
+        _diagnostics.XXX_ReportFunctionsAreNotSupportedYet(node->FunctionKeyword.Span);
+    }
+
+    FunctionSymbol function(node->Identifier.value, parameters, returnType, node);
+
+    if (!_scope->TryDeclareFunction(function))
+    {
+        _diagnostics.ReportSymbolAlreadyDeclared(node->Identifier.Span, function.Name);
+    }
 }
 
 BoundScope *Binder::CreateRootScope()
@@ -348,6 +385,11 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
         previous = stack.top();
         stack.pop();
         BoundScope *scope = new BoundScope(parent);
+
+        for (auto &function : previous->Functions)
+        {
+            scope->TryDeclareFunction(function);
+        }
         for (auto &variable : previous->Variables)
         {
             scope->TryDeclareVariable(variable);
@@ -357,6 +399,78 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
     return parent;
 }
 
+BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
+{
+
+    bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
+    TypeSymbol type = BindTypeClause(node->TypeClause);
+    BoundExpression *initializer = BindExpression(node->Initializer);
+
+    TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
+    VariableSymbol *variable = BindVariable(node->Identifier, isReadOnly, variableType);
+    BoundExpression *convertedInitializer = BindConversion(node->Initializer->Span(), initializer, variableType);
+
+    return new BoundVariableDeclaration(*variable, initializer);
+}
+
+TypeSymbol Binder::LookupType(std::string name)
+{
+    if (name == "bool")
+    {
+        return TypeSymbol::Boolean;
+    }
+    if (name == "int")
+    {
+        return TypeSymbol::Integer;
+    }
+    if (name == "string")
+    {
+        return TypeSymbol::String;
+    }
+    return TypeSymbol::Null;
+}
+
+TypeSymbol Binder::BindTypeClause(TypeClauseNode *node)
+{
+    if (node == nullptr)
+    {
+        return TypeSymbol::Null;
+    }
+    TypeSymbol type = LookupType(node->IdentifierToken.value);
+
+    if (type == TypeSymbol::Null)
+    {
+        _diagnostics.ReportUndefinedType(node->IdentifierToken.Span, node->IdentifierToken.value);
+    }
+    return type;
+}
+BoundExpression *Binder::BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit)
+{
+    BoundExpression *expression = BindExpression(node);
+    return BindConversion(node->Span(), expression, type, node);
+}
+BoundExpression *Binder::BindConversion(TextSpan diagnosticSpan, BoundExpression *expression, TypeSymbol type, bool allowExplicit)
+{
+
+    Conversion conversion = Conversion::Classify(expression->type, type);
+    if (!conversion.Exists)
+    {
+        if (expression->type != TypeSymbol::Error && type != TypeSymbol::Error)
+            _diagnostics.ReportCannotConvert(diagnosticSpan, expression->type.ToString(), type.ToString());
+        return new BoundErrorExpression();
+    }
+
+    if (!allowExplicit && conversion.IsExplicit)
+    {
+        _diagnostics.ReportCannotConvertImplicitly(diagnosticSpan, expression->type.ToString(), type.ToString());
+    }
+
+    if (conversion.IsIdentity)
+    {
+        return expression;
+    }
+    return new BoundConversionExpression(type, expression);
+}
 // enum class BoundNodeKind
 // {
 //     LiteralExpression,

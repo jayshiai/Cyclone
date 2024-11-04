@@ -538,26 +538,48 @@ private:
 class BoundGlobalScope
 {
 public:
-    BoundGlobalScope(BoundGlobalScope *previous, std::vector<Diagnostic> diagnostics, std::vector<VariableSymbol> variables, BoundStatement *statement) : Previous(previous), Diagnostics(diagnostics), Variables(variables), Statement(statement) {}
+    BoundGlobalScope(BoundGlobalScope *previous, std::vector<Diagnostic> diagnostics, std::vector<VariableSymbol> variables, std::vector<FunctionSymbol> functions, std::vector<BoundStatement *> statements) : Previous(previous), Diagnostics(diagnostics), Variables(variables), Functions(functions), Statements(statements) {}
     BoundGlobalScope *Previous;
     std::vector<Diagnostic> Diagnostics;
     std::vector<VariableSymbol> Variables;
-    BoundStatement *Statement;
+    std::vector<FunctionSymbol> Functions;
+    std::vector<BoundStatement *> Statements;
+};
+
+class BoundProgram
+{
+public:
+    std::vector<Diagnostic> Diagnostics;
+    std::unordered_map<FunctionSymbol, BoundBlockStatement *> Functions;
+    BoundBlockStatement *statement;
+
+    BoundProgram(std::vector<Diagnostic> diagnostics, std::unordered_map<FunctionSymbol, BoundBlockStatement *> functions, BoundBlockStatement *statement) : Diagnostics(diagnostics), Functions(functions), statement(statement) {}
 };
 class Binder
 {
 public:
-    Binder(BoundScope *parent) : _scope(new BoundScope(parent)) {};
+    Binder(BoundScope *parent, FunctionSymbol *function) : _scope(new BoundScope(parent)), _function(function)
+    {
+        if (_function != nullptr)
+        {
+            for (auto &param : _function->Parameters)
+            {
+                _scope->TryDeclareVariable(param);
+            }
+        }
+    };
 
     const DiagnosticBag &GetDiagnostics() const
     {
         return _diagnostics;
     }
     static BoundGlobalScope BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree);
+    static BoundProgram *BindProgram(BoundGlobalScope *globalScope);
 
 private:
     DiagnosticBag _diagnostics;
     BoundScope *_scope;
+    FunctionSymbol *_function;
 
     TypeSymbol LookupType(std::string name);
     BoundExpression *BindExpression(SyntaxNode *node, bool canBeVoid = false);
@@ -569,8 +591,10 @@ private:
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
+    void BindFunctionDeclaration(FunctionDeclarationSyntax *node);
 
     VariableSymbol *BindVariable(Token identifier, bool isReadOnly, TypeSymbol type);
+    TypeSymbol BindTypeClause(TypeClauseNode *node);
 
     BoundStatement *BindExpressionStatement(ExpressionStatementSyntax *node);
     BoundStatement *BindIfStatement(IfStatementSyntax *node);
@@ -583,7 +607,8 @@ private:
     BoundExpression *BindNameExpression(NameExpressionNode *node);
     BoundExpression *BindAssignmentExpression(AssignmentExpressionNode *node);
     BoundExpression *BindCallExpression(CallExpressionNode *node);
-    BoundExpression *BindConversion(TypeSymbol type, SyntaxNode *node);
+    BoundExpression *BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit = false);
+    BoundExpression *BindConversion(TextSpan diagnosticSpan, BoundExpression *expression, TypeSymbol type, bool allowExplicit = false);
 };
 
 class Conversion

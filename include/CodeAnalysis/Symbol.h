@@ -3,9 +3,12 @@
 #include <string>
 #include <ostream>
 #include <vector>
+#include "CodeAnalysis/SyntaxTree.h"
 enum class SymbolKind
 {
     Variable,
+    LocalVariable,
+    GlobalVariable,
     Type,
     Function,
     Parameter
@@ -36,6 +39,7 @@ public:
     static const TypeSymbol String;
     static const TypeSymbol Error;
     static const TypeSymbol Void;
+    static const TypeSymbol Null;
     virtual SymbolKind GetKind() const override
     {
         return SymbolKind::Type;
@@ -105,7 +109,28 @@ namespace std
     };
 }
 
-class ParameterSymbol : public VariableSymbol
+class LocalVariableSymbol : public VariableSymbol
+{
+public:
+    SymbolKind GetKind() const override
+    {
+        return SymbolKind::LocalVariable;
+    }
+
+    LocalVariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : VariableSymbol(name, isReadOnly, type) {}
+};
+
+class GlobalVariableSymbol : public VariableSymbol
+{
+public:
+    SymbolKind GetKind() const override
+    {
+        return SymbolKind::GlobalVariable;
+    }
+
+    GlobalVariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : VariableSymbol(name, isReadOnly, type) {}
+};
+class ParameterSymbol : public LocalVariableSymbol
 {
 
 public:
@@ -114,7 +139,7 @@ public:
         return SymbolKind::Parameter;
     }
 
-    ParameterSymbol(std::string name, TypeSymbol type) : VariableSymbol(name, true, type) {}
+    ParameterSymbol(std::string name, TypeSymbol type) : LocalVariableSymbol(name, true, type) {}
 };
 
 class FunctionSymbol : public Symbol
@@ -125,10 +150,11 @@ public:
         return SymbolKind::Function;
     }
 
-    FunctionSymbol(std::string name, std::vector<ParameterSymbol> parameters, TypeSymbol type) : Symbol(name), Parameters(parameters), Type(type) {}
-    FunctionSymbol() : Symbol(""), Parameters({}), Type(TypeSymbol::Error) {};
+    FunctionSymbol(std::string name, std::vector<ParameterSymbol> parameters, TypeSymbol type, FunctionDeclarationSyntax *declaration = nullptr) : Symbol(name), Parameters(parameters), Type(type), Declaration(declaration) {}
+    FunctionSymbol() : Symbol(""), Parameters({}), Type(TypeSymbol::Error), Declaration(nullptr) {};
     std::vector<ParameterSymbol> Parameters;
     TypeSymbol Type;
+    FunctionDeclarationSyntax *Declaration = nullptr;
     friend std::ostream &operator<<(std::ostream &os, const FunctionSymbol &func)
     {
         os << "FunctionSymbol(Name: " << func.Name << ")";
@@ -145,6 +171,18 @@ public:
         return Name == other.Name;
     }
 };
+
+namespace std
+{
+    template <>
+    struct hash<FunctionSymbol>
+    {
+        std::size_t operator()(const FunctionSymbol &symbol) const
+        {
+            return std::hash<std::string>()(symbol.ToString());
+        }
+    };
+}
 
 class BuiltInFunctions
 {

@@ -258,9 +258,10 @@ public:
     Token Keyword;
     TypeClauseNode *TypeClause;
     SyntaxNode *Initializer;
+
     std::vector<SyntaxNode *> GetChildren() const override
     {
-        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Initializer};
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), TypeClause, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Initializer};
     }
 };
 
@@ -367,7 +368,6 @@ class MemberSyntax : public SyntaxNode
 {
 public:
     MemberSyntax(SyntaxKind kind) : SyntaxNode(kind) {}
-    virtual ~MemberSyntax() = 0;
     virtual std::vector<SyntaxNode *> GetChildren() const override
     {
         return {};

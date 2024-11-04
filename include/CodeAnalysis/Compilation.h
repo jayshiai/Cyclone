@@ -28,7 +28,6 @@ public:
     void EmitTree(std::ostream &os);
 
 private:
-    BoundBlockStatement *GetStatement();
     BoundGlobalScope *_globalScope = nullptr;
     SyntaxTree *syntaxTree;
 };

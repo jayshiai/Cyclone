@@ -42,9 +42,16 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     {
         return EvaluationResult(diagnostics, std::any());
     }
-    // Evaluator evaluator = Evaluator(GlobalScope()->Statement, variables);
-    BoundBlockStatement *statement = GetStatement();
-    Evaluator evaluator = Evaluator(statement, variables);
+
+    BoundProgram *program = Binder::BindProgram(GlobalScope());
+
+    if (program->Diagnostics.size() > 0)
+    {
+        diagnostics.insert(diagnostics.end(), program->Diagnostics.begin(), program->Diagnostics.end());
+        return EvaluationResult(diagnostics, std::any());
+    }
+
+    Evaluator evaluator = Evaluator(program, variables);
 
     std::any value = evaluator.Evaluate();
 
@@ -70,14 +77,8 @@ BoundGlobalScope *Compilation::GlobalScope()
 
 void Compilation::EmitTree(std::ostream &os)
 {
-    BoundBlockStatement *statement = GetStatement();
-    statement->WriteTo(os);
-}
-
-BoundBlockStatement *Compilation::GetStatement()
-{
-    BoundStatement *statement = GlobalScope()->Statement;
-    return Lowerer::Lower(statement);
+    BoundProgram *program = Binder::BindProgram(GlobalScope());
+    program->statement->WriteTo(os);
 }
 
 Compilation *Compilation::ContinueWith(SyntaxTree *syntaxTree)

@@ -51,7 +51,7 @@ BoundStatement *Lowerer::RewriteForStatement(BoundForStatement *node)
 {
     BoundVariableDeclaration *variableDeclaration = new BoundVariableDeclaration(node->Variable, node->LowerBound);
     BoundVariableExpression *variableExpression = new BoundVariableExpression(node->Variable);
-    VariableSymbol *upperBoundSymbol = new VariableSymbol("upperBound", true, TypeSymbol::Integer);
+    LocalVariableSymbol *upperBoundSymbol = new LocalVariableSymbol("upperBound", true, TypeSymbol::Integer);
     BoundVariableDeclaration *upperBoundDeclaration = new BoundVariableDeclaration(*upperBoundSymbol, node->UpperBound);
     BoundBinaryOperator *lessOrEquals = BoundBinaryOperator::Bind(SyntaxKind::LESS_EQUALS, TypeSymbol::Integer, TypeSymbol::Integer);
     BoundBinaryExpression *condition = new BoundBinaryExpression(variableExpression, lessOrEquals, new BoundVariableExpression(*upperBoundSymbol));

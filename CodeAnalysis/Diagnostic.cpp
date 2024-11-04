@@ -44,10 +44,24 @@ void DiagnosticBag::ReportUndefinedBinaryOperator(const TextSpan &span, const st
     Report(span, oss.str());
 }
 
+void DiagnosticBag::ReportParameterAlreadyDeclared(TextSpan span, std::string name)
+{
+    std::ostringstream oss;
+    oss << "Parameter '" << name << "' is already declared.";
+    Report(span, oss.str());
+}
+
 void DiagnosticBag::ReportUndefinedName(const TextSpan &span, const std::string &name)
 {
     std::ostringstream oss;
     oss << "Variable '" << name << "' doesn't exist.";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportUndefinedType(const TextSpan &span, const std::string &name)
+{
+    std::ostringstream oss;
+    oss << "Type '" << name << "' doesn't exist.";
     Report(span, oss.str());
 }
 
@@ -60,6 +74,20 @@ void DiagnosticBag::ReportCannotConvert(TextSpan span, std::string fromType, std
 {
     std::ostringstream oss;
     oss << "Cannot convert type " << fromType << " to " << toType << ".";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportCannotConvertImplicitly(const TextSpan &span, const std::string &fromType, const std::string &toType)
+{
+    std::ostringstream oss;
+    oss << "Cannot convert type " << fromType << " to " << toType << " implicitly.";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportSymbolAlreadyDeclared(const TextSpan &span, const std::string &name)
+{
+    std::ostringstream oss;
+    oss << name << "' is already declared.";
     Report(span, oss.str());
 }
 
@@ -101,4 +129,9 @@ void DiagnosticBag::ReportWrongArgumentType(const TextSpan &span, const std::str
 void DiagnosticBag::ReportExpressionMustHaveValue(const TextSpan &span)
 {
     Report(span, "Expression must have a value.");
+}
+
+void DiagnosticBag::XXX_ReportFunctionsAreNotSupportedYet(const TextSpan &span)
+{
+    Report(span, "Functions with Return are not supported yet.");
 }

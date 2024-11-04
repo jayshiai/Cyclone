@@ -37,23 +37,23 @@ std::string convertBoundNodeKind(BoundNodeKind kind)
     }
 }
 
-std::any Evaluator::Evaluate()
+std::any Evaluator::EvaluateStatement(BoundBlockStatement *body)
 {
     std::unordered_map<BoundLabel, int> labelToIndex;
 
-    for (int i = 0; i < _root->Statements.size(); i++)
+    for (int i = 0; i < body->Statements.size(); i++)
     {
-        if (_root->Statements[i]->GetKind() == BoundNodeKind::LabelStatement)
+        if (body->Statements[i]->GetKind() == BoundNodeKind::LabelStatement)
         {
-            BoundLabelStatement *label = static_cast<BoundLabelStatement *>(_root->Statements[i]);
+            BoundLabelStatement *label = static_cast<BoundLabelStatement *>(body->Statements[i]);
             labelToIndex[label->Label] = i + 1;
         }
     }
 
     int index = 0;
-    while (index < _root->Statements.size())
+    while (index < body->Statements.size())
     {
-        BoundStatement *s = _root->Statements[index];
+        BoundStatement *s = body->Statements[index];
 
         switch (s->GetKind())
         {
@@ -99,8 +99,8 @@ std::any Evaluator::Evaluate()
 void Evaluator::EvaluateVariableDeclaration(BoundVariableDeclaration *node)
 {
     std::any value = EvaluateExpression(node->Initializer);
-    _variables[node->Variable] = value;
     _lastValue = value;
+    Assign(node->Variable, value);
 }
 
 void Evaluator::EvaluateExpressionStatement(BoundExpressionStatement *node)
@@ -144,13 +144,23 @@ std::any Evaluator::EvaluateLiteralExpression(BoundLiteralExpression *n)
 
 std::any Evaluator::EvaluateVariableExpression(BoundVariableExpression *n)
 {
-    return _variables[n->Variable];
+
+    if (n->Variable.GetKind() == SymbolKind::GlobalVariable)
+    {
+        std::cout << "GlobalVariable: " << n->Variable.Name << std::endl;
+        return _globals[n->Variable];
+    }
+    else
+    {
+        std::unordered_map<VariableSymbol, std::any> locals = _locals.top();
+        return locals[n->Variable];
+    }
 }
 
 std::any Evaluator::EvaluateAssignmentExpression(BoundAssignmentExpression *n)
 {
-    auto value = EvaluateExpression(n->Expression);
-    _variables[n->Variable] = value;
+    std::any value = EvaluateExpression(n->Expression);
+    Assign(n->Variable, value);
     return value;
 }
 
@@ -255,7 +265,21 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
     }
     else
     {
-        throw std::runtime_error("Unknown function: " + n->Function.Name);
+        std::unordered_map<VariableSymbol, std::any> locals;
+
+        for (int i = 0; i < n->Arguments.size(); i++)
+        {
+            locals[n->Function.Parameters[i]] = EvaluateExpression(n->Arguments[i]);
+        }
+
+        _locals.push(locals);
+
+        BoundBlockStatement *statement = _program->Functions[n->Function];
+        std::any result = EvaluateStatement(statement);
+
+        _locals.pop();
+
+        return result;
     }
 }
 
@@ -279,4 +303,17 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         throw std::runtime_error("Unexpected conversion: " + n->type.Name);
 
     return std::any();
+}
+
+void Evaluator::Assign(VariableSymbol variable, std::any value)
+{
+    if (variable.GetKind() == SymbolKind::GlobalVariable)
+    {
+        _globals[variable] = value;
+    }
+    else
+    {
+        std::unordered_map<VariableSymbol, std::any> locals = _locals.top();
+        locals[variable] = value;
+    }
 }

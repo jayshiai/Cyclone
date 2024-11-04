@@ -40,8 +40,12 @@ public:
     void ReportCannotAssign(TextSpan span, std::string name);
     void ReportUndefinedBinaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &leftType, const std::string &rightType);
 
+    void ReportParameterAlreadyDeclared(TextSpan span, std::string name);
     void ReportUndefinedName(const TextSpan &span, const std::string &name);
-
+    void ReportUndefinedType(const TextSpan &span, const std::string &name);
+    void ReportCannotConvertImplicitly(const TextSpan &span, const std::string &fromType, const std::string &toType);
+    void ReportSymbolAlreadyDeclared(const TextSpan &span, const std::string &name);
+    void XXX_ReportFunctionsAreNotSupportedYet(const TextSpan &span);
     void ReportUndefinedFunction(const TextSpan &span, const std::string &name);
     void ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount);
     void ReportWrongArgumentType(const TextSpan &span, const std::string &name, const std::string &expectedType, const std::string &actualType);
