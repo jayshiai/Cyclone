@@ -239,6 +239,7 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
     {
         std::string input;
         std::cin >> input;
+        std::cout << "\n";
         return input;
     }
     else if (n->Function == BuiltInFunctions::Print)
@@ -250,6 +251,7 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
     else if (n->Function == BuiltInFunctions::Random)
     {
         int max = std::any_cast<int>(EvaluateExpression(n->Arguments[0]));
+
         return rand() % max;
     }
     else
@@ -276,4 +278,6 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
     }
     else
         throw std::runtime_error("Unexpected conversion: " + n->type.Name);
+
+    return std::any();
 }
