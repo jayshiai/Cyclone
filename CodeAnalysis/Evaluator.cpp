@@ -147,13 +147,18 @@ std::any Evaluator::EvaluateVariableExpression(BoundVariableExpression *n)
 
     if (n->Variable.GetKind() == SymbolKind::GlobalVariable)
     {
-        std::cout << "GlobalVariable: " << n->Variable.Name << std::endl;
+
         return _globals[n->Variable];
+    }
+    else if (n->Variable.GetKind() == SymbolKind::LocalVariable)
+    {
+
+        std::unordered_map<VariableSymbol, std::any> locals = _locals.top();
+        return locals[n->Variable];
     }
     else
     {
-        std::unordered_map<VariableSymbol, std::any> locals = _locals.top();
-        return locals[n->Variable];
+        throw std::runtime_error("Unexpected variable kind");
     }
 }
 

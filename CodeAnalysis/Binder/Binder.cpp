@@ -74,7 +74,7 @@ VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymb
 {
     std::string name = identifier.value;
     bool declare = name != "" || !name.empty();
-    VariableSymbol *variable = (_function == nullptr)
+    VariableSymbol *variable = _function == nullptr
                                    ? static_cast<VariableSymbol *>(new GlobalVariableSymbol(name, isReadOnly, type))
                                    : static_cast<VariableSymbol *>(new LocalVariableSymbol(name, isReadOnly, type));
 

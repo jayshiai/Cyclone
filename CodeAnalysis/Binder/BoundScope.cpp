@@ -17,6 +17,7 @@ bool BoundScope::TryLookupVariable(const std::string &name, VariableSymbol &vari
     auto it = _variables.find(name);
     if (it != _variables.end())
     {
+
         variable = it->second;
         return true;
     }

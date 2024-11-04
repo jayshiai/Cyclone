@@ -73,12 +73,13 @@ public:
     std::string Name;
     TypeSymbol Type;
     bool IsReadOnly;
+    SymbolKind Kind;
     VariableSymbol() : Symbol(""), IsReadOnly(false), Type(TypeSymbol::Error) {}
     VariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : Symbol(name), Name(name), IsReadOnly(isReadOnly), Type(type) {}
-
+    VariableSymbol(SymbolKind kind, std::string name, bool isReadOnly, TypeSymbol type) : Symbol(name), Name(name), IsReadOnly(isReadOnly), Type(type), Kind(kind) {}
     SymbolKind GetKind() const override
     {
-        return SymbolKind::Variable;
+        return Kind;
     }
     friend std::ostream &operator<<(std::ostream &os, const VariableSymbol &var)
     {
@@ -117,7 +118,7 @@ public:
         return SymbolKind::LocalVariable;
     }
 
-    LocalVariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : VariableSymbol(name, isReadOnly, type) {}
+    LocalVariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : VariableSymbol(SymbolKind::LocalVariable, name, isReadOnly, type) {}
 };
 
 class GlobalVariableSymbol : public VariableSymbol
@@ -128,7 +129,7 @@ public:
         return SymbolKind::GlobalVariable;
     }
 
-    GlobalVariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : VariableSymbol(name, isReadOnly, type) {}
+    GlobalVariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : VariableSymbol(SymbolKind::GlobalVariable, name, isReadOnly, type) {}
 };
 class ParameterSymbol : public LocalVariableSymbol
 {
