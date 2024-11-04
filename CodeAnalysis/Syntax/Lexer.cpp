@@ -49,6 +49,10 @@ std::vector<Token> Lexer::tokenize()
             tokens.push_back(Token{SyntaxKind::CLOSE_BRACE, "}", pos});
             advance();
             break;
+        case ':':
+            tokens.push_back(Token{SyntaxKind::COLON, ":", pos});
+            advance();
+            break;
         case ',':
             tokens.push_back(Token{SyntaxKind::COMMA, ",", pos});
             advance();
@@ -340,5 +344,7 @@ SyntaxKind Lexer::checkKeyword(const std::string &keyword)
         return SyntaxKind::FOR_KEYWORD;
     else if (keyword == "to")
         return SyntaxKind::TO_KEYWORD;
+    else if (keyword == "function")
+        return SyntaxKind::FUNCTION_KEYWORD;
     return SyntaxKind::IDENTIFIER;
 }

@@ -23,11 +23,77 @@ Token Parser::peek(int offset)
 
 CompilationUnitNode *Parser::ParseCompilationUnit()
 {
-    StatementSyntax *statement = ParseStatement();
+    std::vector<MemberSyntax *> members = ParseMembers();
     Token endOfFileToken = Expect(SyntaxKind::END_OF_FILE);
-    return new CompilationUnitNode(statement, endOfFileToken);
+    return new CompilationUnitNode(members, endOfFileToken);
+}
+std::vector<MemberSyntax *> Parser::ParseMembers()
+{
+    std::vector<MemberSyntax *> members;
+    while (currentToken.Kind != SyntaxKind::END_OF_FILE)
+    {
+        Token startToken = currentToken;
+        MemberSyntax *member = ParseMember();
+        members.push_back(member);
+
+        if (currentToken == startToken)
+        {
+            NextToken();
+        }
+    }
+    return members;
 }
 
+MemberSyntax *Parser::ParseMember()
+{
+    if (currentToken.Kind == SyntaxKind::FUNCTION_KEYWORD)
+    {
+        return ParseFunctionDeclaration();
+    }
+    return ParseGlobalStatement();
+}
+
+MemberSyntax *Parser::ParseFunctionDeclaration()
+{
+    Token functionKeyword = Expect(SyntaxKind::FUNCTION_KEYWORD);
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    Token openParenthesis = Expect(SyntaxKind::LPAREN);
+    SeparatedSyntaxList<ParameterNode *> parameters = ParseParameterList();
+    Token closeParenthesis = Expect(SyntaxKind::RPAREN);
+    TypeClauseNode *type = ParseOptionalTypeClause();
+    BlockStatementSyntax *body = ParseBlockStatement();
+    return new FunctionDeclarationSyntax(functionKeyword, identifier, openParenthesis, parameters, closeParenthesis, type, body);
+}
+
+SeparatedSyntaxList<ParameterNode *> Parser::ParseParameterList()
+{
+    std::vector<SyntaxNode *> nodesAndSeparators;
+    while (currentToken.Kind != SyntaxKind::RPAREN && currentToken.Kind != SyntaxKind::END_OF_FILE)
+    {
+        ParameterNode *parameter = ParseParameter();
+        nodesAndSeparators.push_back(parameter);
+
+        if (currentToken.Kind != SyntaxKind::RPAREN)
+        {
+            Token *comma = new Token(Expect(SyntaxKind::COMMA));
+            nodesAndSeparators.push_back(comma);
+        }
+    }
+    return SeparatedSyntaxList<ParameterNode *>(nodesAndSeparators);
+}
+
+ParameterNode *Parser::ParseParameter()
+{
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    TypeClauseNode *type = ParseTypeClause();
+    return new ParameterNode(identifier, type);
+}
+
+MemberSyntax *Parser::ParseGlobalStatement()
+{
+    StatementSyntax *statement = ParseStatement();
+    return new GlobalStatementSyntax(statement);
+}
 StatementSyntax *Parser::ParseStatement()
 {
     switch (currentToken.Kind)
@@ -74,9 +140,26 @@ StatementSyntax *Parser::ParseVariableDeclaration()
     SyntaxKind expected = currentToken.Kind == SyntaxKind::LET_KEYWORD ? SyntaxKind::LET_KEYWORD : SyntaxKind::VAR_KEYWORD;
     Token keyword = Expect(expected);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    TypeClauseNode *typeClause = ParseOptionalTypeClause();
     Token equals = Expect(SyntaxKind::EQUALS);
     SyntaxNode *initializer = ParseExpression();
-    return new VariableDeclarationSyntax(keyword, identifier, equals, initializer);
+    return new VariableDeclarationSyntax(keyword, identifier, typeClause, equals, initializer);
+}
+
+TypeClauseNode *Parser::ParseOptionalTypeClause()
+{
+    if (currentToken.Kind != SyntaxKind::COLON)
+    {
+        return nullptr;
+    }
+    return ParseTypeClause();
+}
+
+TypeClauseNode *Parser::ParseTypeClause()
+{
+    Token colon = Expect(SyntaxKind::COLON);
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    return new TypeClauseNode(colon, identifier);
 }
 
 StatementSyntax *Parser::ParseIfStatement()

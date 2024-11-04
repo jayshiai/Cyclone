@@ -33,7 +33,7 @@
 //     OPEN_BRACE,
 //     CLOSE_BRACE,
 //     COMMA,
-
+//     COLON,
 //     TRUE_KEYWORD,
 //     FALSE_KEYWORD,
 //     LET_KEYWORD,
@@ -43,7 +43,7 @@
 //     WHILE_KEYWORD,
 //     FOR_KEYWORD,
 //     TO_KEYWORD,
-
+//     FUNCTION_KEYWORD,
 //     LiteralExpression,
 //     UnaryExpression,
 //     BinaryExpression,
@@ -52,8 +52,11 @@
 //     AssignmentExpression,
 //     CallExpression,
 //     CompilationUnit,
-//     ElseClause,
-
+// FunctionDeclaration,
+// GlobalStatement,
+// Parameter,
+// TypeClause,
+// ElseClause,
 //     ExpressionStatement,
 //     VariableDeclaration,
 //     BlockStatement,
@@ -144,6 +147,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "ForKeyword";
     case SyntaxKind::TO_KEYWORD:
         return "ToKeyword";
+    case SyntaxKind::FUNCTION_KEYWORD:
+        return "FunctionKeyword";
 
     case SyntaxKind::OPEN_BRACE:
         return "OpenBraceToken";
@@ -151,9 +156,22 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "CloseBraceToken";
     case SyntaxKind::COMMA:
         return "CommaToken";
+    case SyntaxKind::COLON:
+        return "ColonToken";
 
     case SyntaxKind::CompilationUnit:
         return "CompilationUnit";
+    case SyntaxKind::FunctionDeclaration:
+        return "FunctionDeclaration";
+    case SyntaxKind::GlobalStatement:
+        return "GlobalStatement";
+    case SyntaxKind::Parameter:
+        return "Parameter";
+    case SyntaxKind::TypeClause:
+        return "TypeClause";
+    case SyntaxKind::ElseClause:
+        return "ElseClause";
+
     case SyntaxKind::ExpressionStatement:
         return "ExpressionStatement";
     case SyntaxKind::VariableDeclaration:

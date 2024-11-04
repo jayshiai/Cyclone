@@ -49,6 +49,16 @@ private:
     SyntaxNode *ParseNameOrCallExpression();
     SyntaxNode *ParseNameExpression();
     SyntaxNode *ParseCallExpression();
+
+    std::vector<MemberSyntax *> ParseMembers();
+    MemberSyntax *ParseMember();
+    MemberSyntax *ParseGlobalStatement();
+    MemberSyntax *ParseFunctionDeclaration();
+    SeparatedSyntaxList<ParameterNode *> ParseParameterList();
+    ParameterNode *ParseParameter();
+
+    TypeClauseNode *ParseOptionalTypeClause();
+    TypeClauseNode *ParseTypeClause();
     SeparatedSyntaxList<SyntaxNode> ParseArguments();
     int GetBinaryPrecedence(SyntaxKind kind);
     int GetUnaryPrecedence(SyntaxKind kind);

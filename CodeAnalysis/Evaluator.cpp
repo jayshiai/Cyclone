@@ -251,7 +251,6 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
     else if (n->Function == BuiltInFunctions::Random)
     {
         int max = std::any_cast<int>(EvaluateExpression(n->Arguments[0]));
-
         return rand() % max;
     }
     else

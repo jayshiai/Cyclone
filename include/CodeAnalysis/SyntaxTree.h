@@ -41,6 +41,7 @@ enum class SyntaxKind
     OPEN_BRACE,
     CLOSE_BRACE,
     COMMA,
+    COLON,
 
     TRUE_KEYWORD,
     FALSE_KEYWORD,
@@ -51,6 +52,7 @@ enum class SyntaxKind
     WHILE_KEYWORD,
     FOR_KEYWORD,
     TO_KEYWORD,
+    FUNCTION_KEYWORD,
 
     LiteralExpression,
     UnaryExpression,
@@ -61,6 +63,10 @@ enum class SyntaxKind
     CallExpression,
 
     CompilationUnit,
+    FunctionDeclaration,
+    GlobalStatement,
+    Parameter,
+    TypeClause,
     ElseClause,
 
     ExpressionStatement,
@@ -152,11 +158,12 @@ inline StatementSyntax::~StatementSyntax() {}
 class VariableDeclarationSyntax : public StatementSyntax
 {
 public:
-    VariableDeclarationSyntax(Token keyword, Token identifier, Token equalsToken, SyntaxNode *initializer)
-        : StatementSyntax(SyntaxKind::VariableDeclaration), Keyword(keyword), Identifier(identifier), EqualsToken(equalsToken), Initializer(initializer) {}
+    VariableDeclarationSyntax(Token keyword, Token identifier, TypeClauseNode *typeClause, Token equalsToken, SyntaxNode *initializer)
+        : StatementSyntax(SyntaxKind::VariableDeclaration), Keyword(keyword), Identifier(identifier), TypeClause(typeClause), EqualsToken(equalsToken), Initializer(initializer) {}
     Token Identifier;
     Token EqualsToken;
     Token Keyword;
+    TypeClauseNode *TypeClause;
     SyntaxNode *Initializer;
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -262,17 +269,83 @@ public:
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&WhileKeyword)), Condition, Body};
     }
 };
+
+class MemberSyntax : public SyntaxNode
+{
+public:
+    MemberSyntax(SyntaxKind kind) : SyntaxNode(kind) {}
+    virtual ~MemberSyntax() = 0;
+    virtual std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {};
+    }
+};
+class GlobalStatementSyntax : public MemberSyntax
+{
+public:
+    GlobalStatementSyntax(StatementSyntax *statement)
+        : MemberSyntax(SyntaxKind::GlobalStatement), Statement(statement) {}
+    StatementSyntax *Statement;
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {Statement};
+    }
+};
+
+class FunctionDeclarationSyntax : public MemberSyntax
+{
+public:
+    FunctionDeclarationSyntax(Token functionKeyword, Token identifier, Token openParenthesisToken, SeparatedSyntaxList<ParameterNode> parameters, Token closeParenthesisToken, TypeClauseNode *type, BlockStatementSyntax *body)
+        : MemberSyntax(SyntaxKind::FunctionDeclaration), FunctionKeyword(functionKeyword), Identifier(identifier), OpenParenthesisToken(openParenthesisToken), Parameters(parameters), CloseParenthesisToken(closeParenthesisToken), Type(type), Body(body) {}
+    Token FunctionKeyword;
+    Token Identifier;
+    Token OpenParenthesisToken;
+    SeparatedSyntaxList<ParameterNode> Parameters;
+    Token CloseParenthesisToken;
+    TypeClauseNode *Type;
+    BlockStatementSyntax *Body;
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        std::vector<SyntaxNode *> children = {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&FunctionKeyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenParenthesisToken))};
+        int index = 0;
+        for (auto parameter : Parameters)
+        {
+            children.push_back(parameter);
+            Token *separator = Parameters.GetSeparator(index);
+            if (separator != nullptr)
+            {
+                children.push_back(separator);
+            }
+            ++index;
+        }
+        children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseParenthesisToken)));
+        if (Type != nullptr)
+        {
+            children.push_back(Type);
+        }
+        children.push_back(Body);
+        return children;
+    }
+};
+
 class CompilationUnitNode : public SyntaxNode
 {
 public:
-    CompilationUnitNode(StatementSyntax *statement, Token endOfFileToken)
-        : SyntaxNode(SyntaxKind::CompilationUnit), Statement(statement), EndOfFileToken(endOfFileToken) {}
+    CompilationUnitNode(std::vector<MemberSyntax *> members, Token endOfFileToken)
+        : SyntaxNode(SyntaxKind::CompilationUnit), Members(members), EndOfFileToken(endOfFileToken) {}
 
-    StatementSyntax *Statement;
+    std::vector<MemberSyntax *> Members;
     Token EndOfFileToken;
     std::vector<SyntaxNode *> GetChildren() const override
     {
-        return {Statement, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EndOfFileToken))};
+        std::vector<SyntaxNode *> children;
+        for (auto member : Members)
+        {
+            children.push_back(member);
+        }
+        children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EndOfFileToken)));
+        return children;
     }
 };
 class LiteralExpressionNode : public SyntaxNode
@@ -460,6 +533,35 @@ public:
         }
         children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseParenthesisToken)));
         return children;
+    }
+};
+
+class TypeClauseNode : public SyntaxNode
+{
+public:
+    Token ColonToken;
+    Token IdentifierToken;
+    TypeClauseNode(Token ColonToken, Token IdentifierToken)
+        : SyntaxNode(SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ColonToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken))};
+    }
+};
+
+class ParameterNode : public SyntaxNode
+{
+public:
+    Token IdentifierToken;
+    TypeClauseNode *Type;
+
+    ParameterNode(Token IdentifierToken, TypeClauseNode *Type)
+        : SyntaxNode(SyntaxKind::Parameter), IdentifierToken(IdentifierToken), Type(Type) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken)), Type};
     }
 };
 
