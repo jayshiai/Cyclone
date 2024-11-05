@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include <iostream>
 #include <any>
+#include <algorithm>
 
 const std::string BLUE = "\033[34m";
 const std::string RESET_COLOR = "\033[0m";
@@ -144,6 +145,8 @@ main()
 
         if (result.Diagnostics.size() > 0)
         {
+            std::sort(result.Diagnostics.begin(), result.Diagnostics.end(), [](const Diagnostic &a, const Diagnostic &b)
+                      { return a.Span.Start < b.Span.Start; });
             for (auto &diagnostic : result.Diagnostics)
             {
                 PrintDiagnostic(diagnostic, Root.Text);
