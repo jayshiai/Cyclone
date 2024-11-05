@@ -55,6 +55,7 @@ enum class SyntaxKind
     FUNCTION_KEYWORD,
     BREAK_KEYWORD,
     CONTINUE_KEYWORD,
+    RETURN_KEYWORD,
 
     LiteralExpression,
     UnaryExpression,
@@ -79,6 +80,7 @@ enum class SyntaxKind
     ForStatement,
     BreakStatement,
     ContinueStatement,
+    ReturnStatement
 
 };
 
@@ -349,6 +351,20 @@ public:
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword))};
+    }
+};
+
+class ReturnStatementSyntax : public StatementSyntax
+{
+public:
+    Token Keyword;
+    SyntaxNode *Expression;
+    ReturnStatementSyntax(Token keyword, SyntaxNode *expression)
+        : StatementSyntax(SyntaxKind::ReturnStatement), Keyword(keyword), Expression(expression) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), Expression};
     }
 };
 class ElseClauseSyntax : public SyntaxNode

@@ -24,6 +24,7 @@ enum class BoundNodeKind
     IfStatement,
     WhileStatement,
     ForStatement,
+    ReturnStatement,
 
     GotoStatement,
     LabelStatement,
@@ -337,6 +338,25 @@ public:
         return {{"Variable", Variable.ToString()}};
     }
 };
+
+class BoundReturnStatement : public BoundStatement
+{
+public:
+    BoundNodeKind kind = BoundNodeKind::ReturnStatement;
+    BoundReturnStatement(BoundExpression *expression) : Expression(expression) {};
+    BoundExpression *Expression;
+    BoundNodeKind GetKind() const override { return kind; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Expression};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Expression", ""}};
+    }
+};
 class BoundUnaryOperator
 {
 public:
@@ -624,6 +644,7 @@ private:
     BoundStatement *BindBreakStatement(BreakStatementSyntax *node);
     BoundStatement *BindContinueStatement(ContinueStatementSyntax *node);
     BoundStatement *BindLoopBody(StatementSyntax *body, BoundLabel *&breakLabel, BoundLabel *&continueLabel);
+    BoundStatement *BindReturnStatement(ReturnStatementSyntax *node);
     BoundStatement *BindErrorStatement();
 
     BoundExpression *BindLiteralExpression(LiteralExpressionNode *node);

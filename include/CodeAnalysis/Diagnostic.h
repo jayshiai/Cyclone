@@ -48,7 +48,10 @@ public:
 
     void ReportInvalidBreakOrContinue(TextSpan span, std::string text);
 
-    void XXX_ReportFunctionsAreNotSupportedYet(const TextSpan &span);
+    void ReportInvalidReturn(TextSpan span);
+    void ReportInvalidReturnExpression(TextSpan span, std::string name);
+    void ReportMissingReturnExpression(TextSpan span, std::string name);
+
     void ReportUndefinedFunction(const TextSpan &span, const std::string &name);
     void ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount);
     void ReportWrongArgumentType(const TextSpan &span, const std::string &name, const std::string &expectedType, const std::string &actualType);

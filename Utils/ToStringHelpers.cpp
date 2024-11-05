@@ -46,6 +46,7 @@
 //     FUNCTION_KEYWORD,
 //      BREAK_KEYWORD,
 //     CONTINUE_KEYWORD,
+//      RETURN_KEYWORD,
 
 //     LiteralExpression,
 //     UnaryExpression,
@@ -158,6 +159,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "BreakKeyword";
     case SyntaxKind::CONTINUE_KEYWORD:
         return "ContinueKeyword";
+    case SyntaxKind::RETURN_KEYWORD:
+        return "ReturnKeyword";
 
     case SyntaxKind::OPEN_BRACE:
         return "OpenBraceToken";
@@ -197,7 +200,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "BreakStatement";
     case SyntaxKind::ContinueStatement:
         return "ContinueStatement";
-
+    case SyntaxKind::ReturnStatement:
+        return "ReturnStatement";
     case SyntaxKind::BAD_TOKEN:
         return "BadToken";
     case SyntaxKind::END_OF_FILE:

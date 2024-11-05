@@ -28,6 +28,8 @@ BoundStatement *Binder::BindStatement(StatementSyntax *node)
         return BindBreakStatement((BreakStatementSyntax *)node);
     case SyntaxKind::ContinueStatement:
         return BindContinueStatement((ContinueStatementSyntax *)node);
+    case SyntaxKind::ReturnStatement:
+        return BindReturnStatement((ReturnStatementSyntax *)node);
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;
@@ -109,6 +111,37 @@ BoundStatement *Binder::BindContinueStatement(ContinueStatementSyntax *node)
         return BindErrorStatement();
     }
     return new BoundGotoStatement(_loopStack.top().second);
+}
+
+BoundStatement *Binder::BindReturnStatement(ReturnStatementSyntax *node)
+{
+    BoundExpression *expression = node->Expression == nullptr ? nullptr : BindExpression(node->Expression);
+    if (_function == nullptr)
+    {
+        _diagnostics.ReportInvalidReturn(node->Keyword.Span);
+    }
+    else
+    {
+        if (_function->Type == TypeSymbol::Void)
+        {
+            if (expression != nullptr)
+            {
+                _diagnostics.ReportInvalidReturnExpression(node->Keyword.Span, _function->Name);
+            }
+        }
+        else
+        {
+            if (expression == nullptr)
+            {
+                _diagnostics.ReportMissingReturnExpression(node->Keyword.Span, _function->Type.ToString());
+            }
+            else
+            {
+                expression = BindConversion(node->Expression->Span(), expression, _function->Type);
+            }
+        }
+    }
+    return new BoundReturnStatement(expression);
 }
 
 BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
@@ -427,10 +460,6 @@ void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
 
     TypeSymbol boundResultType = BindTypeClause(node->Type);
     TypeSymbol returnType = boundResultType != TypeSymbol::Null ? boundResultType : TypeSymbol::Void;
-    if (returnType != TypeSymbol::Void)
-    {
-        _diagnostics.XXX_ReportFunctionsAreNotSupportedYet(node->FunctionKeyword.Span);
-    }
 
     FunctionSymbol function(node->Identifier.value, parameters, returnType, node);
 

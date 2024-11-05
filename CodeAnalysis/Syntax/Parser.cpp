@@ -113,6 +113,8 @@ StatementSyntax *Parser::ParseStatement()
         return ParseBreakStatement();
     case SyntaxKind::CONTINUE_KEYWORD:
         return ParseContinueStatement();
+    case SyntaxKind::RETURN_KEYWORD:
+        return ParseRetrunStatement();
     default:
         return ParseExpressionStatement();
     }
@@ -216,6 +218,17 @@ StatementSyntax *Parser::ParseContinueStatement()
 {
     Token keyword = Expect(SyntaxKind::CONTINUE_KEYWORD);
     return new ContinueStatementSyntax(keyword);
+}
+
+StatementSyntax *Parser::ParseRetrunStatement()
+{
+    Token keyword = Expect(SyntaxKind::RETURN_KEYWORD);
+    int keywordLine = Text.GetLineIndex(keyword.Span.Start);
+    int currentLine = Text.GetLineIndex(currentToken.Span.Start);
+    bool isEof = currentToken.Kind == SyntaxKind::END_OF_FILE;
+    bool isOnSameLine = !isEof && keywordLine == currentLine;
+    SyntaxNode *expression = isOnSameLine ? ParseExpression() : nullptr;
+    return new ReturnStatementSyntax(keyword, expression);
 }
 
 ExpressionStatementSyntax *Parser::ParseExpressionStatement()

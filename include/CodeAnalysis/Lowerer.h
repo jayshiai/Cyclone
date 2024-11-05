@@ -18,6 +18,7 @@ protected:
     virtual BoundStatement *RewriteLabelStatement(BoundLabelStatement *node);
     virtual BoundStatement *RewriteConditionalGotoStatement(BoundConditionalGotoStatement *node);
     virtual BoundStatement *RewriteExpressionStatement(BoundExpressionStatement *node);
+    virtual BoundStatement *RewriteReturnStatement(BoundReturnStatement *node);
 
     virtual BoundExpression *RewriteExpression(BoundExpression *node);
     virtual BoundExpression *RewriteErrorExpression(BoundErrorExpression *node);

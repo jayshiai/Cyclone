@@ -22,6 +22,8 @@ BoundStatement *BoundTreeRewriter::RewriteStatement(BoundStatement *node)
         return RewriteLabelStatement((BoundLabelStatement *)node);
     case BoundNodeKind::ConditionalGotoStatement:
         return RewriteConditionalGotoStatement((BoundConditionalGotoStatement *)node);
+    case BoundNodeKind::ReturnStatement:
+        return RewriteReturnStatement((BoundReturnStatement *)node);
     default:
         return node;
     }
@@ -107,6 +109,15 @@ BoundStatement *BoundTreeRewriter::RewriteConditionalGotoStatement(BoundConditio
         return node;
 
     return new BoundConditionalGotoStatement(node->Label, condition, node->JumpIfTrue);
+}
+
+BoundStatement *BoundTreeRewriter::RewriteReturnStatement(BoundReturnStatement *node)
+{
+    BoundExpression *expression = node->Expression == nullptr ? nullptr : RewriteExpression(node->Expression);
+    if (expression == node->Expression)
+        return node;
+
+    return new BoundReturnStatement(expression);
 }
 
 BoundStatement *BoundTreeRewriter::RewriteExpressionStatement(BoundExpressionStatement *node)

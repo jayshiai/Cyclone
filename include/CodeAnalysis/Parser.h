@@ -39,6 +39,7 @@ private:
     BlockStatementSyntax *ParseBlockStatement();
     StatementSyntax *ParseBreakStatement();
     StatementSyntax *ParseContinueStatement();
+    StatementSyntax *ParseRetrunStatement();
 
     SyntaxNode *ParseAssignmentExpression();
     SyntaxNode *ParseExpression();

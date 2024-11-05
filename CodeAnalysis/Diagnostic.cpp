@@ -138,7 +138,21 @@ void DiagnosticBag::ReportInvalidBreakOrContinue(TextSpan span, std::string text
     Report(span, oss.str());
 }
 
-void DiagnosticBag::XXX_ReportFunctionsAreNotSupportedYet(const TextSpan &span)
+void DiagnosticBag::ReportInvalidReturn(TextSpan span)
 {
-    Report(span, "Functions with Return are not supported yet.");
+    Report(span, "The 'return' keyword can only be used inside of functions.");
+}
+
+void DiagnosticBag::ReportInvalidReturnExpression(TextSpan span, std::string name)
+{
+    std::ostringstream oss;
+    oss << "Since the function'" << name << "' does not return a value the 'return' keyword cannot be followed by an expression.";
+    Report(span, oss.str());
+}
+
+void DiagnosticBag::ReportMissingReturnExpression(TextSpan span, std::string name)
+{
+    std::ostringstream oss;
+    oss << "An expression of type '" << name << "' expected.";
+    Report(span, oss.str());
 }

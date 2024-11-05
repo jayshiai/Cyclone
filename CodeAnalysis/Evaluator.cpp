@@ -32,6 +32,14 @@ std::string convertBoundNodeKind(BoundNodeKind kind)
         return "WhileStatement";
     case BoundNodeKind::ForStatement:
         return "ForStatement";
+    case BoundNodeKind::GotoStatement:
+        return "GotoStatement";
+    case BoundNodeKind::LabelStatement:
+        return "LabelStatement";
+    case BoundNodeKind::ConditionalGotoStatement:
+        return "ConditionalGotoStatement";
+    case BoundNodeKind::ReturnStatement:
+        return "ReturnStatement";
     default:
         return "Unknown";
     }
@@ -88,6 +96,12 @@ std::any Evaluator::EvaluateStatement(BoundBlockStatement *body)
         case BoundNodeKind::LabelStatement:
             index++;
             break;
+        case BoundNodeKind::ReturnStatement:
+        {
+            BoundReturnStatement *rs = (BoundReturnStatement *)s;
+            _lastValue = rs->Expression == nullptr ? std::any() : EvaluateExpression(rs->Expression);
+            return _lastValue;
+        }
         default:
             throw std::runtime_error("Unexpected node kind");
         }
