@@ -302,9 +302,30 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
 
     if (node->Arguments.Count() != function.Parameters.size())
     {
-        _diagnostics.ReportWrongArgumentCount(node->Span(), node->IdentifierToken.value, function.Parameters.size(), node->Arguments.Count());
+        TextSpan Span(0, 0);
+        if (node->Arguments.Count() > function.Parameters.size())
+        {
+            TextSpan firstExceedingNode(0, 0);
+            if (function.Parameters.size() > 0)
+            {
+                firstExceedingNode = node->Arguments.GetSeparator(function.Parameters.size() - 1)->Span;
+            }
+            else
+            {
+                firstExceedingNode = node->Arguments[0]->Span();
+            }
+
+            Span = TextSpan::FromBounds(firstExceedingNode.Start, node->CloseParenthesisToken.Span.End);
+        }
+        else
+        {
+            Span = node->CloseParenthesisToken.Span;
+        }
+        _diagnostics.ReportWrongArgumentCount(Span, function.Name, function.Parameters.size(), node->Arguments.Count());
         return new BoundErrorExpression();
     }
+
+    bool hasErrors = false;
 
     for (int i = 0; i < node->Arguments.Count(); i++)
     {
@@ -312,11 +333,17 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
         ParameterSymbol parameter = function.Parameters[i];
         if (argument->type != parameter.Type)
         {
-            _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Span(), parameter.Name, parameter.Type.ToString(), argument->type.ToString());
-            return new BoundErrorExpression();
+            if (argument->type != TypeSymbol::Error)
+            {
+                _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Span(), parameter.Name, parameter.Type.ToString(), argument->type.ToString());
+            }
+
+            hasErrors = true;
         }
     }
 
+    if (hasErrors)
+        return new BoundErrorExpression();
     return new BoundCallExpression(function, boundArguments);
 }
 BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)

@@ -137,6 +137,7 @@ public:
     std::string value;
     size_t position;
     TextSpan Span;
+
     Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
     Token() : SyntaxNode(SyntaxKind::BAD_TOKEN), Span(TextSpan(0, 0)) {};
     Token(const Token &other)
