@@ -131,6 +131,13 @@ void DiagnosticBag::ReportExpressionMustHaveValue(const TextSpan &span)
     Report(span, "Expression must have a value.");
 }
 
+void DiagnosticBag::ReportInvalidBreakOrContinue(TextSpan span, std::string text)
+{
+    std::ostringstream oss;
+    oss << "The keyword '" << text << "' can only be used inside of loops.";
+    Report(span, oss.str());
+}
+
 void DiagnosticBag::XXX_ReportFunctionsAreNotSupportedYet(const TextSpan &span)
 {
     Report(span, "Functions with Return are not supported yet.");

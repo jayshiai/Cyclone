@@ -346,5 +346,9 @@ SyntaxKind Lexer::checkKeyword(const std::string &keyword)
         return SyntaxKind::TO_KEYWORD;
     else if (keyword == "function")
         return SyntaxKind::FUNCTION_KEYWORD;
+    else if (keyword == "break")
+        return SyntaxKind::BREAK_KEYWORD;
+    else if (keyword == "continue")
+        return SyntaxKind::CONTINUE_KEYWORD;
     return SyntaxKind::IDENTIFIER;
 }

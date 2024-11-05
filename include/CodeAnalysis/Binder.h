@@ -5,6 +5,7 @@
 #include "CodeAnalysis/Symbol.h"
 #include <unordered_map>
 #include <any>
+#include <stack>
 enum class BoundNodeKind
 {
     LiteralExpression,
@@ -277,10 +278,28 @@ public:
     }
 };
 
-class BoundWhileStatement : public BoundStatement
+class BoundLoopStatement : public BoundStatement
 {
 public:
-    BoundWhileStatement(BoundExpression *condition, BoundStatement *body) : Condition(condition), Body(body) {};
+    BoundLoopStatement(BoundLabel *breakLabel, BoundLabel *continueLabel) : BreakLabel(breakLabel), ContinueLabel(continueLabel) {};
+    BoundLabel *BreakLabel;
+    BoundLabel *ContinueLabel;
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"BreakLabel", BreakLabel->ToString()}, {"ContinueLabel", ContinueLabel->ToString()}};
+    }
+};
+
+class BoundWhileStatement : public BoundLoopStatement
+{
+public:
+    BoundWhileStatement(BoundExpression *condition, BoundStatement *body, BoundLabel *breakLabel, BoundLabel *continueLabel) : BoundLoopStatement(breakLabel, continueLabel), Condition(condition), Body(body) {};
     BoundExpression *Condition;
     BoundStatement *Body;
     BoundNodeKind kind = BoundNodeKind::WhileStatement;
@@ -297,10 +316,10 @@ public:
     }
 };
 
-class BoundForStatement : public BoundStatement
+class BoundForStatement : public BoundLoopStatement
 {
 public:
-    BoundForStatement(VariableSymbol variable, BoundExpression *lowerBound, BoundExpression *upperBound, BoundStatement *body) : Variable(variable), LowerBound(lowerBound), UpperBound(upperBound), Body(body) {};
+    BoundForStatement(VariableSymbol variable, BoundExpression *lowerBound, BoundExpression *upperBound, BoundStatement *body, BoundLabel *breakLabel, BoundLabel *continueLabel) : BoundLoopStatement(breakLabel, continueLabel), Variable(variable), LowerBound(lowerBound), UpperBound(upperBound), Body(body) {};
     VariableSymbol Variable;
     BoundExpression *LowerBound;
     BoundExpression *UpperBound;
@@ -580,6 +599,8 @@ private:
     DiagnosticBag _diagnostics;
     BoundScope *_scope;
     FunctionSymbol *_function;
+    std::stack<std::pair<BoundLabel, BoundLabel>> _loopStack;
+    int _labelCounter = 0;
 
     TypeSymbol LookupType(std::string name);
     BoundExpression *BindExpression(SyntaxNode *node, bool canBeVoid = false);
@@ -600,6 +621,10 @@ private:
     BoundStatement *BindIfStatement(IfStatementSyntax *node);
     BoundStatement *BindWhileStatement(WhileStatementSyntax *node);
     BoundStatement *BindForStatement(ForStatementSyntax *node);
+    BoundStatement *BindBreakStatement(BreakStatementSyntax *node);
+    BoundStatement *BindContinueStatement(ContinueStatementSyntax *node);
+    BoundStatement *BindLoopBody(StatementSyntax *body, BoundLabel *&breakLabel, BoundLabel *&continueLabel);
+    BoundStatement *BindErrorStatement();
 
     BoundExpression *BindLiteralExpression(LiteralExpressionNode *node);
     BoundExpression *BindUnaryExpression(UnaryExpressionNode *node);

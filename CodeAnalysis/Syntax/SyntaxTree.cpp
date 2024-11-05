@@ -57,7 +57,10 @@ void SyntaxNode::PrettyPrint(std::ostream &os, SyntaxNode *node, std::string ind
 
     else
     {
-        os << convertSyntaxKindToString(node->Kind);
+        if (node != nullptr)
+        {
+            os << convertSyntaxKindToString(node->Kind);
+        }
     }
 
     os << RESET_COLOR << std::endl;

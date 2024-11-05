@@ -109,6 +109,10 @@ StatementSyntax *Parser::ParseStatement()
         return ParseWhileStatement();
     case SyntaxKind::FOR_KEYWORD:
         return ParseForStatement();
+    case SyntaxKind::BREAK_KEYWORD:
+        return ParseBreakStatement();
+    case SyntaxKind::CONTINUE_KEYWORD:
+        return ParseContinueStatement();
     default:
         return ParseExpressionStatement();
     }
@@ -201,6 +205,19 @@ StatementSyntax *Parser::ParseForStatement()
     StatementSyntax *body = ParseStatement();
     return new ForStatementSyntax(keyword, identifier, equals, lowerBound, toKeyword, upperBound, body);
 }
+
+StatementSyntax *Parser::ParseBreakStatement()
+{
+    Token keyword = Expect(SyntaxKind::BREAK_KEYWORD);
+    return new BreakStatementSyntax(keyword);
+}
+
+StatementSyntax *Parser::ParseContinueStatement()
+{
+    Token keyword = Expect(SyntaxKind::CONTINUE_KEYWORD);
+    return new ContinueStatementSyntax(keyword);
+}
+
 ExpressionStatementSyntax *Parser::ParseExpressionStatement()
 {
     SyntaxNode *expression = ParseExpression();

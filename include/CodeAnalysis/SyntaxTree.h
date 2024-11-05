@@ -53,6 +53,8 @@ enum class SyntaxKind
     FOR_KEYWORD,
     TO_KEYWORD,
     FUNCTION_KEYWORD,
+    BREAK_KEYWORD,
+    CONTINUE_KEYWORD,
 
     LiteralExpression,
     UnaryExpression,
@@ -75,6 +77,8 @@ enum class SyntaxKind
     IfStatement,
     WhileStatement,
     ForStatement,
+    BreakStatement,
+    ContinueStatement,
 
 };
 
@@ -246,6 +250,11 @@ public:
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ColonToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken))};
     }
+
+    TextSpan Span() const override
+    {
+        return TextSpan(ColonToken.Span.Start, IdentifierToken.Span.End);
+    }
 };
 
 class VariableDeclarationSyntax : public StatementSyntax
@@ -261,7 +270,7 @@ public:
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
-        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), TypeClause, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Initializer};
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Initializer};
     }
 };
 
@@ -315,7 +324,32 @@ public:
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), LowerBound, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&ToKeyword)), UpperBound, Body};
     }
 };
+class BreakStatementSyntax : public StatementSyntax
+{
+public:
+    Token Keyword;
+    BreakStatementSyntax(Token keyword)
+        : StatementSyntax(SyntaxKind::BreakStatement), Keyword(keyword) {}
 
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword))};
+    }
+};
+
+class ContinueStatementSyntax : public StatementSyntax
+{
+
+public:
+    Token Keyword;
+    ContinueStatementSyntax(Token keyword)
+        : StatementSyntax(SyntaxKind::ContinueStatement), Keyword(keyword) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword))};
+    }
+};
 class ElseClauseSyntax : public SyntaxNode
 {
 public:

@@ -45,6 +45,9 @@ public:
     void ReportUndefinedType(const TextSpan &span, const std::string &name);
     void ReportCannotConvertImplicitly(const TextSpan &span, const std::string &fromType, const std::string &toType);
     void ReportSymbolAlreadyDeclared(const TextSpan &span, const std::string &name);
+
+    void ReportInvalidBreakOrContinue(TextSpan span, std::string text);
+
     void XXX_ReportFunctionsAreNotSupportedYet(const TextSpan &span);
     void ReportUndefinedFunction(const TextSpan &span, const std::string &name);
     void ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount);

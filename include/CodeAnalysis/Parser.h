@@ -37,6 +37,8 @@ private:
     StatementSyntax *ParseVariableDeclaration();
     ExpressionStatementSyntax *ParseExpressionStatement();
     BlockStatementSyntax *ParseBlockStatement();
+    StatementSyntax *ParseBreakStatement();
+    StatementSyntax *ParseContinueStatement();
 
     SyntaxNode *ParseAssignmentExpression();
     SyntaxNode *ParseExpression();

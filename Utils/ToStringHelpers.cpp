@@ -44,6 +44,9 @@
 //     FOR_KEYWORD,
 //     TO_KEYWORD,
 //     FUNCTION_KEYWORD,
+//      BREAK_KEYWORD,
+//     CONTINUE_KEYWORD,
+
 //     LiteralExpression,
 //     UnaryExpression,
 //     BinaryExpression,
@@ -63,6 +66,8 @@
 //     IfStatement,
 //     WhileStatement,
 //     ForStatement,
+//      BreakStatement,
+//     ContinueStatement,
 
 // };
 std::string convertSyntaxKindToString(SyntaxKind kind)
@@ -149,6 +154,10 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "ToKeyword";
     case SyntaxKind::FUNCTION_KEYWORD:
         return "FunctionKeyword";
+    case SyntaxKind::BREAK_KEYWORD:
+        return "BreakKeyword";
+    case SyntaxKind::CONTINUE_KEYWORD:
+        return "ContinueKeyword";
 
     case SyntaxKind::OPEN_BRACE:
         return "OpenBraceToken";
@@ -184,6 +193,10 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "WhileStatement";
     case SyntaxKind::ForStatement:
         return "ForStatement";
+    case SyntaxKind::BreakStatement:
+        return "BreakStatement";
+    case SyntaxKind::ContinueStatement:
+        return "ContinueStatement";
 
     case SyntaxKind::BAD_TOKEN:
         return "BadToken";

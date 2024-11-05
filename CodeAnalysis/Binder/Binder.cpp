@@ -24,14 +24,24 @@ BoundStatement *Binder::BindStatement(StatementSyntax *node)
         return BindWhileStatement((WhileStatementSyntax *)node);
     case SyntaxKind::ForStatement:
         return BindForStatement((ForStatementSyntax *)node);
+    case SyntaxKind::BreakStatement:
+        return BindBreakStatement((BreakStatementSyntax *)node);
+    case SyntaxKind::ContinueStatement:
+        return BindContinueStatement((ContinueStatementSyntax *)node);
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;
     }
 }
 
+BoundStatement *Binder::BindErrorStatement()
+{
+    return new BoundExpressionStatement(new BoundErrorExpression());
+}
+
 BoundStatement *Binder::BindIfStatement(IfStatementSyntax *node)
 {
+
     BoundExpression *condition = BindExpression(node->Condition, TypeSymbol::Boolean);
 
     BoundStatement *thenStatement = BindStatement(node->ThenStatement);
@@ -42,8 +52,13 @@ BoundStatement *Binder::BindIfStatement(IfStatementSyntax *node)
 BoundStatement *Binder::BindWhileStatement(WhileStatementSyntax *node)
 {
     BoundExpression *condition = BindExpression(node->Condition, TypeSymbol::Boolean);
-    BoundStatement *body = BindStatement(node->Body);
-    return new BoundWhileStatement(condition, body);
+
+    BoundLabel *breakLabel = nullptr;
+    BoundLabel *continueLabel = nullptr;
+
+    BoundStatement *body = BindLoopBody(node->Body, breakLabel, continueLabel);
+
+    return new BoundWhileStatement(condition, body, breakLabel, continueLabel);
 }
 
 BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
@@ -52,9 +67,48 @@ BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
     BoundExpression *upperBound = BindExpression(node->UpperBound, TypeSymbol::Integer);
     _scope = new BoundScope(_scope);
     VariableSymbol *variable = BindVariable(node->Identifier, false, TypeSymbol::Integer);
-    BoundStatement *body = BindStatement(node->Body);
+
+    BoundLabel *breakLabel = nullptr;
+    BoundLabel *continueLabel = nullptr;
+    BoundStatement *body = BindLoopBody(node->Body, breakLabel, continueLabel);
+
+    std::cout << breakLabel->Name << std::endl;
     _scope = _scope->Parent;
-    return new BoundForStatement(*variable, lowerBound, upperBound, body);
+    return new BoundForStatement(*variable, lowerBound, upperBound, body, breakLabel, continueLabel);
+}
+
+BoundStatement *Binder::BindLoopBody(StatementSyntax *body, BoundLabel *&breakLabel, BoundLabel *&continueLabel)
+{
+    _labelCounter++;
+
+    breakLabel = new BoundLabel("break" + std::to_string(_labelCounter));
+    continueLabel = new BoundLabel("continue" + std::to_string(_labelCounter));
+
+    _loopStack.push(std::make_pair(*breakLabel, *continueLabel));
+    BoundStatement *boundBody = BindStatement(body);
+    _loopStack.pop();
+
+    return boundBody;
+}
+
+BoundStatement *Binder::BindBreakStatement(BreakStatementSyntax *node)
+{
+    if (_loopStack.empty())
+    {
+        _diagnostics.ReportInvalidBreakOrContinue(node->Keyword.Span, node->Keyword.value);
+        return BindErrorStatement();
+    }
+    return new BoundGotoStatement(_loopStack.top().first);
+}
+
+BoundStatement *Binder::BindContinueStatement(ContinueStatementSyntax *node)
+{
+    if (_loopStack.empty())
+    {
+        _diagnostics.ReportInvalidBreakOrContinue(node->Keyword.Span, node->Keyword.value);
+        return BindErrorStatement();
+    }
+    return new BoundGotoStatement(_loopStack.top().second);
 }
 
 BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
