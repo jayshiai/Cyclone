@@ -33,18 +33,20 @@ BoundStatement *Lowerer::RewriteIfStatement(BoundIfStatement *node)
 
 BoundStatement *Lowerer::RewriteWhileStatement(BoundWhileStatement *node)
 {
-    BoundLabel *checkLabel = GenerateLabel();
+    BoundLabel *bodyLabel = GenerateLabel();
 
-    BoundGotoStatement *gotoCheck = new BoundGotoStatement(*checkLabel);
+    BoundGotoStatement *gotoContinue = new BoundGotoStatement(*node->ContinueLabel);
+    BoundLabelStatement *bodyLabelStatement = new BoundLabelStatement(*bodyLabel);
+
     BoundLabelStatement *continueLabelStatement = new BoundLabelStatement(*node->ContinueLabel);
-    BoundLabelStatement *checkLabelStatement = new BoundLabelStatement(*checkLabel);
-    BoundConditionalGotoStatement *gotoTrue = new BoundConditionalGotoStatement(*node->ContinueLabel, node->Condition);
+
+    BoundConditionalGotoStatement *gotoTrue = new BoundConditionalGotoStatement(*bodyLabel, node->Condition);
     BoundLabelStatement *breakLabelStatement = new BoundLabelStatement(*node->BreakLabel);
 
-    BoundBlockStatement *result = new BoundBlockStatement({gotoCheck,
-                                                           continueLabelStatement,
+    BoundBlockStatement *result = new BoundBlockStatement({gotoContinue,
+                                                           bodyLabelStatement,
                                                            node->Body,
-                                                           checkLabelStatement,
+                                                           continueLabelStatement,
                                                            gotoTrue,
                                                            breakLabelStatement});
     return RewriteStatement(result);
