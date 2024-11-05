@@ -235,12 +235,16 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
             return std::any_cast<int>(left) == std::any_cast<int>(right);
         if (left.type() == typeid(bool) && right.type() == typeid(bool))
             return std::any_cast<bool>(left) == std::any_cast<bool>(right);
+        if (left.type() == typeid(std::string) && right.type() == typeid(std::string))
+            return std::any_cast<std::string>(left) == std::any_cast<std::string>(right);
         throw std::runtime_error("Unexpected types for equality comparison");
     case BoundBinaryOperatorKind::NotEquals:
         if (left.type() == typeid(int) && right.type() == typeid(int))
             return std::any_cast<int>(left) != std::any_cast<int>(right);
         if (left.type() == typeid(bool) && right.type() == typeid(bool))
             return std::any_cast<bool>(left) != std::any_cast<bool>(right);
+        if (left.type() == typeid(std::string) && right.type() == typeid(std::string))
+            return std::any_cast<std::string>(left) != std::any_cast<std::string>(right);
         throw std::runtime_error("Unexpected types for inequality comparison");
     default:
         throw std::runtime_error("Unexpected binary operator");

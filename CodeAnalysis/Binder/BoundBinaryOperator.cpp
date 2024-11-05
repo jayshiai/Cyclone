@@ -23,6 +23,8 @@ const std::vector<BoundBinaryOperator> BoundBinaryOperator::operators{
     BoundBinaryOperator(SyntaxKind::DIVIDE, BoundBinaryOperatorKind::Division, TypeSymbol::Integer),
 
     BoundBinaryOperator(SyntaxKind::PLUS, BoundBinaryOperatorKind::Addition, TypeSymbol::String),
+    BoundBinaryOperator(SyntaxKind::EQUALS_EQUALS, BoundBinaryOperatorKind::Equals, TypeSymbol::String, TypeSymbol::Boolean),
+    BoundBinaryOperator(SyntaxKind::BANG_EQUALS, BoundBinaryOperatorKind::NotEquals, TypeSymbol::String, TypeSymbol::Boolean),
 
     BoundBinaryOperator(SyntaxKind::AMPERSAND, BoundBinaryOperatorKind::BitwiseAnd, TypeSymbol::Integer),
     BoundBinaryOperator(SyntaxKind::PIPE, BoundBinaryOperatorKind::BitwiseOr, TypeSymbol::Integer),
