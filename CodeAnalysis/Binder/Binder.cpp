@@ -2,6 +2,7 @@
 #include "CodeAnalysis/SyntaxTree.h"
 #include "CodeAnalysis/Symbol.h"
 #include "CodeAnalysis/Lowerer.h"
+#include "CodeAnalysis/ControlFlowGraph.h"
 #include "Utils.h"
 #include <iostream>
 #include <algorithm>
@@ -424,6 +425,11 @@ BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
             Binder binder(&parentScope, &function);
             BoundStatement *body = binder.BindStatement(function.Declaration->Body);
             BoundBlockStatement *loweredBody = Lowerer::Lower(body);
+
+            if (function.Type != TypeSymbol::Void && !ControlFlowGraph::AllPathsReturn(loweredBody))
+            {
+                binder._diagnostics.ReportAllPathsMustReturn(function.Declaration->Identifier.Span);
+            }
             functions[function] = loweredBody;
 
             diagnostics.insert(diagnostics.end(), binder.GetDiagnostics().GetDiagnostics().begin(), binder.GetDiagnostics().GetDiagnostics().end());

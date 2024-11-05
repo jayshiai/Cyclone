@@ -156,3 +156,8 @@ void DiagnosticBag::ReportMissingReturnExpression(TextSpan span, std::string nam
     oss << "An expression of type '" << name << "' expected.";
     Report(span, oss.str());
 }
+
+void DiagnosticBag::ReportAllPathsMustReturn(TextSpan span)
+{
+    Report(span, "Not all code paths return a value.");
+}

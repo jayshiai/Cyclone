@@ -47,7 +47,7 @@ public:
     void ReportSymbolAlreadyDeclared(const TextSpan &span, const std::string &name);
 
     void ReportInvalidBreakOrContinue(TextSpan span, std::string text);
-
+    void ReportAllPathsMustReturn(TextSpan span);
     void ReportInvalidReturn(TextSpan span);
     void ReportInvalidReturnExpression(TextSpan span, std::string name);
     void ReportMissingReturnExpression(TextSpan span, std::string name);
