@@ -19,6 +19,8 @@ public:
     {
         return _diagnostics;
     }
+    static int GetBinaryPrecedence(SyntaxKind kind);
+    static int GetUnaryPrecedence(SyntaxKind kind);
 
 private:
     SourceText Text;
@@ -63,8 +65,6 @@ private:
     TypeClauseNode *ParseOptionalTypeClause();
     TypeClauseNode *ParseTypeClause();
     SeparatedSyntaxList<SyntaxNode> ParseArguments();
-    int GetBinaryPrecedence(SyntaxKind kind);
-    int GetUnaryPrecedence(SyntaxKind kind);
 };
 
 #endif

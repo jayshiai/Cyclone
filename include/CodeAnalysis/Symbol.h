@@ -4,6 +4,7 @@
 #include <ostream>
 #include <vector>
 #include "CodeAnalysis/SyntaxTree.h"
+#include "CodeAnalysis/IndentedTextWriter.h"
 enum class SymbolKind
 {
     Variable,
@@ -18,9 +19,14 @@ class Symbol
 {
 public:
     std::string Name;
-    std::string ToString() const
+
+    void WriteTo(std::ostream &os);
+    void WriteTo(IndentedTextWriter &writer);
+    std::string ToString()
     {
-        return Name;
+        std::ostringstream writer;
+        WriteTo(writer);
+        return writer.str();
     }
     virtual SymbolKind GetKind() const = 0;
 
@@ -196,5 +202,18 @@ public:
     {
         return {Print, Input, Random};
     }
+};
+
+class SymbolPrinter
+{
+public:
+    static void WriteTo(const Symbol *symbol, IndentedTextWriter &writer);
+
+private:
+    static void WriteFunctionTo(const FunctionSymbol *symbol, IndentedTextWriter &writer);
+    static void WriteGlobalVariableTo(const GlobalVariableSymbol *symbol, IndentedTextWriter &writer);
+    static void WriteLocalVariableTo(const LocalVariableSymbol *symbol, IndentedTextWriter &writer);
+    // static void WriteParameterTo(const ParameterSymbol *symbol, IndentedTextWriter &writer);
+    // static void WriteTypeTo(const TypeSymbol *symbol, IndentedTextWriter &writer);
 };
 #endif

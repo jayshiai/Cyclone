@@ -3,6 +3,7 @@
 
 #include "CodeAnalysis/SyntaxTree.h"
 #include "CodeAnalysis/Symbol.h"
+#include "CodeAnalysis/IndentedTextWriter.h"
 #include <unordered_map>
 #include <any>
 #include <stack>
@@ -68,7 +69,7 @@ public:
     BoundNodeKind kind;
     virtual std::vector<BoundNode *> GetChildren() const { return {}; }
     virtual BoundNodeKind GetKind() const = 0;
-    void WriteTo(std::ostream &os)
+    void PrintTo(std::ostream &os)
     {
         PrettyPrint(os, this);
     }
@@ -77,11 +78,19 @@ public:
     {
         return {};
     }
-
+    void WriteTo(std::ostream &os);
+    void WriteTo(IndentedTextWriter &writer);
     friend std::ostream &operator<<(std::ostream &out, BoundNode &node)
     {
         node.WriteTo(out);
         return out;
+    }
+
+    std::string ToString()
+    {
+        std::ostringstream writer;
+        WriteTo(writer);
+        return writer.str();
     }
 
 private:
@@ -674,5 +683,36 @@ public:
 
 private:
     Conversion(bool exists, bool inIdentity, bool isImplicit) : Exists(exists), IsIdentity(inIdentity), IsImplicit(isImplicit), IsExplicit(exists && !isImplicit) {}
+};
+
+class BoundNodePrinter
+{
+
+public:
+    static void WriteTo(const BoundNode *node, std::ostream &os);
+    static void WriteTo(const BoundNode *node, IndentedTextWriter &writer);
+
+private:
+    static void WriteNestedStatement(const BoundStatement *node, IndentedTextWriter &writer);
+    static void WriteNestedExpression(const BoundExpression *node, int parentPrecedence, IndentedTextWriter &writer);
+    static void WriteNestedExpression(const BoundExpression *node, int parentPrecedence, int currentPrecedence, IndentedTextWriter &writer);
+    static void WriteBlockStatement(const BoundBlockStatement *node, IndentedTextWriter &writer);
+    static void WriteVariableDeclaration(const BoundVariableDeclaration *node, IndentedTextWriter &writer);
+    static void WriteIfStatement(const BoundIfStatement *node, IndentedTextWriter &writer);
+    static void WriteWhileStatement(const BoundWhileStatement *node, IndentedTextWriter &writer);
+    static void WriteForStatement(const BoundForStatement *node, IndentedTextWriter &writer);
+    static void WriteLabelStatement(const BoundLabelStatement *node, IndentedTextWriter &writer);
+    static void WriteGotoStatement(const BoundGotoStatement *node, IndentedTextWriter &writer);
+    static void WriteConditionalGotoStatement(const BoundConditionalGotoStatement *node, IndentedTextWriter &writer);
+    static void WriteReturnStatement(const BoundReturnStatement *node, IndentedTextWriter &writer);
+    static void WriteExpressionStatement(const BoundExpressionStatement *node, IndentedTextWriter &writer);
+    static void WriteErrorExpression(const BoundErrorExpression *node, IndentedTextWriter &writer);
+    static void WriteLiteralExpression(const BoundLiteralExpression *node, IndentedTextWriter &writer);
+    static void WriteVariableExpression(const BoundVariableExpression *node, IndentedTextWriter &writer);
+    static void WriteAssignmentExpression(const BoundAssignmentExpression *node, IndentedTextWriter &writer);
+    static void WriteUnaryExpression(const BoundUnaryExpression *node, IndentedTextWriter &writer);
+    static void WriteBinaryExpression(const BoundBinaryExpression *node, IndentedTextWriter &writer);
+    static void WriteCallExpression(const BoundCallExpression *node, IndentedTextWriter &writer);
+    static void WriteConversionExpression(const BoundConversionExpression *node, IndentedTextWriter &writer);
 };
 #endif

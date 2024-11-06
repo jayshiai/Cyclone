@@ -5,11 +5,41 @@
 #include "CodeAnalysis/Compilation.h"
 #include "CodeAnalysis/Lowerer.h"
 #include "CodeAnalysis/ControlFlowGraph.h"
+#include "CodeAnalysis/Symbol.h"
 #include <unordered_map>
 #include <atomic>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
+void GenerateCFG(BoundProgram *program)
+{
+    std::string appDirectory = std::filesystem::current_path().string();
+
+    std::string cfgPath = appDirectory + "/cfg.dot";
+    BoundStatement *cfgStatement = nullptr;
+    if (program->statement->Statements.empty() && !program->Functions.empty())
+    {
+        cfgStatement = program->Functions.begin()->second;
+    }
+    else
+    {
+        cfgStatement = program->statement;
+    }
+
+    ControlFlowGraph *cfg = ControlFlowGraph::Create(static_cast<BoundBlockStatement *>(cfgStatement));
+
+    std::ofstream streamWriter(cfgPath);
+    if (streamWriter.is_open())
+    {
+        cfg->WriteTo(streamWriter);
+        streamWriter.close();
+    }
+    else
+    {
+        std::cerr << "Failed to open file for writing: " << cfgPath << std::endl;
+    }
+}
 std::string cConvertBoundNodeKind(BoundNodeKind kind)
 {
     switch (kind)
@@ -48,7 +78,7 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     }
 
     BoundProgram *program = Binder::BindProgram(GlobalScope());
-    // GenerateCFG(program); //Generates Graph for Control Flow analysis
+    GenerateCFG(program); // Generates Graph for Control Flow analysis
     if (program->Diagnostics.size() > 0)
     {
         diagnostics.insert(diagnostics.end(), program->Diagnostics.begin(), program->Diagnostics.end());
@@ -82,48 +112,29 @@ BoundGlobalScope *Compilation::GlobalScope()
 void Compilation::EmitTree(std::ostream &os)
 {
     BoundProgram *program = Binder::BindProgram(GlobalScope());
-    program->statement->WriteTo(os);
+
+    if (!program->statement->Statements.empty())
+    {
+        program->statement->WriteTo(os);
+    }
+    else
+    {
+        for (auto function : program->Functions)
+        {
+            if (std::find_if(GlobalScope()->Functions.begin(), GlobalScope()->Functions.end(),
+                             [&](const FunctionSymbol &func)
+                             { return func.Name == function.first.Name; }) == GlobalScope()->Functions.end())
+            {
+                continue;
+            }
+            FunctionSymbol functionSymbol = function.first;
+            functionSymbol.WriteTo(os);
+            function.second->WriteTo(os);
+        }
+    }
 }
 
 Compilation *Compilation::ContinueWith(SyntaxTree *syntaxTree)
 {
     return new Compilation(this, syntaxTree);
-}
-
-void GenerateCFG(BoundProgram *program)
-{
-    // Get the application path and directory
-    std::string appPath = std::filesystem::current_path().string();
-    std::string appDirectory = std::filesystem::path(appPath).parent_path().string();
-
-    // Define the path for the cfg.dot file
-    std::string cfgPath = appDirectory + "/cfg.dot";
-
-    // Determine the statement for the Control Flow Graph
-    BoundStatement *cfgStatement = nullptr;
-    if (program->statement->Statements.empty() && !program->Functions.empty())
-    {
-        if (!program->Functions.empty())
-        {
-            cfgStatement = std::prev(program->Functions.end())->second;
-        }
-    }
-    else
-    {
-        cfgStatement = program->statement;
-    }
-    // Create the control flow graph
-    ControlFlowGraph *cfg = ControlFlowGraph::Create(static_cast<BoundBlockStatement *>(cfgStatement));
-
-    // Write the control flow graph to cfg.dot file
-    std::ofstream streamWriter(cfgPath);
-    if (streamWriter.is_open())
-    {
-        cfg->WriteTo(streamWriter);
-        streamWriter.close();
-    }
-    else
-    {
-        std::cerr << "Failed to open file for writing: " << cfgPath << std::endl;
-    }
 }

@@ -40,8 +40,8 @@ public:
             IsEnd = !isStart;
         };
 
-        bool IsStart;
-        bool IsEnd;
+        bool IsStart = false;
+        bool IsEnd = false;
 
         std::vector<BoundStatement *> Statements;
         std::vector<BasicBlockBranch *> Incoming;
@@ -59,13 +59,12 @@ public:
                 return "<End>";
             }
 
-            for (auto statement : Statements)
+            std::ostringstream writer;
+            for (const auto &statement : Statements)
             {
-                statement->WriteTo(std::cout);
-                return "BasicBlock";
+                statement->WriteTo(writer);
             }
-
-            return "BasicBlock";
+            return writer.str();
         };
     };
 
@@ -83,9 +82,10 @@ public:
             {
                 return "";
             }
-            Condition->WriteTo(std::cout);
 
-            return "BasicBlockBranch";
+            std::ostringstream writer;
+            Condition->WriteTo(writer);
+            return writer.str();
         };
     };
 
@@ -105,11 +105,10 @@ public:
 
         void EndBlock()
         {
-            if (!_statements.empty())
+            if (_statements.size() > 0)
             {
-
                 BasicBlock *block = new BasicBlock();
-                block->Statements = _statements;
+                block->Statements = std::move(_statements);
                 _blocks.push_back(block);
                 _statements.clear();
             }
@@ -119,7 +118,7 @@ public:
     class GraphBuilder
     {
     public:
-        ControlFlowGraph *Build(std::vector<BasicBlock *> &blocks);
+        ControlFlowGraph *Build(std::vector<BasicBlock *> blocks);
 
     private:
         void Connect(BasicBlock *from, BasicBlock *to, BoundExpression *condition = nullptr);

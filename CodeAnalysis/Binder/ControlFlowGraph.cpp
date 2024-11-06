@@ -6,18 +6,23 @@
 
 void ControlFlowGraph::WriteTo(std::ostream &writer) const
 {
+    // auto Quote = [](const std::string &text)
+    // {
+    //     std::string quoted = "\"" + text + "\"";
+    //     size_t pos = 0;
+    //     while ((pos = quoted.find("\"", pos)) != std::string::npos)
+    //     {
+    //         quoted.replace(pos, 1, "\\\"");
+    //         pos += 2;
+    //     }
+    //     return quoted;
+    // };
+
     auto Quote = [](const std::string &text)
     {
-        std::string quoted = "\"" + text + "\"";
-        size_t pos = 0;
-        while ((pos = quoted.find("\"", pos)) != std::string::npos)
-        {
-            quoted.replace(pos, 1, "\\\"");
-            pos += 2;
-        }
-        return quoted;
+        // Simply surround the text with quotes without escaping them
+        return "\"" + text + "\"";
     };
-
     writer << "digraph G {" << std::endl;
 
     std::unordered_map<BasicBlock *, std::string> blockIds;
@@ -79,6 +84,7 @@ void ControlFlowGraph::GraphBuilder::Connect(BasicBlock *from, BasicBlock *to, B
 
         if (value)
         {
+
             condition = nullptr;
         }
         else
@@ -86,7 +92,6 @@ void ControlFlowGraph::GraphBuilder::Connect(BasicBlock *from, BasicBlock *to, B
             return;
         }
     }
-
     BasicBlockBranch *branch = new BasicBlockBranch(from, to, condition);
 
     from->Outgoing.push_back(branch);
@@ -130,14 +135,14 @@ BoundExpression *ControlFlowGraph::GraphBuilder::Negate(BoundExpression *conditi
     if (auto *literal = dynamic_cast<BoundLiteralExpression *>(condition))
     {
         bool value = (literal->Value == "true");
-        return new BoundLiteralExpression(literal->Value, TypeSymbol::Boolean);
+        return new BoundLiteralExpression(value ? "false" : "true", TypeSymbol::Boolean);
     }
 
     BoundUnaryOperator *op = BoundUnaryOperator::Bind(SyntaxKind::BANG, TypeSymbol::Boolean);
     return new BoundUnaryExpression(op, condition);
 }
 
-ControlFlowGraph *ControlFlowGraph::GraphBuilder::Build(std::vector<BasicBlock *> &blocks)
+ControlFlowGraph *ControlFlowGraph::GraphBuilder::Build(std::vector<BasicBlock *> blocks)
 {
     if (blocks.empty())
     {
@@ -215,29 +220,13 @@ ControlFlowGraph *ControlFlowGraph::GraphBuilder::Build(std::vector<BasicBlock *
         }
     }
 
-    while (true)
+ScanAgain:
+    for (auto block : blocks)
     {
-        bool modified = false;
-
-        for (auto it = blocks.begin(); it != blocks.end();)
+        if (block->Incoming.empty())
         {
-            BasicBlock *block = *it;
-
-            if (block->Incoming.empty())
-            {
-                RemoveBlock(blocks, block);
-                it = blocks.erase(it);
-                modified = true;
-            }
-            else
-            {
-                ++it;
-            }
-        }
-
-        if (!modified)
-        {
-            break;
+            RemoveBlock(blocks, block);
+            goto ScanAgain;
         }
     }
 

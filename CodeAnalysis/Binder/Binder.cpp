@@ -469,7 +469,7 @@ void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
 
     FunctionSymbol function(node->Identifier.value, parameters, returnType, node);
 
-    if (!_scope->TryDeclareFunction(function))
+    if (!function.Declaration->Identifier.value.empty() && !_scope->TryDeclareFunction(function))
     {
         _diagnostics.ReportSymbolAlreadyDeclared(node->Identifier.Span, function.Name);
     }
@@ -735,4 +735,14 @@ Conversion Conversion::Classify(TypeSymbol from, TypeSymbol to)
         return Conversion::None;
     }
     return Conversion::None;
+}
+
+void BoundNode::WriteTo(std::ostream &os)
+{
+    BoundNodePrinter::WriteTo(const_cast<const BoundNode *>(this), os);
+}
+
+void BoundNode::WriteTo(IndentedTextWriter &writer)
+{
+    BoundNodePrinter::WriteTo(const_cast<const BoundNode *>(this), writer);
 }
