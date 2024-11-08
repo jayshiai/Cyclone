@@ -1,6 +1,9 @@
 #ifndef INDENTED_TEXT_WRITER_H
 #define INDENTED_TEXT_WRITER_H
 
+#include "CodeAnalysis/Diagnostic.h"
+#include "CodeAnalysis/SourceText.h"
+#include <algorithm>
 #include <iostream>
 #include <string>
 
@@ -106,6 +109,47 @@ public:
         SetForegroundColor(GRAY);
         Write(text);
         ResetColor();
+    }
+
+    void WriteDiagnostics(std::vector<Diagnostic> diagnostics, SyntaxTree syntaxtree)
+    {
+
+        std::sort(diagnostics.begin(), diagnostics.end(), [](const Diagnostic &a, const Diagnostic &b)
+                  { return a.Span.Start < b.Span.Start; });
+        for (auto diagnostic : diagnostics)
+        {
+            auto lineIndex = syntaxtree.Text.GetLineIndex(diagnostic.Span.Start);
+            auto line = syntaxtree.Text._lines[lineIndex];
+            auto lineNumber = lineIndex + 1;
+            auto character = diagnostic.Span.Start - line.Start + 1;
+
+            WriteLine();
+            SetForegroundColor(RED);
+            Write("(" + std::to_string(lineNumber) + "," + std::to_string(character) + "): ");
+            Write(diagnostic.Message);
+            WriteLine();
+            ResetColor();
+
+            auto prefixSpan = TextSpan::FromBounds(line.Start, diagnostic.Span.Start);
+            auto suffixSpan = TextSpan::FromBounds(diagnostic.Span.End, line.End);
+
+            auto prefix = syntaxtree.Text.ToString(prefixSpan);
+            auto error = syntaxtree.Text.ToString(diagnostic.Span);
+            auto suffix = syntaxtree.Text.ToString(suffixSpan);
+
+            Write("    ");
+            Write(prefix);
+
+            SetForegroundColor(RED);
+            Write(error);
+            ResetColor();
+
+            Write(suffix);
+
+            WriteLine();
+        }
+
+        WriteLine();
     }
 
     // Overload the stream insertion operator
