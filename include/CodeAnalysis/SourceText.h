@@ -31,9 +31,8 @@ class SourceText
 {
 private:
     std::string _text;
-
-    SourceText(const std::string &text)
-        : _text(text)
+    SourceText(const std::string &text, std::string filename = "")
+        : _text(text), Filename(filename)
     {
         _lines = ParseLines(text);
     }
@@ -45,10 +44,11 @@ private:
     static int GetLineBreakWidth(const std::string &text, int position);
 
 public:
+    std::string Filename;
     std::vector<TextLine> _lines;
-    static SourceText From(const std::string &text)
+    static SourceText From(const std::string &text, std::string filename = "")
     {
-        return SourceText(text);
+        return SourceText(text, filename);
     }
 
     char operator[](int index) const
@@ -103,4 +103,30 @@ public:
     }
 };
 
+class TextLocation
+{
+public:
+    SourceText Text;
+    TextSpan Span;
+    TextLocation(SourceText text, TextSpan span)
+        : Text(text), Span(span), Filename(text.Filename)
+    {
+
+        StartLine = text.GetLineIndex(span.Start);
+        StartCharacter = span.Start - text._lines[StartLine].Start;
+        EndLine = text.GetLineIndex(span.End);
+        EndCharacter = span.End - text._lines[EndLine].Start;
+    }
+
+    std::string ToString() const
+    {
+        return Span.ToString();
+    }
+
+    std::string Filename;
+    int StartLine;
+    int StartCharacter;
+    int EndLine;
+    int EndCharacter;
+};
 #endif

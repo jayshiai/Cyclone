@@ -149,7 +149,7 @@ main()
 
             IndentedTextWriter writer(std::cout);
 
-            writer.WriteDiagnostics(result.Diagnostics, Root);
+            writer.WriteDiagnostics(result.Diagnostics);
             // std::sort(result.Diagnostics.begin(), result.Diagnostics.end(), [](const Diagnostic &a, const Diagnostic &b)
             //           { return a.Span.Start < b.Span.Start; });
             // for (auto &diagnostic : result.Diagnostics)

@@ -8,12 +8,12 @@
 class Parser
 {
 public:
-    Parser(SourceText text, const std::vector<Token> &tokens, DiagnosticBag diagnostic) : Text(text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0])
-    {
-        _diagnostics.AddRange(diagnostic);
-    };
-    Parser(SourceText text, const std::vector<Token> &tokens) : Text(text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0]) {}
-    Parser(SourceText text);
+    // Parser(SyntaxTree *syntaxTree, const std::vector<Token> &tokens, DiagnosticBag diagnostic) : _syntaxTree(syntaxTree), _text(syntaxTree->Text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0])
+    // {
+    //     _diagnostics.AddRange(diagnostic);
+    // };
+    // Parser(SyntaxTree *syntaxTree, const std::vector<Token> &tokens) : _syntaxTree(syntaxTree), _text(syntaxTree->Text), tokens(tokens), currentTokenIndex(0), currentToken(tokens[0]) {}
+    Parser(SyntaxTree *syntaxTree);
     CompilationUnitNode *ParseCompilationUnit();
     const DiagnosticBag &GetDiagnostics() const
     {
@@ -23,7 +23,8 @@ public:
     static int GetUnaryPrecedence(SyntaxKind kind);
 
 private:
-    SourceText Text;
+    SyntaxTree *_syntaxTree;
+    SourceText _text;
     DiagnosticBag _diagnostics;
     std::vector<Token> tokens;
     size_t currentTokenIndex;

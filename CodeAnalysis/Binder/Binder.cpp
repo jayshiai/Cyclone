@@ -69,7 +69,7 @@ BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
     BoundExpression *lowerBound = BindExpression(node->LowerBound, TypeSymbol::Integer);
     BoundExpression *upperBound = BindExpression(node->UpperBound, TypeSymbol::Integer);
     _scope = new BoundScope(_scope);
-    VariableSymbol *variable = BindVariable(node->Identifier, false, TypeSymbol::Integer);
+    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, false, TypeSymbol::Integer);
 
     BoundLabel *breakLabel = nullptr;
     BoundLabel *continueLabel = nullptr;
@@ -98,7 +98,7 @@ BoundStatement *Binder::BindBreakStatement(BreakStatementSyntax *node)
 {
     if (_loopStack.empty())
     {
-        _diagnostics.ReportInvalidBreakOrContinue(node->Keyword.Span, node->Keyword.value);
+        _diagnostics.ReportInvalidBreakOrContinue(node->Keyword.Location, node->Keyword.value);
         return BindErrorStatement();
     }
     return new BoundGotoStatement(_loopStack.top().first);
@@ -108,7 +108,7 @@ BoundStatement *Binder::BindContinueStatement(ContinueStatementSyntax *node)
 {
     if (_loopStack.empty())
     {
-        _diagnostics.ReportInvalidBreakOrContinue(node->Keyword.Span, node->Keyword.value);
+        _diagnostics.ReportInvalidBreakOrContinue(node->Keyword.Location, node->Keyword.value);
         return BindErrorStatement();
     }
     return new BoundGotoStatement(_loopStack.top().second);
@@ -119,7 +119,7 @@ BoundStatement *Binder::BindReturnStatement(ReturnStatementSyntax *node)
     BoundExpression *expression = node->Expression == nullptr ? nullptr : BindExpression(node->Expression);
     if (_function == nullptr)
     {
-        _diagnostics.ReportInvalidReturn(node->Keyword.Span);
+        _diagnostics.ReportInvalidReturn(node->Keyword.Location);
     }
     else
     {
@@ -127,18 +127,18 @@ BoundStatement *Binder::BindReturnStatement(ReturnStatementSyntax *node)
         {
             if (expression != nullptr)
             {
-                _diagnostics.ReportInvalidReturnExpression(node->Keyword.Span, _function->Name);
+                _diagnostics.ReportInvalidReturnExpression(node->Keyword.Location, _function->Name);
             }
         }
         else
         {
             if (expression == nullptr)
             {
-                _diagnostics.ReportMissingReturnExpression(node->Keyword.Span, _function->Type.ToString());
+                _diagnostics.ReportMissingReturnExpression(node->Keyword.Location, _function->Type.ToString());
             }
             else
             {
-                expression = BindConversion(node->Expression->Span(), expression, _function->Type);
+                expression = BindConversion(node->Expression->Location, expression, _function->Type);
             }
         }
     }
@@ -158,7 +158,7 @@ BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
     return new BoundBlockStatement(statements);
 }
 
-VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymbol type)
+VariableSymbol *Binder::BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type)
 {
     std::string name = identifier.value;
     bool declare = name != "" || !name.empty();
@@ -168,7 +168,7 @@ VariableSymbol *Binder::BindVariable(Token identifier, bool isReadOnly, TypeSymb
 
     if (declare && !_scope->TryDeclareVariable(*variable))
     {
-        _diagnostics.ReportSymbolAlreadyDeclared(identifier.Span, name);
+        _diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
     }
 
     return variable;
@@ -190,7 +190,7 @@ BoundExpression *Binder::BindExpression(SyntaxNode *node, bool canBeVoid)
 
     if (!canBeVoid && result->type == TypeSymbol::Void)
     {
-        _diagnostics.ReportExpressionMustHaveValue(node->Span());
+        _diagnostics.ReportExpressionMustHaveValue(node->Location);
         return new BoundErrorExpression();
     }
     return result;
@@ -233,7 +233,7 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
     case SyntaxKind::STRING:
         return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::String);
     default:
-        _diagnostics.ReportUnexpectedToken(node->LiteralToken.Span, convertSyntaxKindToString(node->LiteralToken.Kind), "Literal Expression");
+        _diagnostics.ReportUnexpectedToken(node->LiteralToken.Location, convertSyntaxKindToString(node->LiteralToken.Kind), "Literal Expression");
         return new BoundErrorExpression();
     }
 }
@@ -248,7 +248,7 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
     VariableSymbol variable(name, false, TypeSymbol::Error);
     if (!_scope->TryLookupVariable(name, variable))
     {
-        _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
+        _diagnostics.ReportUndefinedName(node->IdentifierToken.Location, name);
         return new BoundErrorExpression();
     }
     return new BoundVariableExpression(variable);
@@ -261,15 +261,15 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
     VariableSymbol variable(name, false, TypeSymbol::Error);
     if (!_scope->TryLookupVariable(name, variable))
     {
-        _diagnostics.ReportUndefinedName(node->IdentifierToken.Span, name);
+        _diagnostics.ReportUndefinedName(node->IdentifierToken.Location, name);
         return boundExpression;
     }
     if (variable.IsReadOnly)
     {
-        _diagnostics.ReportCannotAssign(node->IdentifierToken.Span, name);
+        _diagnostics.ReportCannotAssign(node->IdentifierToken.Location, name);
     }
 
-    BoundExpression *convertedExpression = BindConversion(node->Expression->Span(), boundExpression, variable.Type);
+    BoundExpression *convertedExpression = BindConversion(node->Expression->Location, boundExpression, variable.Type);
 
     return new BoundAssignmentExpression(variable, convertedExpression);
 }
@@ -284,7 +284,7 @@ BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
     BoundUnaryOperator *boundOperator = BoundUnaryOperator::Bind(node->OperatorToken.Kind, boundOperand->type);
     if (boundOperator == nullptr)
     {
-        _diagnostics.ReportUndefinedUnaryOperator(node->OperatorToken.Span, node->OperatorToken.value, boundOperand->type.ToString());
+        _diagnostics.ReportUndefinedUnaryOperator(node->OperatorToken.Location, node->OperatorToken.value, boundOperand->type.ToString());
         return new BoundErrorExpression();
     }
     return new BoundUnaryExpression(boundOperator, boundOperand);
@@ -304,7 +304,7 @@ BoundExpression *Binder::BindBinaryExpression(BinaryExpressionNode *node)
     if (boundOperator == nullptr)
     {
 
-        _diagnostics.ReportUndefinedBinaryOperator(node->OperatorToken.Span, node->OperatorToken.value, boundLeft->type.ToString(), boundRight->type.ToString());
+        _diagnostics.ReportUndefinedBinaryOperator(node->OperatorToken.Location, node->OperatorToken.value, boundLeft->type.ToString(), boundRight->type.ToString());
         return new BoundErrorExpression();
     }
 
@@ -330,7 +330,7 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
     FunctionSymbol function;
     if (!_scope->TryLookupFunction(node->IdentifierToken.value, function))
     {
-        _diagnostics.ReportUndefinedFunction(node->IdentifierToken.Span, node->IdentifierToken.value);
+        _diagnostics.ReportUndefinedFunction(node->IdentifierToken.Location, node->IdentifierToken.value);
         return new BoundErrorExpression();
     }
 
@@ -355,7 +355,8 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
         {
             Span = node->CloseParenthesisToken.Span;
         }
-        _diagnostics.ReportWrongArgumentCount(Span, function.Name, function.Parameters.size(), node->Arguments.Count());
+        TextLocation location = TextLocation(node->syntaxTree->Text, Span);
+        _diagnostics.ReportWrongArgumentCount(location, function.Name, function.Parameters.size(), node->Arguments.Count());
         return new BoundErrorExpression();
     }
 
@@ -369,7 +370,7 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
         {
             if (argument->type != TypeSymbol::Error)
             {
-                _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Span(), parameter.Name, parameter.Type.ToString(), argument->type.ToString());
+                _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Location, parameter.Name, parameter.Type.ToString(), argument->type.ToString());
             }
 
             hasErrors = true;
@@ -428,7 +429,7 @@ BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
 
             if (function.Type != TypeSymbol::Void && !ControlFlowGraph::AllPathsReturn(loweredBody))
             {
-                binder._diagnostics.ReportAllPathsMustReturn(function.Declaration->Identifier.Span);
+                binder._diagnostics.ReportAllPathsMustReturn(function.Declaration->Identifier.Location);
             }
             functions[function] = loweredBody;
 
@@ -455,7 +456,7 @@ void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
 
         if (seenParameterNames.find(parameterName) != seenParameterNames.end())
         {
-            _diagnostics.ReportParameterAlreadyDeclared(parameter->IdentifierToken.Span, parameterName);
+            _diagnostics.ReportParameterAlreadyDeclared(parameter->IdentifierToken.Location, parameterName);
         }
         else
         {
@@ -471,7 +472,7 @@ void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
 
     if (!function.Declaration->Identifier.value.empty() && !_scope->TryDeclareFunction(function))
     {
-        _diagnostics.ReportSymbolAlreadyDeclared(node->Identifier.Span, function.Name);
+        _diagnostics.ReportSymbolAlreadyDeclared(node->Identifier.Location, function.Name);
     }
 }
 
@@ -523,8 +524,8 @@ BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
     BoundExpression *initializer = BindExpression(node->Initializer);
 
     TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
-    VariableSymbol *variable = BindVariable(node->Identifier, isReadOnly, variableType);
-    BoundExpression *convertedInitializer = BindConversion(node->Initializer->Span(), initializer, variableType);
+    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, isReadOnly, variableType);
+    BoundExpression *convertedInitializer = BindConversion(node->Initializer->Location, initializer, variableType);
 
     return new BoundVariableDeclaration(*variable, initializer);
 }
@@ -556,29 +557,29 @@ TypeSymbol Binder::BindTypeClause(TypeClauseNode *node)
 
     if (type == TypeSymbol::Null)
     {
-        _diagnostics.ReportUndefinedType(node->IdentifierToken.Span, node->IdentifierToken.value);
+        _diagnostics.ReportUndefinedType(node->IdentifierToken.Location, node->IdentifierToken.value);
     }
     return type;
 }
 BoundExpression *Binder::BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit)
 {
     BoundExpression *expression = BindExpression(node);
-    return BindConversion(node->Span(), expression, type, node);
+    return BindConversion(node->Location, expression, type, node);
 }
-BoundExpression *Binder::BindConversion(TextSpan diagnosticSpan, BoundExpression *expression, TypeSymbol type, bool allowExplicit)
+BoundExpression *Binder::BindConversion(TextLocation diagnosticLocation, BoundExpression *expression, TypeSymbol type, bool allowExplicit)
 {
 
     Conversion conversion = Conversion::Classify(expression->type, type);
     if (!conversion.Exists)
     {
         if (expression->type != TypeSymbol::Error && type != TypeSymbol::Error)
-            _diagnostics.ReportCannotConvert(diagnosticSpan, expression->type.ToString(), type.ToString());
+            _diagnostics.ReportCannotConvert(diagnosticLocation, expression->type.ToString(), type.ToString());
         return new BoundErrorExpression();
     }
 
     if (!allowExplicit && conversion.IsExplicit)
     {
-        _diagnostics.ReportCannotConvertImplicitly(diagnosticSpan, expression->type.ToString(), type.ToString());
+        _diagnostics.ReportCannotConvertImplicitly(diagnosticLocation, expression->type.ToString(), type.ToString());
     }
 
     if (conversion.IsIdentity)

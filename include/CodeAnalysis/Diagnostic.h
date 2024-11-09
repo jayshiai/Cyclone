@@ -1,5 +1,6 @@
 #ifndef DIAGNOSTIC_H
 #define DIAGNOSTIC_H
+
 #include "CodeAnalysis/SourceText.h"
 #include <string>
 #include <vector>
@@ -9,11 +10,11 @@
 class Diagnostic
 {
 public:
-    TextSpan Span;
+    TextLocation Location;
     std::string Message;
 
-    Diagnostic(TextSpan span, std::string message)
-        : Span(span), Message(message) {}
+    Diagnostic(TextLocation location, std::string message)
+        : Location(location), Message(message) {}
     std::string ToString()
     {
         return Message;
@@ -25,37 +26,37 @@ class DiagnosticBag
 public:
     void AddRange(const DiagnosticBag &diagnostics);
 
-    void ReportInvalidNumber(const TextSpan &span, const std::string &text, const std::string &type);
+    void ReportInvalidNumber(const TextLocation &location, const std::string &text, const std::string &type);
 
-    void ReportBadCharacter(int position, char character);
-    void ReportUnterminatedString(TextSpan span);
-    void ReportUnexpectedToken(const TextSpan &span, const std::string &actualKind, const std::string &expectedKind);
+    void ReportBadCharacter(TextLocation location, char character);
+    void ReportUnterminatedString(TextLocation location);
+    void ReportUnexpectedToken(const TextLocation &location, const std::string &actualKind, const std::string &expectedKind);
 
-    void ReportUndefinedUnaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &operandType);
+    void ReportUndefinedUnaryOperator(const TextLocation &location, const std::string &operatorText, const std::string &operandType);
 
-    void ReportCannotConvert(TextSpan span, std::string fromType, std::string toType);
+    void ReportCannotConvert(TextLocation location, std::string fromType, std::string toType);
 
-    void ReportVariableAlreadyDeclared(TextSpan span, std::string name);
+    void ReportVariableAlreadyDeclared(TextLocation location, std::string name);
 
-    void ReportCannotAssign(TextSpan span, std::string name);
-    void ReportUndefinedBinaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &leftType, const std::string &rightType);
+    void ReportCannotAssign(TextLocation location, std::string name);
+    void ReportUndefinedBinaryOperator(const TextLocation &location, const std::string &operatorText, const std::string &leftType, const std::string &rightType);
 
-    void ReportParameterAlreadyDeclared(TextSpan span, std::string name);
-    void ReportUndefinedName(const TextSpan &span, const std::string &name);
-    void ReportUndefinedType(const TextSpan &span, const std::string &name);
-    void ReportCannotConvertImplicitly(const TextSpan &span, const std::string &fromType, const std::string &toType);
-    void ReportSymbolAlreadyDeclared(const TextSpan &span, const std::string &name);
+    void ReportParameterAlreadyDeclared(TextLocation location, std::string name);
+    void ReportUndefinedName(const TextLocation &location, const std::string &name);
+    void ReportUndefinedType(const TextLocation &location, const std::string &name);
+    void ReportCannotConvertImplicitly(const TextLocation &location, const std::string &fromType, const std::string &toType);
+    void ReportSymbolAlreadyDeclared(const TextLocation &location, const std::string &name);
 
-    void ReportInvalidBreakOrContinue(TextSpan span, std::string text);
-    void ReportAllPathsMustReturn(TextSpan span);
-    void ReportInvalidReturn(TextSpan span);
-    void ReportInvalidReturnExpression(TextSpan span, std::string name);
-    void ReportMissingReturnExpression(TextSpan span, std::string name);
+    void ReportInvalidBreakOrContinue(TextLocation location, std::string text);
+    void ReportAllPathsMustReturn(TextLocation location);
+    void ReportInvalidReturn(TextLocation location);
+    void ReportInvalidReturnExpression(TextLocation location, std::string name);
+    void ReportMissingReturnExpression(TextLocation location, std::string name);
 
-    void ReportUndefinedFunction(const TextSpan &span, const std::string &name);
-    void ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount);
-    void ReportWrongArgumentType(const TextSpan &span, const std::string &name, const std::string &expectedType, const std::string &actualType);
-    void ReportExpressionMustHaveValue(const TextSpan &span);
+    void ReportUndefinedFunction(const TextLocation &location, const std::string &name);
+    void ReportWrongArgumentCount(const TextLocation &location, const std::string &name, int expectedCount, int actualCount);
+    void ReportWrongArgumentType(const TextLocation &location, const std::string &name, const std::string &expectedType, const std::string &actualType);
+    void ReportExpressionMustHaveValue(const TextLocation &location);
 
     const std::vector<Diagnostic> &GetDiagnostics() const
     {
@@ -65,7 +66,7 @@ public:
 private:
     std::vector<Diagnostic> _diagnostics;
 
-    void Report(const TextSpan &span, const std::string &message);
+    void Report(const TextLocation &location, const std::string &message);
 };
 
 #endif

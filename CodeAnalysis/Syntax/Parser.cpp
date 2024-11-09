@@ -4,13 +4,11 @@
 #include <iostream>
 #include "Utils.h"
 
-Parser::Parser(SourceText text) : Text(text), currentTokenIndex(0)
+Parser::Parser(SyntaxTree *syntaxTree) : _syntaxTree(syntaxTree), _text(syntaxTree->Text), currentTokenIndex(0), currentToken(syntaxTree)
 {
-    Lexer lexer(text);
-    std::vector<Token> lexedTokens = lexer.tokenize();
-    tokens = lexedTokens;
+    Lexer lexer(syntaxTree);
+    tokens = lexer.tokenize();
     currentToken = tokens[0];
-    _diagnostics.AddRange(lexer.GetDiagnostics());
 }
 Token Parser::peek(int offset)
 {
@@ -23,9 +21,11 @@ Token Parser::peek(int offset)
 
 CompilationUnitNode *Parser::ParseCompilationUnit()
 {
+
     std::vector<MemberSyntax *> members = ParseMembers();
+
     Token endOfFileToken = Expect(SyntaxKind::END_OF_FILE);
-    return new CompilationUnitNode(members, endOfFileToken);
+    return new CompilationUnitNode(_syntaxTree, members, endOfFileToken);
 }
 std::vector<MemberSyntax *> Parser::ParseMembers()
 {
@@ -62,7 +62,7 @@ MemberSyntax *Parser::ParseFunctionDeclaration()
     Token closeParenthesis = Expect(SyntaxKind::RPAREN);
     TypeClauseNode *type = ParseOptionalTypeClause();
     BlockStatementSyntax *body = ParseBlockStatement();
-    return new FunctionDeclarationSyntax(functionKeyword, identifier, openParenthesis, parameters, closeParenthesis, type, body);
+    return new FunctionDeclarationSyntax(_syntaxTree, functionKeyword, identifier, openParenthesis, parameters, closeParenthesis, type, body);
 }
 
 SeparatedSyntaxList<ParameterNode> Parser::ParseParameterList()
@@ -86,13 +86,13 @@ ParameterNode *Parser::ParseParameter()
 {
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
     TypeClauseNode *type = ParseTypeClause();
-    return new ParameterNode(identifier, type);
+    return new ParameterNode(_syntaxTree, identifier, type);
 }
 
 MemberSyntax *Parser::ParseGlobalStatement()
 {
     StatementSyntax *statement = ParseStatement();
-    return new GlobalStatementSyntax(statement);
+    return new GlobalStatementSyntax(_syntaxTree, statement);
 }
 StatementSyntax *Parser::ParseStatement()
 {
@@ -138,7 +138,7 @@ BlockStatementSyntax *Parser::ParseBlockStatement()
     }
 
     Token closeBraceToken = Expect(SyntaxKind::CLOSE_BRACE);
-    return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
+    return new BlockStatementSyntax(_syntaxTree, openBraceToken, statements, closeBraceToken);
 }
 
 StatementSyntax *Parser::ParseVariableDeclaration()
@@ -149,7 +149,7 @@ StatementSyntax *Parser::ParseVariableDeclaration()
     TypeClauseNode *typeClause = ParseOptionalTypeClause();
     Token equals = Expect(SyntaxKind::EQUALS);
     SyntaxNode *initializer = ParseExpression();
-    return new VariableDeclarationSyntax(keyword, identifier, typeClause, equals, initializer);
+    return new VariableDeclarationSyntax(_syntaxTree, keyword, identifier, typeClause, equals, initializer);
 }
 
 TypeClauseNode *Parser::ParseOptionalTypeClause()
@@ -165,7 +165,7 @@ TypeClauseNode *Parser::ParseTypeClause()
 {
     Token colon = Expect(SyntaxKind::COLON);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
-    return new TypeClauseNode(colon, identifier);
+    return new TypeClauseNode(_syntaxTree, colon, identifier);
 }
 
 StatementSyntax *Parser::ParseIfStatement()
@@ -174,7 +174,7 @@ StatementSyntax *Parser::ParseIfStatement()
     SyntaxNode *condition = ParseExpression();
     StatementSyntax *thenStatement = ParseStatement();
     ElseClauseSyntax *elseClause = ParseElseClause();
-    return new IfStatementSyntax(ifKeyword, condition, thenStatement, elseClause);
+    return new IfStatementSyntax(_syntaxTree, ifKeyword, condition, thenStatement, elseClause);
 }
 
 ElseClauseSyntax *Parser::ParseElseClause()
@@ -185,7 +185,7 @@ ElseClauseSyntax *Parser::ParseElseClause()
     }
     Token elseKeyword = Expect(SyntaxKind::ELSE_KEYWORD);
     StatementSyntax *elseStatement = ParseStatement();
-    return new ElseClauseSyntax(elseKeyword, elseStatement);
+    return new ElseClauseSyntax(_syntaxTree, elseKeyword, elseStatement);
 }
 
 StatementSyntax *Parser::ParseWhileStatement()
@@ -193,7 +193,7 @@ StatementSyntax *Parser::ParseWhileStatement()
     Token whileKeyword = Expect(SyntaxKind::WHILE_KEYWORD);
     SyntaxNode *condition = ParseExpression();
     StatementSyntax *body = ParseStatement();
-    return new WhileStatementSyntax(whileKeyword, condition, body);
+    return new WhileStatementSyntax(_syntaxTree, whileKeyword, condition, body);
 }
 
 StatementSyntax *Parser::ParseForStatement()
@@ -205,36 +205,36 @@ StatementSyntax *Parser::ParseForStatement()
     Token toKeyword = Expect(SyntaxKind::TO_KEYWORD);
     SyntaxNode *upperBound = ParseExpression();
     StatementSyntax *body = ParseStatement();
-    return new ForStatementSyntax(keyword, identifier, equals, lowerBound, toKeyword, upperBound, body);
+    return new ForStatementSyntax(_syntaxTree, keyword, identifier, equals, lowerBound, toKeyword, upperBound, body);
 }
 
 StatementSyntax *Parser::ParseBreakStatement()
 {
     Token keyword = Expect(SyntaxKind::BREAK_KEYWORD);
-    return new BreakStatementSyntax(keyword);
+    return new BreakStatementSyntax(_syntaxTree, keyword);
 }
 
 StatementSyntax *Parser::ParseContinueStatement()
 {
     Token keyword = Expect(SyntaxKind::CONTINUE_KEYWORD);
-    return new ContinueStatementSyntax(keyword);
+    return new ContinueStatementSyntax(_syntaxTree, keyword);
 }
 
 StatementSyntax *Parser::ParseRetrunStatement()
 {
     Token keyword = Expect(SyntaxKind::RETURN_KEYWORD);
-    int keywordLine = Text.GetLineIndex(keyword.Span.Start);
-    int currentLine = Text.GetLineIndex(currentToken.Span.Start);
+    int keywordLine = _text.GetLineIndex(keyword.Span.Start);
+    int currentLine = _text.GetLineIndex(currentToken.Span.Start);
     bool isEof = currentToken.Kind == SyntaxKind::END_OF_FILE;
     bool isOnSameLine = !isEof && keywordLine == currentLine;
     SyntaxNode *expression = isOnSameLine ? ParseExpression() : nullptr;
-    return new ReturnStatementSyntax(keyword, expression);
+    return new ReturnStatementSyntax(_syntaxTree, keyword, expression);
 }
 
 ExpressionStatementSyntax *Parser::ParseExpressionStatement()
 {
     SyntaxNode *expression = ParseExpression();
-    return new ExpressionStatementSyntax(expression);
+    return new ExpressionStatementSyntax(_syntaxTree, expression);
 }
 
 void Parser::NextToken()
@@ -258,7 +258,7 @@ SyntaxNode *Parser::ParseAssignmentExpression()
         Token equals = currentToken;
         NextToken();
         SyntaxNode *right = ParseAssignmentExpression();
-        return new AssignmentExpressionNode(identifier, equals, right);
+        return new AssignmentExpressionNode(_syntaxTree, identifier, equals, right);
     }
     return ParseBinaryExpression();
 }
@@ -272,7 +272,7 @@ SyntaxNode *Parser::ParseBinaryExpression(int parentPrecedence)
         Token op = currentToken;
         NextToken();
         SyntaxNode *expression = ParseBinaryExpression(unaryPrecedence);
-        left = new UnaryExpressionNode(expression, op);
+        left = new UnaryExpressionNode(_syntaxTree, expression, op);
     }
     else
     {
@@ -290,7 +290,7 @@ SyntaxNode *Parser::ParseBinaryExpression(int parentPrecedence)
         Token op = currentToken;
         NextToken();
         SyntaxNode *right = ParseBinaryExpression(precedence);
-        left = new BinaryExpressionNode(left, right, op);
+        left = new BinaryExpressionNode(_syntaxTree, left, right, op);
     }
     return left;
 }
@@ -347,8 +347,8 @@ Token Parser::Expect(SyntaxKind kind)
     }
     else
     {
-        _diagnostics.ReportUnexpectedToken(currentToken.Span, convertSyntaxKindToString(currentToken.Kind), convertSyntaxKindToString(kind));
-        return Token(kind, currentToken.value, currentToken.position);
+        _diagnostics.ReportUnexpectedToken(currentToken.Location, convertSyntaxKindToString(currentToken.Kind), convertSyntaxKindToString(kind));
+        return Token(_syntaxTree, kind, currentToken.value, currentToken.position);
     }
 }
 SyntaxNode *Parser::ParsePrimaryExpression()
@@ -392,7 +392,7 @@ SyntaxNode *Parser::ParseCallExpression()
     Token openParenthesis = Expect(SyntaxKind::LPAREN);
     SeparatedSyntaxList<SyntaxNode> arguments = ParseArguments();
     Token closeParenthesis = Expect(SyntaxKind::RPAREN);
-    return new CallExpressionNode(identifier, openParenthesis, arguments, closeParenthesis);
+    return new CallExpressionNode(_syntaxTree, identifier, openParenthesis, arguments, closeParenthesis);
 }
 
 SeparatedSyntaxList<SyntaxNode> Parser::ParseArguments()
@@ -417,13 +417,13 @@ SyntaxNode *Parser::ParseParenthesizedExpression()
     NextToken();
     SyntaxNode *expression = ParseExpression();
     Expect(SyntaxKind::RPAREN);
-    return new ParenthesizedExpressionNode(expression);
+    return new ParenthesizedExpressionNode(_syntaxTree, expression);
 }
 
 SyntaxNode *Parser::ParseBooleanLiteral()
 {
     bool isTrue = currentToken.Kind == SyntaxKind::TRUE_KEYWORD;
-    SyntaxNode *node = new LiteralExpressionNode(currentToken, isTrue);
+    SyntaxNode *node = new LiteralExpressionNode(_syntaxTree, currentToken, isTrue);
     NextToken();
     return node;
 }
@@ -431,11 +431,11 @@ SyntaxNode *Parser::ParseBooleanLiteral()
 SyntaxNode *Parser::ParseStringLiteral()
 {
     Token stringToken = Expect(SyntaxKind::STRING);
-    return new LiteralExpressionNode(stringToken);
+    return new LiteralExpressionNode(_syntaxTree, stringToken);
 }
 SyntaxNode *Parser::ParseNumberLiteral()
 {
-    SyntaxNode *node = new LiteralExpressionNode(currentToken, std::stoi(currentToken.value));
+    SyntaxNode *node = new LiteralExpressionNode(_syntaxTree, currentToken, std::stoi(currentToken.value));
     NextToken();
     return node;
 }
@@ -443,5 +443,5 @@ SyntaxNode *Parser::ParseNumberLiteral()
 SyntaxNode *Parser::ParseNameExpression()
 {
     Token name = Expect(SyntaxKind::IDENTIFIER);
-    return new NameExpressionNode(name);
+    return new NameExpressionNode(_syntaxTree, name);
 }

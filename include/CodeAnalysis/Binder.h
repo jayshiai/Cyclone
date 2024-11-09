@@ -643,7 +643,7 @@ private:
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
     void BindFunctionDeclaration(FunctionDeclarationSyntax *node);
 
-    VariableSymbol *BindVariable(Token identifier, bool isReadOnly, TypeSymbol type);
+    VariableSymbol *BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type);
     TypeSymbol BindTypeClause(TypeClauseNode *node);
 
     BoundStatement *BindExpressionStatement(ExpressionStatementSyntax *node);
@@ -663,7 +663,7 @@ private:
     BoundExpression *BindAssignmentExpression(AssignmentExpressionNode *node);
     BoundExpression *BindCallExpression(CallExpressionNode *node);
     BoundExpression *BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit = false);
-    BoundExpression *BindConversion(TextSpan diagnosticSpan, BoundExpression *expression, TypeSymbol type, bool allowExplicit = false);
+    BoundExpression *BindConversion(TextLocation diagnosticLocation, BoundExpression *expression, TypeSymbol type, bool allowExplicit = false);
 };
 
 class Conversion

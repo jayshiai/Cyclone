@@ -219,20 +219,20 @@ void PrintDiagnostic(Diagnostic diagnostic, SourceText Text)
     const std::string YELLOW = "\033[33m";
     const std::string BLUE = "\033[34m";
 
-    int lineIndex = Text.GetLineIndex(diagnostic.Span.Start);
+    int lineIndex = Text.GetLineIndex(diagnostic.Location.Span.Start);
     TextLine line = Text._lines[lineIndex];
     int lineNumber = lineIndex + 1;
-    int character = diagnostic.Span.Start - line.Start + 1;
+    int character = diagnostic.Location.Span.Start - line.Start + 1;
 
     std::cout << YELLOW << "(" << lineNumber << "," << character << "): " << RESET_COLOR;
 
     std::cout << RED << diagnostic.ToString() << RESET_COLOR << std::endl;
 
-    TextSpan prefixSpan = TextSpan::FromBounds(line.Start, diagnostic.Span.Start);
-    TextSpan suffixSpan = TextSpan::FromBounds(diagnostic.Span.End, line.End);
+    TextSpan prefixSpan = TextSpan::FromBounds(line.Start, diagnostic.Location.Span.Start);
+    TextSpan suffixSpan = TextSpan::FromBounds(diagnostic.Location.Span.End, line.End);
 
     std::string prefix = Text.ToString(prefixSpan);
-    std::string error = Text.ToString(diagnostic.Span);
+    std::string error = Text.ToString(diagnostic.Location.Span);
     std::string suffix = Text.ToString(suffixSpan);
 
     std::cout << "    " << RESET_COLOR << prefix

@@ -33,11 +33,7 @@ int main(int argc, char *argv[])
         std::cerr << "error: could not open file " << path << std::endl;
         return 1;
     }
-
-    std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    // std::cout << text << std::endl;
-    SyntaxTree syntaxTree = SyntaxTree::Parse(text);
-
+    SyntaxTree syntaxTree = SyntaxTree::Load(path);
     Compilation *compilation = new Compilation(&syntaxTree);
     std::unordered_map<VariableSymbol, std::any> variables;
     EvaluationResult result = compilation->Evaluate(variables);
@@ -52,7 +48,7 @@ int main(int argc, char *argv[])
     else
     {
         IndentedTextWriter writer(std::cout);
-        writer.WriteDiagnostics(result.Diagnostics, syntaxTree);
+        writer.WriteDiagnostics(result.Diagnostics);
     }
 
     return 0;

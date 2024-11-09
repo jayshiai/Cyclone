@@ -5,159 +5,158 @@ void DiagnosticBag::AddRange(const DiagnosticBag &diagnostics)
     _diagnostics.insert(_diagnostics.end(), diagnostics._diagnostics.begin(), diagnostics._diagnostics.end());
 }
 
-void DiagnosticBag::ReportInvalidNumber(const TextSpan &span, const std::string &text, const std::string &type)
+void DiagnosticBag::ReportInvalidNumber(const TextLocation &location, const std::string &text, const std::string &type)
 {
     std::ostringstream oss;
     oss << "The number " << text << " isn't a valid " << type << ".";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportBadCharacter(int position, char character)
+void DiagnosticBag::ReportBadCharacter(TextLocation location, char character)
 {
-    TextSpan span(position, 1);
     std::ostringstream oss;
     oss << "Bad character input: '" << character << "'.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
-void DiagnosticBag::ReportUnterminatedString(TextSpan span)
+void DiagnosticBag::ReportUnterminatedString(TextLocation location)
 {
-    Report(span, "Unterminated string literal.");
+    Report(location, "Unterminated string literal.");
 }
-void DiagnosticBag::ReportUnexpectedToken(const TextSpan &span, const std::string &actualKind, const std::string &expectedKind)
+void DiagnosticBag::ReportUnexpectedToken(const TextLocation &location, const std::string &actualKind, const std::string &expectedKind)
 {
     std::ostringstream oss;
     oss << "Unexpected token <" << actualKind << ">, expected <" << expectedKind << ">.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportUndefinedUnaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &operandType)
+void DiagnosticBag::ReportUndefinedUnaryOperator(const TextLocation &location, const std::string &operatorText, const std::string &operandType)
 {
     std::ostringstream oss;
     oss << "Unary operator '" << operatorText << "' is not defined for type " << operandType << ".";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportUndefinedBinaryOperator(const TextSpan &span, const std::string &operatorText, const std::string &leftType, const std::string &rightType)
+void DiagnosticBag::ReportUndefinedBinaryOperator(const TextLocation &location, const std::string &operatorText, const std::string &leftType, const std::string &rightType)
 {
     std::ostringstream oss;
     oss << "Binary operator '" << operatorText << "' is not defined for types " << leftType << " and " << rightType << ".";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportParameterAlreadyDeclared(TextSpan span, std::string name)
+void DiagnosticBag::ReportParameterAlreadyDeclared(TextLocation location, std::string name)
 {
     std::ostringstream oss;
     oss << "Parameter '" << name << "' is already declared.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportUndefinedName(const TextSpan &span, const std::string &name)
+void DiagnosticBag::ReportUndefinedName(const TextLocation &location, const std::string &name)
 {
     std::ostringstream oss;
     oss << "Variable '" << name << "' doesn't exist.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportUndefinedType(const TextSpan &span, const std::string &name)
+void DiagnosticBag::ReportUndefinedType(const TextLocation &location, const std::string &name)
 {
     std::ostringstream oss;
     oss << "Type '" << name << "' doesn't exist.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::Report(const TextSpan &span, const std::string &message)
+void DiagnosticBag::Report(const TextLocation &location, const std::string &message)
 {
-    _diagnostics.emplace_back(span, message);
+    _diagnostics.emplace_back(location, message);
 }
 
-void DiagnosticBag::ReportCannotConvert(TextSpan span, std::string fromType, std::string toType)
+void DiagnosticBag::ReportCannotConvert(TextLocation location, std::string fromType, std::string toType)
 {
     std::ostringstream oss;
     oss << "Cannot convert type " << fromType << " to " << toType << ".";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportCannotConvertImplicitly(const TextSpan &span, const std::string &fromType, const std::string &toType)
+void DiagnosticBag::ReportCannotConvertImplicitly(const TextLocation &location, const std::string &fromType, const std::string &toType)
 {
     std::ostringstream oss;
     oss << "Cannot convert type " << fromType << " to " << toType << " implicitly.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportSymbolAlreadyDeclared(const TextSpan &span, const std::string &name)
+void DiagnosticBag::ReportSymbolAlreadyDeclared(const TextLocation &location, const std::string &name)
 {
     std::ostringstream oss;
     oss << name << "' is already declared.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportVariableAlreadyDeclared(TextSpan span, std::string name)
+void DiagnosticBag::ReportVariableAlreadyDeclared(TextLocation location, std::string name)
 {
     std::ostringstream oss;
     oss << "Variable '" << name << "' is already declared.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportCannotAssign(TextSpan span, std::string name)
+void DiagnosticBag::ReportCannotAssign(TextLocation location, std::string name)
 {
     std::ostringstream oss;
     oss << "Variable '" << name << "' is read-only and cannot be assigned to.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportUndefinedFunction(const TextSpan &span, const std::string &name)
+void DiagnosticBag::ReportUndefinedFunction(const TextLocation &location, const std::string &name)
 {
     std::ostringstream oss;
     oss << "Function '" << name << "' doesn't exist.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportWrongArgumentCount(const TextSpan &span, const std::string &name, int expectedCount, int actualCount)
+void DiagnosticBag::ReportWrongArgumentCount(const TextLocation &location, const std::string &name, int expectedCount, int actualCount)
 {
     std::ostringstream oss;
     oss << "Function '" << name << "' requires " << expectedCount << " arguments but was given " << actualCount << ".";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportWrongArgumentType(const TextSpan &span, const std::string &name, const std::string &expectedType, const std::string &actualType)
+void DiagnosticBag::ReportWrongArgumentType(const TextLocation &location, const std::string &name, const std::string &expectedType, const std::string &actualType)
 {
     std::ostringstream oss;
     oss << "Parameter '" << name << "' requires a value of type " << expectedType << " but was given a value of type " << actualType << ".";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportExpressionMustHaveValue(const TextSpan &span)
+void DiagnosticBag::ReportExpressionMustHaveValue(const TextLocation &location)
 {
-    Report(span, "Expression must have a value.");
+    Report(location, "Expression must have a value.");
 }
 
-void DiagnosticBag::ReportInvalidBreakOrContinue(TextSpan span, std::string text)
+void DiagnosticBag::ReportInvalidBreakOrContinue(TextLocation location, std::string text)
 {
     std::ostringstream oss;
     oss << "The keyword '" << text << "' can only be used inside of loops.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportInvalidReturn(TextSpan span)
+void DiagnosticBag::ReportInvalidReturn(TextLocation location)
 {
-    Report(span, "The 'return' keyword can only be used inside of functions.");
+    Report(location, "The 'return' keyword can only be used inside of functions.");
 }
 
-void DiagnosticBag::ReportInvalidReturnExpression(TextSpan span, std::string name)
+void DiagnosticBag::ReportInvalidReturnExpression(TextLocation location, std::string name)
 {
     std::ostringstream oss;
     oss << "Since the function'" << name << "' does not return a value the 'return' keyword cannot be followed by an expression.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportMissingReturnExpression(TextSpan span, std::string name)
+void DiagnosticBag::ReportMissingReturnExpression(TextLocation location, std::string name)
 {
     std::ostringstream oss;
     oss << "An expression of type '" << name << "' expected.";
-    Report(span, oss.str());
+    Report(location, oss.str());
 }
 
-void DiagnosticBag::ReportAllPathsMustReturn(TextSpan span)
+void DiagnosticBag::ReportAllPathsMustReturn(TextLocation location)
 {
-    Report(span, "Not all code paths return a value.");
+    Report(location, "Not all code paths return a value.");
 }

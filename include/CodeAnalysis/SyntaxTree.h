@@ -85,12 +85,37 @@ enum class SyntaxKind
 };
 
 std::string convertSyntaxKindToString(SyntaxKind kind);
+class CompilationUnitNode;
+
+class Token;
+
+class SyntaxTree
+{
+public:
+    SourceText Text;
+    std::vector<Diagnostic> Diagnostics;
+    CompilationUnitNode *Root;
+    static SyntaxTree Parse(std::string text);
+    static SyntaxTree Parse(SourceText text);
+    static void Parse(SyntaxTree *syntaxTree, CompilationUnitNode *&root, std::vector<Diagnostic> &diagnostics);
+    static std::vector<Token> ParseTokens(std::string text);
+    static std::vector<Token> ParseTokens(std::string text, std::vector<Diagnostic> &diagnostics);
+    static std::vector<Token> ParseTokens(SourceText text);
+    static std::vector<Token> ParseTokens(SourceText text, std::vector<Diagnostic> &diagnostics);
+    static SyntaxTree Load(std::string filename);
+
+private:
+    using ParseHandler = void (*)(SyntaxTree *syntaxTree, CompilationUnitNode *&root, std::vector<Diagnostic> &diagnostics);
+    SyntaxTree(SourceText text, ParseHandler handler);
+};
 
 class SyntaxNode
 {
 public:
     virtual ~SyntaxNode() = default;
+    SyntaxTree *syntaxTree;
     SyntaxKind Kind;
+    TextLocation Location;
     virtual std::vector<SyntaxNode *> GetChildren() const { return {}; }
     virtual TextSpan Span() const
     {
@@ -125,12 +150,12 @@ public:
         WriteTo(writer);
         return writer.str();
     }
+    SyntaxNode(SyntaxTree *_syntaxTree, SyntaxKind kind) : syntaxTree(_syntaxTree), Kind(kind), Location(_syntaxTree->Text, Span())
+    {
+    }
 
 private:
     static void PrettyPrint(std::ostream &os, SyntaxNode *node, std::string indent = "", bool isLast = true);
-
-protected:
-    SyntaxNode(SyntaxKind kind) : Kind(kind) {}
 };
 
 class Token : public SyntaxNode
@@ -140,14 +165,19 @@ public:
     size_t position;
     TextSpan Span;
 
-    Token(SyntaxKind kind, std::string value, size_t position) : SyntaxNode(kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
-    Token() : SyntaxNode(SyntaxKind::BAD_TOKEN), Span(TextSpan(0, 0)) {};
-    Token(const Token &other)
-        : SyntaxNode(other.Kind), value(other.value), position(other.position), Span(other.Span) {}
+    Token(SyntaxTree *syntaxTree, SyntaxKind kind, std::string value, size_t position) : SyntaxNode(syntaxTree, kind), value(value), position(position), Span(TextSpan(position, value.empty() ? 0 : value.size())) {}
+    Token(SyntaxTree *syntaxTree) : SyntaxNode(syntaxTree, SyntaxKind::BAD_TOKEN), Span(TextSpan(0, 0)) {};
+    Token(SyntaxTree *syntaxtree, const Token &other)
+        : SyntaxNode(syntaxtree, other.Kind), value(other.value), position(other.position), Span(other.Span) {}
 
     bool operator==(const Token &other) const
     {
         return Kind == other.Kind && value == other.value && position == other.position;
+    }
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {};
     }
 };
 
@@ -155,7 +185,7 @@ public:
 class StatementSyntax : public SyntaxNode
 {
 public:
-    StatementSyntax(SyntaxKind kind) : SyntaxNode(kind) {}
+    StatementSyntax(SyntaxTree *syntaxTree, SyntaxKind kind) : SyntaxNode(syntaxTree, kind) {}
     virtual ~StatementSyntax() = 0; // Pure virtual destructor to make it abstract
 };
 
@@ -246,8 +276,8 @@ class TypeClauseNode : public SyntaxNode
 public:
     Token ColonToken;
     Token IdentifierToken;
-    TypeClauseNode(Token ColonToken, Token IdentifierToken)
-        : SyntaxNode(SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken) {}
+    TypeClauseNode(SyntaxTree *syntaxTree, Token ColonToken, Token IdentifierToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -263,8 +293,8 @@ public:
 class VariableDeclarationSyntax : public StatementSyntax
 {
 public:
-    VariableDeclarationSyntax(Token keyword, Token identifier, TypeClauseNode *typeClause, Token equalsToken, SyntaxNode *initializer)
-        : StatementSyntax(SyntaxKind::VariableDeclaration), Keyword(keyword), Identifier(identifier), TypeClause(typeClause), EqualsToken(equalsToken), Initializer(initializer) {}
+    VariableDeclarationSyntax(SyntaxTree *syntaxTree, Token keyword, Token identifier, TypeClauseNode *typeClause, Token equalsToken, SyntaxNode *initializer)
+        : StatementSyntax(syntaxTree, SyntaxKind::VariableDeclaration), Keyword(keyword), Identifier(identifier), TypeClause(typeClause), EqualsToken(equalsToken), Initializer(initializer) {}
     Token Identifier;
     Token EqualsToken;
     Token Keyword;
@@ -280,8 +310,8 @@ public:
 class ExpressionStatementSyntax : public StatementSyntax
 {
 public:
-    ExpressionStatementSyntax(SyntaxNode *expression)
-        : StatementSyntax(SyntaxKind::ExpressionStatement), Expression(expression) {}
+    ExpressionStatementSyntax(SyntaxTree *syntaxTree, SyntaxNode *expression)
+        : StatementSyntax(syntaxTree, SyntaxKind::ExpressionStatement), Expression(expression) {}
     SyntaxNode *Expression;
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -291,8 +321,8 @@ public:
 class BlockStatementSyntax : public StatementSyntax
 {
 public:
-    BlockStatementSyntax(Token openBraceToken, std::vector<StatementSyntax *> statements, Token closeBraceToken)
-        : StatementSyntax(SyntaxKind::BlockStatement), OpenBraceToken(openBraceToken), Statements(statements), CloseBraceToken(closeBraceToken) {}
+    BlockStatementSyntax(SyntaxTree *syntaxTree, Token openBraceToken, std::vector<StatementSyntax *> statements, Token closeBraceToken)
+        : StatementSyntax(syntaxTree, SyntaxKind::BlockStatement), OpenBraceToken(openBraceToken), Statements(statements), CloseBraceToken(closeBraceToken) {}
     Token OpenBraceToken;
     std::vector<StatementSyntax *> Statements;
     Token CloseBraceToken;
@@ -312,8 +342,8 @@ public:
 class ForStatementSyntax : public StatementSyntax
 {
 public:
-    ForStatementSyntax(Token keyword, Token identifier, Token equalsToken, SyntaxNode *lowerBound, Token toKeyword, SyntaxNode *upperBound, StatementSyntax *body)
-        : StatementSyntax(SyntaxKind::ForStatement), Keyword(keyword), Identifier(identifier), EqualsToken(equalsToken), LowerBound(lowerBound), ToKeyword(toKeyword), UpperBound(upperBound), Body(body) {}
+    ForStatementSyntax(SyntaxTree *syntaxTree, Token keyword, Token identifier, Token equalsToken, SyntaxNode *lowerBound, Token toKeyword, SyntaxNode *upperBound, StatementSyntax *body)
+        : StatementSyntax(syntaxTree, SyntaxKind::ForStatement), Keyword(keyword), Identifier(identifier), EqualsToken(equalsToken), LowerBound(lowerBound), ToKeyword(toKeyword), UpperBound(upperBound), Body(body) {}
     Token Keyword;
     Token Identifier;
     Token EqualsToken;
@@ -331,8 +361,8 @@ class BreakStatementSyntax : public StatementSyntax
 {
 public:
     Token Keyword;
-    BreakStatementSyntax(Token keyword)
-        : StatementSyntax(SyntaxKind::BreakStatement), Keyword(keyword) {}
+    BreakStatementSyntax(SyntaxTree *syntaxTree, Token keyword)
+        : StatementSyntax(syntaxTree, SyntaxKind::BreakStatement), Keyword(keyword) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -345,8 +375,8 @@ class ContinueStatementSyntax : public StatementSyntax
 
 public:
     Token Keyword;
-    ContinueStatementSyntax(Token keyword)
-        : StatementSyntax(SyntaxKind::ContinueStatement), Keyword(keyword) {}
+    ContinueStatementSyntax(SyntaxTree *syntaxTree, Token keyword)
+        : StatementSyntax(syntaxTree, SyntaxKind::ContinueStatement), Keyword(keyword) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -359,8 +389,8 @@ class ReturnStatementSyntax : public StatementSyntax
 public:
     Token Keyword;
     SyntaxNode *Expression;
-    ReturnStatementSyntax(Token keyword, SyntaxNode *expression)
-        : StatementSyntax(SyntaxKind::ReturnStatement), Keyword(keyword), Expression(expression) {}
+    ReturnStatementSyntax(SyntaxTree *syntaxTree, Token keyword, SyntaxNode *expression)
+        : StatementSyntax(syntaxTree, SyntaxKind::ReturnStatement), Keyword(keyword), Expression(expression) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -370,8 +400,8 @@ public:
 class ElseClauseSyntax : public SyntaxNode
 {
 public:
-    ElseClauseSyntax(Token elseKeyword, StatementSyntax *elseStatement)
-        : SyntaxNode(SyntaxKind::ElseClause), ElseKeyword(elseKeyword), ElseStatement(elseStatement) {}
+    ElseClauseSyntax(SyntaxTree *syntaxTree, Token elseKeyword, StatementSyntax *elseStatement)
+        : SyntaxNode(syntaxTree, SyntaxKind::ElseClause), ElseKeyword(elseKeyword), ElseStatement(elseStatement) {}
 
     Token ElseKeyword;
     StatementSyntax *ElseStatement;
@@ -384,8 +414,8 @@ public:
 class IfStatementSyntax : public StatementSyntax
 {
 public:
-    IfStatementSyntax(Token ifkeyword, SyntaxNode *condition, StatementSyntax *thenStatement, ElseClauseSyntax *elseClause)
-        : StatementSyntax(SyntaxKind::IfStatement), IfKeyword(ifkeyword), Condition(condition), ThenStatement(thenStatement), ElseClause(elseClause) {}
+    IfStatementSyntax(SyntaxTree *syntaxTree, Token ifkeyword, SyntaxNode *condition, StatementSyntax *thenStatement, ElseClauseSyntax *elseClause)
+        : StatementSyntax(syntaxTree, SyntaxKind::IfStatement), IfKeyword(ifkeyword), Condition(condition), ThenStatement(thenStatement), ElseClause(elseClause) {}
     Token IfKeyword;
     SyntaxNode *Condition;
     StatementSyntax *ThenStatement;
@@ -404,8 +434,8 @@ public:
 class WhileStatementSyntax : public StatementSyntax
 {
 public:
-    WhileStatementSyntax(Token whileKeyword, SyntaxNode *condition, StatementSyntax *body)
-        : StatementSyntax(SyntaxKind::WhileStatement), WhileKeyword(whileKeyword), Condition(condition), Body(body) {}
+    WhileStatementSyntax(SyntaxTree *syntaxTree, Token whileKeyword, SyntaxNode *condition, StatementSyntax *body)
+        : StatementSyntax(syntaxTree, SyntaxKind::WhileStatement), WhileKeyword(whileKeyword), Condition(condition), Body(body) {}
     Token WhileKeyword;
     SyntaxNode *Condition;
     StatementSyntax *Body;
@@ -418,7 +448,7 @@ public:
 class MemberSyntax : public SyntaxNode
 {
 public:
-    MemberSyntax(SyntaxKind kind) : SyntaxNode(kind) {}
+    MemberSyntax(SyntaxTree *syntaxTree, SyntaxKind kind) : SyntaxNode(syntaxTree, kind) {}
     virtual std::vector<SyntaxNode *> GetChildren() const override
     {
         return {};
@@ -427,8 +457,8 @@ public:
 class GlobalStatementSyntax : public MemberSyntax
 {
 public:
-    GlobalStatementSyntax(StatementSyntax *statement)
-        : MemberSyntax(SyntaxKind::GlobalStatement), Statement(statement) {}
+    GlobalStatementSyntax(SyntaxTree *syntaxTree, StatementSyntax *statement)
+        : MemberSyntax(syntaxTree, SyntaxKind::GlobalStatement), Statement(statement) {}
     StatementSyntax *Statement;
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -442,8 +472,8 @@ public:
     Token IdentifierToken;
     TypeClauseNode *Type;
 
-    ParameterNode(Token IdentifierToken, TypeClauseNode *Type)
-        : SyntaxNode(SyntaxKind::Parameter), IdentifierToken(IdentifierToken), Type(Type) {}
+    ParameterNode(SyntaxTree *syntaxTree, Token IdentifierToken, TypeClauseNode *Type)
+        : SyntaxNode(syntaxTree, SyntaxKind::Parameter), IdentifierToken(IdentifierToken), Type(Type) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -454,8 +484,8 @@ public:
 class FunctionDeclarationSyntax : public MemberSyntax
 {
 public:
-    FunctionDeclarationSyntax(Token functionKeyword, Token identifier, Token openParenthesisToken, SeparatedSyntaxList<ParameterNode> parameters, Token closeParenthesisToken, TypeClauseNode *type, BlockStatementSyntax *body)
-        : MemberSyntax(SyntaxKind::FunctionDeclaration), FunctionKeyword(functionKeyword), Identifier(identifier), OpenParenthesisToken(openParenthesisToken), Parameters(parameters), CloseParenthesisToken(closeParenthesisToken), Type(type), Body(body) {}
+    FunctionDeclarationSyntax(SyntaxTree *syntaxTree, Token functionKeyword, Token identifier, Token openParenthesisToken, SeparatedSyntaxList<ParameterNode> parameters, Token closeParenthesisToken, TypeClauseNode *type, BlockStatementSyntax *body)
+        : MemberSyntax(syntaxTree, SyntaxKind::FunctionDeclaration), FunctionKeyword(functionKeyword), Identifier(identifier), OpenParenthesisToken(openParenthesisToken), Parameters(parameters), CloseParenthesisToken(closeParenthesisToken), Type(type), Body(body) {}
     Token FunctionKeyword;
     Token Identifier;
     Token OpenParenthesisToken;
@@ -491,8 +521,8 @@ public:
 class CompilationUnitNode : public SyntaxNode
 {
 public:
-    CompilationUnitNode(std::vector<MemberSyntax *> members, Token endOfFileToken)
-        : SyntaxNode(SyntaxKind::CompilationUnit), Members(members), EndOfFileToken(endOfFileToken) {}
+    CompilationUnitNode(SyntaxTree *syntaxTree, std::vector<MemberSyntax *> members, Token endOfFileToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::CompilationUnit), Members(members), EndOfFileToken(endOfFileToken) {}
 
     std::vector<MemberSyntax *> Members;
     Token EndOfFileToken;
@@ -512,10 +542,12 @@ class LiteralExpressionNode : public SyntaxNode
 public:
     Token LiteralToken;
     std::any Value;
-    LiteralExpressionNode(Token LiteralToken)
-        : SyntaxNode(SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(LiteralToken.value) {}
-    LiteralExpressionNode(Token LiteralToken, std::any Value)
-        : SyntaxNode(SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(Value) {}
+
+    LiteralExpressionNode(SyntaxTree *syntaxtree, Token LiteralToken, std::any Value)
+        : SyntaxNode(syntaxTree, SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(Value) {}
+
+    LiteralExpressionNode(SyntaxTree *syntaxtree, Token LiteralToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(LiteralToken.value) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&LiteralToken))};
@@ -526,8 +558,8 @@ class NameExpressionNode : public SyntaxNode
 {
 public:
     Token IdentifierToken;
-    NameExpressionNode(Token IdentifierToken)
-        : SyntaxNode(SyntaxKind::NameExpression), IdentifierToken(IdentifierToken) {}
+    NameExpressionNode(SyntaxTree *syntaxtree, Token IdentifierToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::NameExpression), IdentifierToken(IdentifierToken) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken))};
@@ -540,8 +572,8 @@ public:
     Token IdentifierToken;
     Token EqualsToken;
     SyntaxNode *Expression;
-    AssignmentExpressionNode(Token IdentifierToken, Token EqualsToken, SyntaxNode *Expression)
-        : SyntaxNode(SyntaxKind::AssignmentExpression), IdentifierToken(IdentifierToken), EqualsToken(EqualsToken), Expression(Expression) {}
+    AssignmentExpressionNode(SyntaxTree *syntaxtree, Token IdentifierToken, Token EqualsToken, SyntaxNode *Expression)
+        : SyntaxNode(syntaxTree, SyntaxKind::AssignmentExpression), IdentifierToken(IdentifierToken), EqualsToken(EqualsToken), Expression(Expression) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&IdentifierToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Expression};
@@ -553,8 +585,8 @@ public:
     SyntaxNode *left;
     SyntaxNode *right;
     Token OperatorToken;
-    BinaryExpressionNode(SyntaxNode *left, SyntaxNode *right, Token OperatorToken)
-        : SyntaxNode(SyntaxKind::BinaryExpression), left(left), right(right), OperatorToken(OperatorToken) {}
+    BinaryExpressionNode(SyntaxTree *syntaxtree, SyntaxNode *left, SyntaxNode *right, Token OperatorToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::BinaryExpression), left(left), right(right), OperatorToken(OperatorToken) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -566,8 +598,8 @@ class ParenthesizedExpressionNode : public SyntaxNode
 {
 public:
     SyntaxNode *expression;
-    ParenthesizedExpressionNode(SyntaxNode *expression)
-        : SyntaxNode(SyntaxKind::ParenthesizedExpression), expression(expression) {}
+    ParenthesizedExpressionNode(SyntaxTree *syntaxTree, SyntaxNode *expression)
+        : SyntaxNode(syntaxTree, SyntaxKind::ParenthesizedExpression), expression(expression) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {expression};
@@ -579,8 +611,8 @@ class UnaryExpressionNode : public SyntaxNode
 public:
     SyntaxNode *expression;
     Token OperatorToken;
-    UnaryExpressionNode(SyntaxNode *expression, Token OperatorToken)
-        : SyntaxNode(SyntaxKind::UnaryExpression), expression(expression), OperatorToken(OperatorToken) {}
+    UnaryExpressionNode(SyntaxTree *syntaxTree, SyntaxNode *expression, Token OperatorToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::UnaryExpression), expression(expression), OperatorToken(OperatorToken) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OperatorToken)), expression};
@@ -594,8 +626,8 @@ public:
     Token OpenParenthesisToken;
     SeparatedSyntaxList<SyntaxNode> Arguments;
     Token CloseParenthesisToken;
-    CallExpressionNode(Token IdentifierToken, Token OpenParenthesisToken, SeparatedSyntaxList<SyntaxNode> Arguments, Token CloseParenthesisToken)
-        : SyntaxNode(SyntaxKind::CallExpression), IdentifierToken(IdentifierToken), OpenParenthesisToken(OpenParenthesisToken), Arguments(Arguments), CloseParenthesisToken(CloseParenthesisToken) {}
+    CallExpressionNode(SyntaxTree *syntaxTree, Token IdentifierToken, Token OpenParenthesisToken, SeparatedSyntaxList<SyntaxNode> Arguments, Token CloseParenthesisToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::CallExpression), IdentifierToken(IdentifierToken), OpenParenthesisToken(OpenParenthesisToken), Arguments(Arguments), CloseParenthesisToken(CloseParenthesisToken) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -614,21 +646,6 @@ public:
         children.push_back(const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseParenthesisToken)));
         return children;
     }
-};
-
-class SyntaxTree
-{
-public:
-    SourceText Text;
-    std::vector<Diagnostic> Diagnostics;
-    CompilationUnitNode *Root;
-    static SyntaxTree Parse(std::string text);
-    static SyntaxTree Parse(SourceText text);
-    static std::vector<Token> ParseTokens(std::string text);
-    static std::vector<Token> ParseTokens(SourceText text);
-
-private:
-    SyntaxTree(SourceText text);
 };
 
 #endif

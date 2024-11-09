@@ -111,31 +111,38 @@ public:
         ResetColor();
     }
 
-    void WriteDiagnostics(std::vector<Diagnostic> diagnostics, SyntaxTree syntaxtree)
+    void WriteDiagnostics(std::vector<Diagnostic> diagnostics)
     {
 
         std::sort(diagnostics.begin(), diagnostics.end(), [](const Diagnostic &a, const Diagnostic &b)
-                  { return a.Span.Start < b.Span.Start; });
+                  { return a.Location.Span.Start < b.Location.Span.Start; });
         for (auto diagnostic : diagnostics)
         {
-            auto lineIndex = syntaxtree.Text.GetLineIndex(diagnostic.Span.Start);
-            auto line = syntaxtree.Text._lines[lineIndex];
-            auto lineNumber = lineIndex + 1;
-            auto character = diagnostic.Span.Start - line.Start + 1;
+
+            SourceText text = diagnostic.Location.Text;
+            std::string Filename = diagnostic.Location.Filename;
+            int startLine = diagnostic.Location.StartLine + 1;
+            int startCharacter = diagnostic.Location.StartCharacter + 1;
+            int endLine = diagnostic.Location.EndLine + 1;
+            int endCharacter = diagnostic.Location.EndCharacter + 1;
+
+            TextSpan span = diagnostic.Location.Span;
+            int lineIndex = text.GetLineIndex(span.Start);
+            TextLine line = text._lines[lineIndex];
 
             WriteLine();
             SetForegroundColor(RED);
-            Write("(" + std::to_string(lineNumber) + "," + std::to_string(character) + "): ");
+            Write(Filename + "(" + std::to_string(startLine) + "," + std::to_string(startCharacter) + "," + std::to_string(endLine) + "," + std::to_string(endCharacter) + "): ");
             Write(diagnostic.Message);
             WriteLine();
             ResetColor();
 
-            auto prefixSpan = TextSpan::FromBounds(line.Start, diagnostic.Span.Start);
-            auto suffixSpan = TextSpan::FromBounds(diagnostic.Span.End, line.End);
+            auto prefixSpan = TextSpan::FromBounds(line.Start, span.Start);
+            auto suffixSpan = TextSpan::FromBounds(span.End, line.End);
 
-            auto prefix = syntaxtree.Text.ToString(prefixSpan);
-            auto error = syntaxtree.Text.ToString(diagnostic.Span);
-            auto suffix = syntaxtree.Text.ToString(suffixSpan);
+            auto prefix = text.ToString(prefixSpan);
+            auto error = text.ToString(span);
+            auto suffix = text.ToString(suffixSpan);
 
             Write("    ");
             Write(prefix);

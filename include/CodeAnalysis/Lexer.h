@@ -8,7 +8,7 @@
 class Lexer
 {
 public:
-    Lexer(SourceText &text) : input(text), pos(0), currentChar(input[pos]), lookAhead(input[pos + 1]) {};
+    Lexer(SyntaxTree *syntaxTree) : _syntaxTree(syntaxTree), input(syntaxTree->Text), pos(0), currentChar(input[0]), lookAhead(input[1]) {};
     std::vector<Token> tokenize();
     const DiagnosticBag &GetDiagnostics() const
     {
@@ -18,6 +18,7 @@ public:
 private:
     DiagnosticBag _diagnostics;
     SourceText input;
+    SyntaxTree *_syntaxTree;
     size_t pos;
     char currentChar;
     char lookAhead;

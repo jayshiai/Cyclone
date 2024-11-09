@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include "CodeAnalysis/Diagnostic.h"
 #include "Utils.h"
+
 std::vector<Token> Lexer::tokenize()
 {
     std::vector<Token> tokens;
@@ -13,133 +14,133 @@ std::vector<Token> Lexer::tokenize()
         switch (currentChar)
         {
         case '+':
-            tokens.push_back(Token{SyntaxKind::PLUS, "+", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::PLUS, "+", pos});
             advance();
             break;
 
         case '-':
-            tokens.push_back(Token{SyntaxKind::MINUS, "-", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::MINUS, "-", pos});
             advance();
             break;
 
         case '*':
-            tokens.push_back(Token{SyntaxKind::MULTIPLY, "*", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::MULTIPLY, "*", pos});
             advance();
             break;
 
         case '/':
-            tokens.push_back(Token{SyntaxKind::DIVIDE, "/", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::DIVIDE, "/", pos});
             advance();
             break;
 
         case '(':
-            tokens.push_back(Token{SyntaxKind::LPAREN, "(", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::LPAREN, "(", pos});
             advance();
             break;
 
         case ')':
-            tokens.push_back(Token{SyntaxKind::RPAREN, ")", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::RPAREN, ")", pos});
             advance();
             break;
         case '{':
-            tokens.push_back(Token{SyntaxKind::OPEN_BRACE, "{", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::OPEN_BRACE, "{", pos});
             advance();
             break;
         case '}':
-            tokens.push_back(Token{SyntaxKind::CLOSE_BRACE, "}", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::CLOSE_BRACE, "}", pos});
             advance();
             break;
         case ':':
-            tokens.push_back(Token{SyntaxKind::COLON, ":", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::COLON, ":", pos});
             advance();
             break;
         case ',':
-            tokens.push_back(Token{SyntaxKind::COMMA, ",", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::COMMA, ",", pos});
             advance();
             break;
         case '~':
-            tokens.push_back(Token{SyntaxKind::TILDE, "~", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::TILDE, "~", pos});
             advance();
             break;
         case '^':
-            tokens.push_back(Token{SyntaxKind::HAT, "^", pos});
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::HAT, "^", pos});
             advance();
             break;
         case '&':
             if (lookAhead == '&')
             {
-                tokens.push_back(Token{SyntaxKind::AMPERSAND_AMPERSAND, "&&", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::AMPERSAND_AMPERSAND, "&&", pos});
                 advance();
                 advance();
             }
             else
             {
-                tokens.push_back(Token{SyntaxKind::AMPERSAND, "&", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::AMPERSAND, "&", pos});
                 advance();
             }
             break;
         case '|':
             if (lookAhead == '|')
             {
-                tokens.push_back(Token{SyntaxKind::PIPE_PIPE, "||", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::PIPE_PIPE, "||", pos});
                 advance();
                 advance();
             }
             else
             {
-                tokens.push_back(Token{SyntaxKind::PIPE, "|", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::PIPE, "|", pos});
                 advance();
             }
             break;
         case '=':
             if (lookAhead == '=')
             {
-                tokens.push_back(Token{SyntaxKind::EQUALS_EQUALS, "==", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::EQUALS_EQUALS, "==", pos});
                 advance();
                 advance();
             }
             else
             {
-                tokens.push_back(Token{SyntaxKind::EQUALS, "=", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::EQUALS, "=", pos});
                 advance();
             }
             break;
         case '!':
             if (lookAhead == '=')
             {
-                tokens.push_back(Token{SyntaxKind::BANG_EQUALS, "!=", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::BANG_EQUALS, "!=", pos});
                 advance();
                 advance();
             }
             else
             {
-                tokens.push_back(Token{SyntaxKind::BANG, "!", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::BANG, "!", pos});
                 advance();
             }
             break;
         case '<':
             if (lookAhead == '=')
             {
-                tokens.push_back(Token{SyntaxKind::LESS_EQUALS, "<=", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::LESS_EQUALS, "<=", pos});
                 advance();
                 advance();
             }
             else
             {
-                tokens.push_back(Token{SyntaxKind::LESS, "<", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::LESS, "<", pos});
                 advance();
             }
             break;
         case '>':
             if (lookAhead == '=')
             {
-                tokens.push_back(Token{SyntaxKind::GREATER_EQUALS, ">=", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::GREATER_EQUALS, ">=", pos});
                 advance();
                 advance();
             }
             else
             {
-                tokens.push_back(Token{SyntaxKind::GREATER, ">", pos});
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::GREATER, ">", pos});
                 advance();
             }
             break;
@@ -181,15 +182,17 @@ std::vector<Token> Lexer::tokenize()
             }
             else
             {
-                _diagnostics.ReportBadCharacter(pos, currentChar);
-                // tokens.push_back(Token{SyntaxKind::BAD_TOKEN, std::string(1, currentChar), pos});
+                TextSpan span(pos, 1);
+                TextLocation location(_syntaxTree->Text, span);
+                _diagnostics.ReportBadCharacter(location, currentChar);
+                // tokens.push_back(Token{_syntaxTree, SyntaxKind::BAD_TOKEN, std::string(1, currentChar), pos});
                 advance();
             }
 
             break;
         }
     }
-    tokens.push_back(Token{SyntaxKind::END_OF_FILE, "", pos});
+    tokens.push_back(Token{_syntaxTree, SyntaxKind::END_OF_FILE, "", pos});
     // std::cout << "TOKENS: " << std::endl;
     // for (auto token : tokens)
     // {
@@ -224,7 +227,7 @@ Token Lexer::GenerateStringToken()
     //     if (currentChar == '\0')
     //     {
     //         _diagnostics.ReportUnterminatedString(TextSpan(start, pos - start));
-    //         return Token{SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+    //         return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
     //     }
     //     advance();
     // }
@@ -236,8 +239,12 @@ Token Lexer::GenerateStringToken()
         case '\0':
         case '\r':
         case '\n':
-            _diagnostics.ReportUnterminatedString(TextSpan(start, pos - start));
-            return Token{SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+        {
+            TextSpan span(start, 1);
+            TextLocation location(_syntaxTree->Text, span);
+            _diagnostics.ReportUnterminatedString(location);
+            return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+        }
         case '"':
             done = true;
             break;
@@ -261,8 +268,12 @@ Token Lexer::GenerateStringToken()
                 result += '"';
                 break;
             default:
-                _diagnostics.ReportBadCharacter(pos - 1, currentChar);
+            {
+                TextSpan span(pos, 1);
+                TextLocation location(_syntaxTree->Text, span);
+                _diagnostics.ReportBadCharacter(location, currentChar);
                 break;
+            }
             }
             advance();
             break;
@@ -273,7 +284,7 @@ Token Lexer::GenerateStringToken()
         }
     }
     advance();
-    return Token{SyntaxKind::STRING, result, start};
+    return Token{_syntaxTree, SyntaxKind::STRING, result, start};
 }
 
 Token Lexer::GenerateWhitespaceToken()
@@ -282,7 +293,7 @@ Token Lexer::GenerateWhitespaceToken()
     {
         advance();
     }
-    return Token{SyntaxKind::WHITESPACE, " ", pos};
+    return Token{_syntaxTree, SyntaxKind::WHITESPACE, " ", pos};
 }
 Token Lexer::GenerateNumberToken()
 {
@@ -305,10 +316,12 @@ Token Lexer::GenerateNumberToken()
             advance();
         }
 
-        _diagnostics.ReportInvalidNumber(TextSpan(start, pos - start), result, "int");
-        return Token{SyntaxKind::BAD_TOKEN, result, start};
+        TextSpan span(start, pos - start);
+        TextLocation location(_syntaxTree->Text, span);
+        _diagnostics.ReportInvalidNumber(location, result, "int");
+        return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, result, start};
     }
-    return Token{SyntaxKind::NUMBER, result, pos};
+    return Token{_syntaxTree, SyntaxKind::NUMBER, result, pos};
 }
 
 Token Lexer::GenerateIdentifierToken()
@@ -321,7 +334,7 @@ Token Lexer::GenerateIdentifierToken()
     int length = pos - start;
     std::string text = input.ToString(start, length);
     SyntaxKind kind = checkKeyword(text);
-    return Token{kind, text, start};
+    return Token{_syntaxTree, kind, text, start};
 }
 
 SyntaxKind Lexer::checkKeyword(const std::string &keyword)
