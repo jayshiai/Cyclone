@@ -8,36 +8,70 @@
 #include "Utils.h"
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <string>
+#include <set>
 #include <unordered_map>
 #include <vector>
+
+namespace fs = std::filesystem;
+std::vector<std::string> GetFilePaths(const std::vector<std::string> &paths)
+{
+    std::vector<std::string> result;
+
+    for (const auto &path : paths)
+    {
+        if (fs::is_directory(path))
+        {
+            for (const auto &entry : fs::recursive_directory_iterator(path))
+            {
+                if (entry.is_regular_file() && entry.path().extension() == ".cy")
+                {
+                    result.push_back(entry.path().string());
+                }
+            }
+        }
+        else
+        {
+            result.push_back(path);
+        }
+    }
+
+    return result;
+}
+
 int main(int argc, char *argv[])
 {
-    if (argc == 1)
+    if (argc < 2)
     {
-        std::cerr << "usage: mc <source-paths>" << std::endl;
+        std::cerr << "usage: cyc <source-paths>" << std::endl;
         return 1;
     }
+    std::vector<std::string> args(argv + 1, argv + argc);
 
-    if (argc > 2)
+    auto paths = GetFilePaths(args);
+    std::vector<SyntaxTree *> syntaxTrees;
+    bool hasErrors = false;
+
+    for (const auto &path : paths)
     {
-        std::cerr << "error: only one path supported right now" << std::endl;
-        return 1;
+
+        if (!fs::exists(path))
+        {
+            std::cerr << "error: file '" << path << "' doesn't exist" << std::endl;
+            hasErrors = true;
+            continue;
+        }
+        SyntaxTree *syntaxTree = new SyntaxTree(SyntaxTree::Load(path));
+        syntaxTrees.push_back(syntaxTree);
     }
 
-    std::string path = argv[1];
-
-    std::ifstream file(path);
-    if (!file)
-    {
-        std::cerr << "error: could not open file " << path << std::endl;
+    if (hasErrors)
         return 1;
-    }
-    SyntaxTree syntaxTree = SyntaxTree::Load(path);
-    Compilation *compilation = new Compilation(&syntaxTree);
+
+    Compilation compilation(syntaxTrees);
     std::unordered_map<VariableSymbol, std::any> variables;
-    EvaluationResult result = compilation->Evaluate(variables);
-
+    auto result = compilation.Evaluate(variables);
     if (result.Diagnostics.empty())
     {
         if (result.Value.has_value())

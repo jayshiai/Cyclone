@@ -69,15 +69,23 @@ std::string cConvertBoundNodeKind(BoundNodeKind kind)
 
 EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::any> &variables)
 {
-    std::vector<Diagnostic> diagnostics = syntaxTree->Diagnostics;
-    diagnostics.insert(diagnostics.end(), GlobalScope()->Diagnostics.begin(), GlobalScope()->Diagnostics.end());
+
+    std::vector<Diagnostic> diagnostics;
+
+    for (const auto &st : syntaxTrees)
+    {
+        diagnostics.insert(diagnostics.end(), st->Diagnostics.begin(), st->Diagnostics.end());
+    }
+
+    BoundGlobalScope *globalScope = GlobalScope();
+    diagnostics.insert(diagnostics.end(), globalScope->Diagnostics.begin(), globalScope->Diagnostics.end());
 
     if (diagnostics.size() > 0)
     {
         return EvaluationResult(diagnostics, std::any());
     }
 
-    BoundProgram *program = Binder::BindProgram(GlobalScope());
+    BoundProgram *program = Binder::BindProgram(globalScope);
     GenerateCFG(program); // Generates Graph for Control Flow analysis
     if (program->Diagnostics.size() > 0)
     {
@@ -96,15 +104,13 @@ BoundGlobalScope *Compilation::GlobalScope()
 {
     if (_globalScope == nullptr)
     {
-        // _globalScope = new BoundGlobalScope(Binder::BindGlobalScope(Previous == nullptr ? nullptr : Previous->GlobalScope(), syntaxTree->Root));
-        BoundGlobalScope *globalScope = new BoundGlobalScope(Binder::BindGlobalScope(Previous == nullptr ? nullptr : Previous->GlobalScope(), syntaxTree->Root));
-
-        std::atomic<BoundGlobalScope *> &atomicGlobalScope = reinterpret_cast<std::atomic<BoundGlobalScope *> &>(_globalScope);
-
-        BoundGlobalScope *expected = nullptr;
-        atomicGlobalScope.compare_exchange_strong(expected, globalScope);
-
-        _globalScope = atomicGlobalScope.load();
+        BoundGlobalScope *previous = nullptr;
+        if (Previous != nullptr)
+        {
+            previous = Previous->GlobalScope();
+        }
+        auto trees = syntaxTrees;
+        _globalScope = Binder::BindGlobalScope(previous, trees);
     }
     return _globalScope;
 };
@@ -136,5 +142,5 @@ void Compilation::EmitTree(std::ostream &os)
 
 Compilation *Compilation::ContinueWith(SyntaxTree *syntaxTree)
 {
-    return new Compilation(this, syntaxTree);
+    return new Compilation(this, {syntaxTree});
 }

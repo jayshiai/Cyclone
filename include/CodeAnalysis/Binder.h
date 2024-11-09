@@ -621,7 +621,7 @@ public:
     {
         return _diagnostics;
     }
-    static BoundGlobalScope BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree);
+    static BoundGlobalScope *BindGlobalScope(BoundGlobalScope *previous, std::vector<SyntaxTree *> syntaxTrees);
     static BoundProgram *BindProgram(BoundGlobalScope *globalScope);
 
 private:

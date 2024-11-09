@@ -381,24 +381,42 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
         return new BoundErrorExpression();
     return new BoundCallExpression(function, boundArguments);
 }
-BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, CompilationUnitNode *tree)
+BoundGlobalScope *Binder::BindGlobalScope(BoundGlobalScope *previous, std::vector<SyntaxTree *> syntaxTrees)
 {
     BoundScope *parentScope = Binder::CreateParentScope(previous);
     Binder binder(parentScope, nullptr);
 
-    std::vector<BoundStatement *> statements;
-    for (auto *member : tree->Members)
+    std::vector<FunctionDeclarationSyntax *> functionDeclarations;
+    std::vector<GlobalStatementSyntax *> globalStatements;
+    for (const auto &st : syntaxTrees)
+    {
+        for (const auto &member : st->Root->Members)
+        {
+            if (auto funcDecl = dynamic_cast<FunctionDeclarationSyntax *>(member))
+            {
+
+                functionDeclarations.push_back(funcDecl);
+            }
+            else if (auto globalStatement = dynamic_cast<GlobalStatementSyntax *>(member))
+            {
+
+                globalStatements.push_back(globalStatement);
+            }
+        }
+    }
+
+    for (const auto &functionDeclaration : functionDeclarations)
     {
 
-        if (auto *function = dynamic_cast<FunctionDeclarationSyntax *>(member))
-        {
-            binder.BindFunctionDeclaration(function);
-        }
-        if (auto *memberStatement = dynamic_cast<GlobalStatementSyntax *>(member))
-        {
-            BoundStatement *statement = binder.BindStatement(memberStatement->Statement);
-            statements.push_back(statement);
-        }
+        binder.BindFunctionDeclaration(functionDeclaration);
+    }
+
+    std::vector<BoundStatement *> statements;
+
+    for (const auto &globalStatement : globalStatements)
+    {
+        BoundStatement *statement = binder.BindStatement(globalStatement->Statement);
+        statements.push_back(statement);
     }
     std::vector<FunctionSymbol> functions = binder._scope->GetDeclaredFunctions();
     std::vector<VariableSymbol> variables = binder._scope->GetDeclaredVariables();
@@ -408,7 +426,7 @@ BoundGlobalScope Binder::BindGlobalScope(BoundGlobalScope *previous, Compilation
     {
         diagnostics.insert(diagnostics.begin(), previous->Diagnostics.begin(), previous->Diagnostics.end());
     }
-    return BoundGlobalScope(previous, diagnostics, variables, functions, statements);
+    return new BoundGlobalScope(previous, diagnostics, variables, functions, statements);
 }
 
 BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)

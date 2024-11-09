@@ -17,8 +17,8 @@ public:
 class Compilation
 {
 public:
-    Compilation(Compilation *previous, SyntaxTree *syntaxTree) : Previous(previous), syntaxTree(syntaxTree) {}
-    Compilation(SyntaxTree *syntaxTree) : Compilation(nullptr, syntaxTree) {}
+    Compilation(Compilation *previous, std::vector<SyntaxTree *> syntaxTrees) : Previous(previous), syntaxTrees(syntaxTrees) {}
+    Compilation(std::vector<SyntaxTree *> syntaxTrees) : Compilation(nullptr, syntaxTrees) {}
     Compilation *Previous;
 
     BoundGlobalScope *GlobalScope();
@@ -29,7 +29,7 @@ public:
 
 private:
     BoundGlobalScope *_globalScope = nullptr;
-    SyntaxTree *syntaxTree;
+    std::vector<SyntaxTree *> syntaxTrees;
 };
 
 #endif
