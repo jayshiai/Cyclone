@@ -543,10 +543,10 @@ public:
     Token LiteralToken;
     std::any Value;
 
-    LiteralExpressionNode(SyntaxTree *syntaxtree, Token LiteralToken, std::any Value)
+    LiteralExpressionNode(SyntaxTree *syntaxTree, Token LiteralToken, std::any Value)
         : SyntaxNode(syntaxTree, SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(Value) {}
 
-    LiteralExpressionNode(SyntaxTree *syntaxtree, Token LiteralToken)
+    LiteralExpressionNode(SyntaxTree *syntaxTree, Token LiteralToken)
         : SyntaxNode(syntaxTree, SyntaxKind::LiteralExpression), LiteralToken(LiteralToken), Value(LiteralToken.value) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -558,7 +558,7 @@ class NameExpressionNode : public SyntaxNode
 {
 public:
     Token IdentifierToken;
-    NameExpressionNode(SyntaxTree *syntaxtree, Token IdentifierToken)
+    NameExpressionNode(SyntaxTree *syntaxTree, Token IdentifierToken)
         : SyntaxNode(syntaxTree, SyntaxKind::NameExpression), IdentifierToken(IdentifierToken) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -572,7 +572,7 @@ public:
     Token IdentifierToken;
     Token EqualsToken;
     SyntaxNode *Expression;
-    AssignmentExpressionNode(SyntaxTree *syntaxtree, Token IdentifierToken, Token EqualsToken, SyntaxNode *Expression)
+    AssignmentExpressionNode(SyntaxTree *syntaxTree, Token IdentifierToken, Token EqualsToken, SyntaxNode *Expression)
         : SyntaxNode(syntaxTree, SyntaxKind::AssignmentExpression), IdentifierToken(IdentifierToken), EqualsToken(EqualsToken), Expression(Expression) {}
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -585,7 +585,7 @@ public:
     SyntaxNode *left;
     SyntaxNode *right;
     Token OperatorToken;
-    BinaryExpressionNode(SyntaxTree *syntaxtree, SyntaxNode *left, SyntaxNode *right, Token OperatorToken)
+    BinaryExpressionNode(SyntaxTree *syntaxTree, SyntaxNode *left, SyntaxNode *right, Token OperatorToken)
         : SyntaxNode(syntaxTree, SyntaxKind::BinaryExpression), left(left), right(right), OperatorToken(OperatorToken) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
