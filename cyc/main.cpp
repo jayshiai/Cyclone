@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
 
     if (hasErrors)
         return 1;
-
     Compilation compilation(syntaxTrees);
     std::unordered_map<VariableSymbol, std::any> variables;
     auto result = compilation.Evaluate(variables);

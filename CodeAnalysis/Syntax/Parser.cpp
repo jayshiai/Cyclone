@@ -23,7 +23,6 @@ CompilationUnitNode *Parser::ParseCompilationUnit()
 {
 
     std::vector<MemberSyntax *> members = ParseMembers();
-
     Token endOfFileToken = Expect(SyntaxKind::END_OF_FILE);
     return new CompilationUnitNode(_syntaxTree, members, endOfFileToken);
 }

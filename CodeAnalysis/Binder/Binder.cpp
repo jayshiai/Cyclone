@@ -75,7 +75,6 @@ BoundStatement *Binder::BindForStatement(ForStatementSyntax *node)
     BoundLabel *continueLabel = nullptr;
     BoundStatement *body = BindLoopBody(node->Body, breakLabel, continueLabel);
 
-    std::cout << breakLabel->Name << std::endl;
     _scope = _scope->Parent;
     return new BoundForStatement(*variable, lowerBound, upperBound, body, breakLabel, continueLabel);
 }

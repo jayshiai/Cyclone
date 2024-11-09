@@ -19,7 +19,6 @@ void SyntaxTree::Parse(SyntaxTree *syntaxTree, CompilationUnitNode *&root, std::
 
     Parser parser(syntaxTree);
     root = parser.ParseCompilationUnit();
-
     diagnostics = parser.GetDiagnostics().GetDiagnostics();
 }
 

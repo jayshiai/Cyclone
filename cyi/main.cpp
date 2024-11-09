@@ -67,7 +67,7 @@ main()
     std::string textBuilder;
     bool showTree = false;
     std::unordered_map<VariableSymbol, std::any> variables;
-    bool showProgram = true;
+    bool showProgram = false;
     Compilation *previous = nullptr;
     while (true)
     {
@@ -128,7 +128,7 @@ main()
             continue;
         }
 
-        Compilation *compilation = previous == nullptr ? new Compilation(&Root) : previous->ContinueWith(&Root);
+        Compilation *compilation = previous == nullptr ? new Compilation({&Root}) : previous->ContinueWith(&Root);
 
         if (showTree)
         {
@@ -162,21 +162,21 @@ main()
         {
             if (result.Value.type() == typeid(int))
             {
-                std::cout << "Result: " << std::any_cast<int>(result.Value) << std::endl;
+                std::cout << std::any_cast<int>(result.Value) << std::endl;
             }
             else if (result.Value.type() == typeid(bool))
             {
-                std::cout << "Result: " << std::any_cast<bool>(result.Value) << std::endl;
+                std::cout << std::any_cast<bool>(result.Value) << std::endl;
             }
             else
             {
                 try
                 {
-                    std::cout << "Result: " << std::any_cast<std::string>(result.Value) << std::endl;
+                    std::cout << std::any_cast<std::string>(result.Value) << std::endl;
                 }
                 catch (const std::bad_any_cast &e)
                 {
-                    std::cout << "Unexpected type in result." << std::endl;
+                    std::cout << std::endl;
                 }
             }
             previous = compilation;
