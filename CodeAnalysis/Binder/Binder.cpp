@@ -300,7 +300,7 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
         {
             initializer = BindArrayInitializerExpression((ArrayInitializerSyntax *)node->Initializer, elementType);
 
-            if(size != nullptr)
+            if (size != nullptr)
             {
                 BoundLiteralExpression *sizeLiteral = (BoundLiteralExpression *)size;
                 if (sizeLiteral->type != TypeSymbol::Integer)
@@ -310,12 +310,12 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
                 }
                 else
                 {
-                   BoundArrayInitializerExpression *arrayInitializer = (BoundArrayInitializerExpression *)initializer;
-                     if(arrayInitializer->Elements.size() != std::stoi(sizeLiteral->Value))
-                     {
-                          _diagnostics.ReportArraySizeMismatch(node->Location, arrayInitializer->Elements.size(), std::stoi(sizeLiteral->Value));
-                          initializer = new BoundErrorExpression();
-                     }
+                    BoundArrayInitializerExpression *arrayInitializer = (BoundArrayInitializerExpression *)initializer;
+                    if (arrayInitializer->Elements.size() != std::stoi(sizeLiteral->Value))
+                    {
+                        _diagnostics.ReportArraySizeMismatch(node->Location, arrayInitializer->Elements.size(), std::stoi(sizeLiteral->Value));
+                        initializer = new BoundErrorExpression();
+                    }
                 }
             }
         }
@@ -344,7 +344,7 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
             _diagnostics.ReportArraySizeNotSpecified(node->Identifier.Location);
         }
     }
-    
+
     VariableSymbol *variable = BindVariableDeclaration(node->Identifier, node->Keyword.Kind == SyntaxKind::LET_KEYWORD, type);
 
     TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
@@ -442,6 +442,38 @@ BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node
 
     return new BoundAssignmentExpression(variable, convertedExpression);
 }
+
+BoundExpression *Binder::BindArrayAssignmentExpression(ArrayAssignmentExpressionSyntax *node)
+{
+    BoundExpression *identifier = BindExpression(node->Identifier);
+
+    if (!identifier->type.IsArray())
+    {
+        _diagnostics.ReportInvalidArrayAccess(node->Location);
+        return new BoundErrorExpression();
+    }
+    BoundExpression *indexExpression = BindExpression(node->Index);
+    VariableSymbol variableSymbol = ((BoundVariableExpression *)identifier)->Variable;
+    TypeSymbol elementsType = GetArrayType(identifier->type);
+    identifier->type = elementsType;
+
+    if (indexExpression->type != TypeSymbol::Integer)
+    {
+        _diagnostics.ReportInvalidArrayIndex(node->Index->Location);
+        return new BoundErrorExpression();
+    }
+
+    BoundExpression *boundExpression = BindExpression(node->Expression);
+
+    if (boundExpression->type != elementsType)
+    {
+        _diagnostics.ReportTypeMismatch(node->Expression->Location, elementsType.ToString(), boundExpression->type.ToString());
+        return new BoundErrorExpression();
+    }
+
+    return new BoundArrayAssignmentExpression(identifier, indexExpression, boundExpression, variableSymbol);
+}
+
 BoundExpression *Binder::BindUnaryExpression(UnaryExpressionNode *node)
 {
     BoundExpression *boundOperand = BindExpression(node->expression);
@@ -790,6 +822,8 @@ BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
         return BindCallExpression((CallExpressionNode *)node);
     case SyntaxKind::ArrayAccessExpression:
         return BindArrayAccessExpression((ArrayAccessExpressionSyntax *)node);
+    case SyntaxKind::ArrayAssignmentExpression:
+        return BindArrayAssignmentExpression((ArrayAssignmentExpressionSyntax *)node);
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;

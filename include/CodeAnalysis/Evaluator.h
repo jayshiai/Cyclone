@@ -28,7 +28,7 @@ private:
     void EvaluateExpressionStatement(BoundExpressionStatement *node);
     void EvaluateVariableDeclaration(BoundVariableDeclaration *node);
     void Assign(VariableSymbol variable, std::any value);
-
+    void AssignArray(VariableSymbol variable, std::any value, int index);
     std::any EvaluateStatement(BoundBlockStatement *node);
 
     std::any EvaluateLiteralExpression(BoundLiteralExpression *node);
@@ -40,6 +40,7 @@ private:
     std::any EvaluateConversionExpression(BoundConversionExpression *node);
     std::any EvaluateArrayInitializerExpression(BoundArrayInitializerExpression *node);
     std::any EvaluateArrayAccessExpression(BoundArrayAccessExpression *node);
+    std::any EvaluateArrayAssignmentExpression(BoundArrayAssignmentExpression *node);
     std::any _lastValue = "";
 };
 

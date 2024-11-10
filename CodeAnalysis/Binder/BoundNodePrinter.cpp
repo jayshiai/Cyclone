@@ -77,6 +77,9 @@ void BoundNodePrinter::WriteTo(const BoundNode *node, IndentedTextWriter &writer
     case BoundNodeKind::ArrayAccessExpression:
         WriteArrayAccessExpression((BoundArrayAccessExpression *)node, writer);
         break;
+    case BoundNodeKind::ArrayAssignmentExpression:
+        WriteArrayAssignmentExpression((BoundArrayAssignmentExpression *)node, writer);
+        break;
     default:
         throw std::runtime_error("Unexpected node: " + convertBoundNodeKindToString(node->GetKind()));
     }
@@ -354,4 +357,13 @@ void BoundNodePrinter::WriteArrayAccessExpression(const BoundArrayAccessExpressi
     writer.WritePunctuation("[");
     node->Index->WriteTo(writer);
     writer.WritePunctuation("]");
+}
+
+void BoundNodePrinter::WriteArrayAssignmentExpression(const BoundArrayAssignmentExpression *node, IndentedTextWriter &writer)
+{
+    node->Identifier->WriteTo(writer);
+    writer.WritePunctuation("[");
+    node->Index->WriteTo(writer);
+    writer.WritePunctuation("] = ");
+    node->Expression->WriteTo(writer);
 }

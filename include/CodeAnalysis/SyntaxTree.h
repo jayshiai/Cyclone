@@ -362,14 +362,14 @@ public:
     SyntaxNode *Index;
     Token CloseBracketToken;
     Token EqualsToken;
-    SyntaxNode *Right;
+    SyntaxNode *Expression;
 
     ArrayAssignmentExpressionSyntax(SyntaxTree *syntaxTree, SyntaxNode *identifier, Token openBracketToken, SyntaxNode *index, Token closeBracketToken, Token equalsToken, SyntaxNode *right)
-        : SyntaxNode(syntaxTree, SyntaxKind::ArrayAssignmentExpression), Identifier(identifier), OpenBracketToken(openBracketToken), Index(index), CloseBracketToken(closeBracketToken), EqualsToken(equalsToken), Right(right) {}
+        : SyntaxNode(syntaxTree, SyntaxKind::ArrayAssignmentExpression), Identifier(identifier), OpenBracketToken(openBracketToken), Index(index), CloseBracketToken(closeBracketToken), EqualsToken(equalsToken), Expression(right) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
-        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenBracketToken)), Index, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBracketToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Right};
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenBracketToken)), Index, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBracketToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Expression};
     }
 };
 class ExpressionStatementSyntax : public StatementSyntax

@@ -20,6 +20,7 @@ enum class BoundNodeKind
     ConversionExpression,
     ArrayInitializerExpression,
     ArrayAccessExpression,
+    ArrayAssignmentExpression,
 
     ExpressionStatement,
     VariableDeclaration,
@@ -523,6 +524,28 @@ public:
     }
 };
 
+class BoundArrayAssignmentExpression : public BoundExpression
+{
+public:
+    BoundArrayAssignmentExpression(BoundExpression *identifier, BoundExpression *index, BoundExpression *expression, VariableSymbol variable) : BoundExpression(identifier->type), Identifier(identifier), Index(index), Expression(expression), type(identifier->type), Variable(variable) {};
+    BoundNodeKind kind = BoundNodeKind::ArrayAssignmentExpression;
+    BoundExpression *Identifier;
+    BoundExpression *Index;
+    BoundExpression *Expression;
+    VariableSymbol Variable;
+    TypeSymbol type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::ArrayAssignmentExpression; }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {{"Variable", Variable.ToString()}};
+    }
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Identifier, Index, Expression};
+    }
+};
+
 class BoundAssignmentExpression : public BoundExpression
 {
 public:
@@ -712,6 +735,7 @@ private:
     BoundExpression *BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit = false);
     BoundExpression *BindConversion(TextLocation diagnosticLocation, BoundExpression *expression, TypeSymbol type, bool allowExplicit = false);
     BoundExpression *BindArrayAccessExpression(ArrayAccessExpressionSyntax *node);
+    BoundExpression *BindArrayAssignmentExpression(ArrayAssignmentExpressionSyntax *node);
 };
 
 class Conversion
@@ -764,5 +788,6 @@ private:
     static void WriteConversionExpression(const BoundConversionExpression *node, IndentedTextWriter &writer);
     static void WriteArrayInitializerExpression(const BoundArrayInitializerExpression *node, IndentedTextWriter &writer);
     static void WriteArrayAccessExpression(const BoundArrayAccessExpression *node, IndentedTextWriter &writer);
+    static void WriteArrayAssignmentExpression(const BoundArrayAssignmentExpression *node, IndentedTextWriter &writer);
 };
 #endif

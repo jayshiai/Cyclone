@@ -153,6 +153,8 @@ BoundExpression *BoundTreeRewriter::RewriteExpression(BoundExpression *node)
         return RewriteArrayInitializerExpression((BoundArrayInitializerExpression *)node);
     case BoundNodeKind::ArrayAccessExpression:
         return RewriteArrayAccessExpression((BoundArrayAccessExpression *)node);
+    case BoundNodeKind::ArrayAssignmentExpression:
+        return RewriteArrayAssignmentExpression((BoundArrayAssignmentExpression *)node);
     default:
         throw std::runtime_error("Unexpected node: " + convertBoundNodeKindToString(node->GetKind()));
         return node;
@@ -288,4 +290,16 @@ BoundExpression *BoundTreeRewriter::RewriteArrayAccessExpression(BoundArrayAcces
         return node;
 
     return new BoundArrayAccessExpression(variable, index);
+}
+
+BoundExpression *BoundTreeRewriter::RewriteArrayAssignmentExpression(BoundArrayAssignmentExpression *node)
+{
+    BoundExpression *identifier = RewriteExpression(node->Identifier);
+    BoundExpression *index = RewriteExpression(node->Index);
+    BoundExpression *expression = RewriteExpression(node->Expression);
+
+    if (identifier == node->Identifier && index == node->Index && expression == node->Expression)
+        return node;
+
+    return new BoundArrayAssignmentExpression(identifier, index, expression, node->Variable);
 }

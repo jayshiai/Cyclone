@@ -146,6 +146,8 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
         return EvaluateArrayInitializerExpression((BoundArrayInitializerExpression *)node);
     case BoundNodeKind::ArrayAccessExpression:
         return EvaluateArrayAccessExpression((BoundArrayAccessExpression *)node);
+    case BoundNodeKind::ArrayAssignmentExpression:
+        return EvaluateArrayAssignmentExpression((BoundArrayAssignmentExpression *)node);
     default:
         throw std::runtime_error("Unexpected node kind");
     }
@@ -387,6 +389,21 @@ std::any Evaluator::EvaluateArrayInitializerExpression(BoundArrayInitializerExpr
         values.push_back(EvaluateExpression(expression));
     }
     return values;
+}
+
+std::any Evaluator::EvaluateArrayAssignmentExpression(BoundArrayAssignmentExpression *n)
+{
+    std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Identifier));
+    int index = std::any_cast<int>(EvaluateExpression(n->Index));
+    std::any value = EvaluateExpression(n->Expression);
+
+    if (index < 0 || index >= array.size())
+        throw std::runtime_error("Index out of bounds");
+
+    array[index] = value;
+
+    Assign(n->Variable, array);
+    return value;
 }
 
 void Evaluator::Assign(VariableSymbol variable, std::any value)
