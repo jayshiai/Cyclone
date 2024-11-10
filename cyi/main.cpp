@@ -68,6 +68,7 @@ main()
     bool showTree = false;
     std::unordered_map<VariableSymbol, std::any> variables;
     bool showProgram = false;
+    bool showBoundTree = false;
     Compilation *previous = nullptr;
     while (true)
     {
@@ -101,6 +102,12 @@ main()
             {
                 showProgram = !showProgram;
                 std::cout << showProgram ? "Showing program." : "Not showing program";
+                continue;
+            }
+            else if (input == "#showBoundTree")
+            {
+                showBoundTree = !showBoundTree;
+                std::cout << showBoundTree ? "Showing bound tree." : "Not showing bound tree";
                 continue;
             }
             else if (input == "#cls")
@@ -142,6 +149,12 @@ main()
             std::cout << BLUE << "Program" << std::endl;
             compilation->EmitTree(std::cout);
         }
+        if (showBoundTree)
+        {
+            std::cout << BLUE << "Bound Tree" << std::endl;
+            compilation->EmitBoundTree(std::cout);
+        }
+
         EvaluationResult result = compilation->Evaluate(variables);
 
         if (result.Diagnostics.size() > 0)
@@ -167,6 +180,30 @@ main()
             else if (result.Value.type() == typeid(bool))
             {
                 std::cout << std::any_cast<bool>(result.Value) << std::endl;
+            }
+            else if (result.Value.type() == typeid(std::string))
+            {
+                std::cout << std::any_cast<std::string>(result.Value) << std::endl;
+            }
+            else if (result.Value.type() == typeid(std::vector<std::any>))
+            {
+                auto values = std::any_cast<std::vector<std::any>>(result.Value);
+                for (auto &value : values)
+                {
+                    if (value.type() == typeid(int))
+                    {
+                        std::cout << std::any_cast<int>(value) << " ";
+                    }
+                    else if (value.type() == typeid(bool))
+                    {
+                        std::cout << std::any_cast<bool>(value) << " ";
+                    }
+                    else if (value.type() == typeid(std::string))
+                    {
+                        std::cout << std::any_cast<std::string>(value) << " ";
+                    }
+                }
+                std::cout << std::endl;
             }
             else
             {

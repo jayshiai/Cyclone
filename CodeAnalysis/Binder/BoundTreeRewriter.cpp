@@ -149,6 +149,8 @@ BoundExpression *BoundTreeRewriter::RewriteExpression(BoundExpression *node)
         return RewriteCallExpression((BoundCallExpression *)node);
     case BoundNodeKind::ConversionExpression:
         return RewriteConversionExpression((BoundConversionExpression *)node);
+    case BoundNodeKind::ArrayInitializerExpression:
+        return RewriteArrayInitializerExpression((BoundArrayInitializerExpression *)node);
     default:
         throw std::runtime_error("Unexpected node: " + convertBoundNodeKindToString(node->GetKind()));
         return node;
@@ -240,4 +242,37 @@ BoundExpression *BoundTreeRewriter::RewriteAssignmentExpression(BoundAssignmentE
         return node;
 
     return new BoundAssignmentExpression(node->Variable, expression);
+}
+
+BoundExpression *BoundTreeRewriter::RewriteArrayInitializerExpression(BoundArrayInitializerExpression *node)
+{
+    std::vector<BoundExpression *> *builder = nullptr;
+
+    for (size_t i = 0; i < node->Elements.size(); i++)
+    {
+        BoundExpression *oldElement = node->Elements[i];
+        BoundExpression *newElement = RewriteExpression(oldElement);
+
+        if (newElement != oldElement)
+        {
+            if (builder == nullptr)
+            {
+                builder = new std::vector<BoundExpression *>();
+                builder->reserve(node->Elements.size());
+
+                for (size_t j = 0; j < i; j++)
+                    builder->push_back(node->Elements[j]);
+            }
+        }
+
+        if (builder != nullptr)
+            builder->push_back(newElement);
+    }
+
+    if (builder == nullptr)
+        return node;
+
+    BoundArrayInitializerExpression *result = new BoundArrayInitializerExpression(*builder, node->type);
+    delete builder;
+    return result;
 }

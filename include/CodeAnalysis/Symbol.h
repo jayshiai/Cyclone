@@ -37,9 +37,13 @@ protected:
 class TypeSymbol : public Symbol
 {
 private:
-    TypeSymbol(std::string name) : Symbol(name) {}
+    TypeSymbol(std::string name) : Symbol(name), elementType(nullptr) {}
+
+    TypeSymbol(std::string name, TypeSymbol *elementType)
+        : Symbol(name), elementType(elementType) {}
 
 public:
+    TypeSymbol *elementType;
     static const TypeSymbol Integer;
     static const TypeSymbol Boolean;
     static const TypeSymbol String;
@@ -47,6 +51,10 @@ public:
     static const TypeSymbol Void;
     static const TypeSymbol Null;
     static const TypeSymbol Any;
+    static TypeSymbol Array(TypeSymbol *elementType)
+    {
+        return TypeSymbol("array<" + elementType->ToString() + ">", elementType);
+    }
     virtual SymbolKind GetKind() const override
     {
         return SymbolKind::Type;
@@ -56,6 +64,10 @@ public:
     {
         os << "TypeSymbol(Name: " << type.Name << ")";
         return os;
+    }
+    bool IsArray() const
+    {
+        return elementType != nullptr;
     }
 
     bool operator==(const TypeSymbol &other) const

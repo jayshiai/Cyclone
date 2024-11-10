@@ -139,7 +139,15 @@ void Compilation::EmitTree(std::ostream &os)
         }
     }
 }
+void Compilation::EmitBoundTree(std::ostream &os)
+{
+    BoundProgram *program = Binder::BindProgram(GlobalScope());
 
+    if (!program->statement->Statements.empty())
+    {
+        program->statement->PrintTo(os);
+    }
+}
 Compilation *Compilation::ContinueWith(SyntaxTree *syntaxTree)
 {
     return new Compilation(this, {syntaxTree});

@@ -19,8 +19,8 @@ enum class SyntaxKind
     DIVIDE,
     LPAREN, // (
     RPAREN, // )
-    LBRACKET,
-    RBRACKET,
+    OPEN_BRACKET,
+    CLOSE_BRACKET,
     BANG,
     EQUALS,
     LESS,
@@ -66,6 +66,7 @@ enum class SyntaxKind
     NameExpression,
     AssignmentExpression,
     CallExpression,
+    ArrayInitializer,
 
     CompilationUnit,
     FunctionDeclaration,
@@ -278,8 +279,17 @@ class TypeClauseNode : public SyntaxNode
 public:
     Token ColonToken;
     Token IdentifierToken;
-    TypeClauseNode(SyntaxTree *syntaxTree, Token ColonToken, Token IdentifierToken)
-        : SyntaxNode(syntaxTree, SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken) {}
+
+    bool IsArray;
+    TypeClauseNode *ElementType;
+    TypeClauseNode(SyntaxTree *syntaxTree, Token ColonToken, Token IdentifierToken, bool isArray = false)
+        : SyntaxNode(syntaxTree, SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken), IsArray(isArray)
+    {
+        if (isArray)
+        {
+            ElementType = new TypeClauseNode(syntaxTree, ColonToken, IdentifierToken);
+        }
+    }
 
     std::vector<SyntaxNode *> GetChildren() const override
     {
@@ -306,6 +316,38 @@ public:
     std::vector<SyntaxNode *> GetChildren() const override
     {
         return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Keyword)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Initializer};
+    }
+};
+
+class ArrayInitializerSyntax : public SyntaxNode
+{
+public:
+    Token OpenBraceToken;
+    SeparatedSyntaxList<SyntaxNode> Elements;
+    Token CloseBraceToken;
+    ArrayInitializerSyntax(SyntaxTree *syntaxTree, Token openBraceToken, SeparatedSyntaxList<SyntaxNode> initializers, Token closeBraceToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::ArrayInitializer), OpenBraceToken(openBraceToken), Elements(initializers), CloseBraceToken(closeBraceToken) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenBraceToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBraceToken))};
+    }
+};
+
+class ArrayAccessExpressionSyntax : public SyntaxNode
+{
+public:
+    Token Identifier;
+    Token OpenBracketToken;
+    SyntaxNode *Index;
+    Token CloseBracketToken;
+
+    ArrayAccessExpressionSyntax(SyntaxTree *syntaxTree, Token identifier, Token openBracketToken, SyntaxNode *index, Token closeBracketToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::BinaryExpression), Identifier(identifier), OpenBracketToken(openBracketToken), Index(index), CloseBracketToken(closeBracketToken) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenBracketToken)), Index, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBracketToken))};
     }
 };
 

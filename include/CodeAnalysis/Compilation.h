@@ -26,6 +26,7 @@ public:
     Compilation *ContinueWith(SyntaxTree *syntaxTree);
 
     void EmitTree(std::ostream &os);
+    void EmitBoundTree(std::ostream &os);
 
 private:
     BoundGlobalScope *_globalScope = nullptr;

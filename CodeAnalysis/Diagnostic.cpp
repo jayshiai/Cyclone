@@ -160,3 +160,10 @@ void DiagnosticBag::ReportAllPathsMustReturn(TextLocation location)
 {
     Report(location, "Not all code paths return a value.");
 }
+
+void DiagnosticBag::ReportTypeMismatch(const TextLocation &location, const std::string &expectedType, const std::string &actualType)
+{
+    std::ostringstream oss;
+    oss << "Expected type '" << expectedType << "' but received type '" << actualType << "'.";
+    Report(location, oss.str());
+}

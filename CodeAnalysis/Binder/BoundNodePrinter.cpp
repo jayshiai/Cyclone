@@ -71,6 +71,9 @@ void BoundNodePrinter::WriteTo(const BoundNode *node, IndentedTextWriter &writer
     case BoundNodeKind::ConversionExpression:
         WriteConversionExpression((BoundConversionExpression *)node, writer);
         break;
+    case BoundNodeKind::ArrayInitializerExpression:
+        WriteArrayInitializerExpression((BoundArrayInitializerExpression *)node, writer);
+        break;
     default:
         throw std::runtime_error("Unexpected node: " + convertBoundNodeKindToString(node->GetKind()));
     }
@@ -324,4 +327,20 @@ void BoundNodePrinter::WriteConversionExpression(const BoundConversionExpression
     writer.WriteIdentifier(node->type.ToString());
     writer.WritePunctuation(") ");
     node->Expression->WriteTo(writer);
+}
+
+void BoundNodePrinter::WriteArrayInitializerExpression(const BoundArrayInitializerExpression *node, IndentedTextWriter &writer)
+{
+    writer.WritePunctuation("[");
+    bool first = true;
+    for (const auto &expression : node->Elements)
+    {
+        if (!first)
+        {
+            writer.WritePunctuation(", ");
+        }
+        expression->WriteTo(writer);
+        first = false;
+    }
+    writer.WritePunctuation("]");
 }

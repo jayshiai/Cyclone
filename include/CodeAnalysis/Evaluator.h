@@ -38,6 +38,7 @@ private:
     std::any EvaluateBinaryExpression(BoundBinaryExpression *node);
     std::any EvaluateCallExpression(BoundCallExpression *node);
     std::any EvaluateConversionExpression(BoundConversionExpression *node);
+    std::any EvaluateArrayInitializerExpression(BoundArrayInitializerExpression *node);
 
     std::any _lastValue = "";
 };

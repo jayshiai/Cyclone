@@ -170,6 +170,14 @@ TypeClauseNode *Parser::ParseTypeClause()
 {
     Token colon = Expect(SyntaxKind::COLON);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
+
+    if (peek(0).Kind == SyntaxKind::OPEN_BRACKET && peek(1).Kind == SyntaxKind::CLOSE_BRACKET)
+    {
+        Expect(SyntaxKind::OPEN_BRACKET);
+        Expect(SyntaxKind::CLOSE_BRACKET);
+        return new TypeClauseNode(_syntaxTree, colon, identifier, true);
+    }
+
     return new TypeClauseNode(_syntaxTree, colon, identifier);
 }
 
@@ -252,6 +260,10 @@ void Parser::NextToken()
 }
 SyntaxNode *Parser::ParseExpression()
 {
+    if (peek(0).Kind == SyntaxKind::OPEN_BRACE)
+    {
+        return ParseArrayInitializer();
+    }
     return ParseAssignmentExpression();
 }
 SyntaxNode *Parser::ParseAssignmentExpression()
@@ -374,10 +386,43 @@ SyntaxNode *Parser::ParseNameOrCallExpression()
     {
         return ParseCallExpression();
     }
+    if (peek(0).Kind == SyntaxKind::IDENTIFIER && peek(1).Kind == SyntaxKind::OPEN_BRACKET)
+    {
+        return ParseArrayAccessExpression();
+    }
 
     return ParseNameExpression();
 }
 
+SyntaxNode *Parser::ParseArrayInitializer()
+{
+
+    Token openBraceToken = Expect(SyntaxKind::OPEN_BRACE);
+
+    std::vector<SyntaxNode *> nodesAndSeparators;
+    while (currentToken.Kind != SyntaxKind::CLOSE_BRACE && currentToken.Kind != SyntaxKind::END_OF_FILE)
+    {
+        SyntaxNode *expression = ParseExpression();
+        nodesAndSeparators.push_back(expression);
+
+        if (currentToken.Kind != SyntaxKind::CLOSE_BRACE)
+        {
+            Token *comma = new Token(Expect(SyntaxKind::COMMA));
+            nodesAndSeparators.push_back(comma);
+        }
+    }
+    Token closeBraceToken = Expect(SyntaxKind::CLOSE_BRACE);
+    return new ArrayInitializerSyntax(_syntaxTree, openBraceToken, nodesAndSeparators, closeBraceToken);
+}
+
+SyntaxNode *Parser::ParseArrayAccessExpression()
+{
+    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+    Token openBracket = Expect(SyntaxKind::OPEN_BRACKET);
+    SyntaxNode *index = ParseExpression();
+    Token closeBracket = Expect(SyntaxKind::CLOSE_BRACKET);
+    return new ArrayAccessExpressionSyntax(_syntaxTree, identifier, openBracket, index, closeBracket);
+}
 SyntaxNode *Parser::ParseCallExpression()
 {
     Token identifier = Expect(SyntaxKind::IDENTIFIER);

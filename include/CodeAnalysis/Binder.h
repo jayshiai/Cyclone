@@ -18,7 +18,7 @@ enum class BoundNodeKind
     AssignmentExpression,
     CallExpression,
     ConversionExpression,
-
+    ArrayInitializerExpression,
     ExpressionStatement,
     VariableDeclaration,
     BlockStatement,
@@ -419,6 +419,26 @@ public:
 
     BoundErrorExpression() : BoundExpression(TypeSymbol::Error) {}
 };
+
+class BoundArrayInitializerExpression : public BoundExpression
+{
+public:
+    BoundArrayInitializerExpression(std::vector<BoundExpression *> elements, const TypeSymbol &elementType) : BoundExpression(elementType), Elements(elements), type(elementType) {};
+    BoundNodeKind kind = BoundNodeKind::ArrayInitializerExpression;
+    std::vector<BoundExpression *> Elements;
+    TypeSymbol type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::ArrayInitializerExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {};
+    }
+};
 class BoundUnaryExpression : public BoundExpression
 {
 public:
@@ -642,6 +662,7 @@ private:
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);
+    BoundStatement *BindArrayDeclaration(VariableDeclarationSyntax *node);
     void BindFunctionDeclaration(FunctionDeclarationSyntax *node);
 
     VariableSymbol *BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type);
@@ -657,6 +678,7 @@ private:
     BoundStatement *BindReturnStatement(ReturnStatementSyntax *node);
     BoundStatement *BindErrorStatement();
 
+    BoundExpression *BindArrayInitializerExpression(ArrayInitializerSyntax *node, TypeSymbol type);
     BoundExpression *BindLiteralExpression(LiteralExpressionNode *node);
     BoundExpression *BindUnaryExpression(UnaryExpressionNode *node);
     BoundExpression *BindBinaryExpression(BinaryExpressionNode *node);
@@ -715,5 +737,6 @@ private:
     static void WriteBinaryExpression(const BoundBinaryExpression *node, IndentedTextWriter &writer);
     static void WriteCallExpression(const BoundCallExpression *node, IndentedTextWriter &writer);
     static void WriteConversionExpression(const BoundConversionExpression *node, IndentedTextWriter &writer);
+    static void WriteArrayInitializerExpression(const BoundArrayInitializerExpression *node, IndentedTextWriter &writer);
 };
 #endif

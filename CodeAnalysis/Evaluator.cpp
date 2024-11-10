@@ -142,6 +142,8 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
         return EvaluateCallExpression((BoundCallExpression *)node);
     case BoundNodeKind::ConversionExpression:
         return EvaluateConversionExpression((BoundConversionExpression *)node);
+    case BoundNodeKind::ArrayInitializerExpression:
+        return EvaluateArrayInitializerExpression((BoundArrayInitializerExpression *)node);
     default:
         throw std::runtime_error("Unexpected node kind");
     }
@@ -363,6 +365,16 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         throw std::runtime_error("Unexpected conversion: " + n->type.Name);
 
     return std::any();
+}
+
+std::any Evaluator::EvaluateArrayInitializerExpression(BoundArrayInitializerExpression *n)
+{
+    std::vector<std::any> values;
+    for (auto &expression : n->Elements)
+    {
+        values.push_back(EvaluateExpression(expression));
+    }
+    return values;
 }
 
 void Evaluator::Assign(VariableSymbol variable, std::any value)

@@ -57,7 +57,7 @@ public:
     void ReportWrongArgumentCount(const TextLocation &location, const std::string &name, int expectedCount, int actualCount);
     void ReportWrongArgumentType(const TextLocation &location, const std::string &name, const std::string &expectedType, const std::string &actualType);
     void ReportExpressionMustHaveValue(const TextLocation &location);
-
+    void ReportTypeMismatch(const TextLocation &location, const std::string &expectedType, const std::string &actualType);
     const std::vector<Diagnostic> &GetDiagnostics() const
     {
         return _diagnostics;

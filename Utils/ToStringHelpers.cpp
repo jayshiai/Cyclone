@@ -101,6 +101,9 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "ParenthesizedExpression";
     case SyntaxKind::CallExpression:
         return "CallExpression";
+    case SyntaxKind::ArrayInitializer:
+        return "ArrayInitializer";
+
     case SyntaxKind::IDENTIFIER:
         return "IdentifierToken";
     case SyntaxKind::LPAREN:

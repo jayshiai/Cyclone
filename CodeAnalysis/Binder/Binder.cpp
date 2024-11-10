@@ -157,53 +157,6 @@ BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
     return new BoundBlockStatement(statements);
 }
 
-BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
-{
-    BoundExpression *expression = BindExpression(node->Expression, true);
-    return new BoundExpressionStatement(expression);
-}
-
-BoundExpression *Binder::BindExpression(SyntaxNode *node, TypeSymbol type)
-{
-
-    return BindConversion(node, type);
-}
-BoundExpression *Binder::BindExpression(SyntaxNode *node, bool canBeVoid)
-{
-    BoundExpression *result = BindExpressionInternal(node);
-
-    if (!canBeVoid && result->type == TypeSymbol::Void)
-    {
-        _diagnostics.ReportExpressionMustHaveValue(node->Location);
-        return new BoundErrorExpression();
-    }
-    return result;
-}
-
-BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
-{
-    switch (node->Kind)
-    {
-    case SyntaxKind::LiteralExpression:
-        return BindLiteralExpression((LiteralExpressionNode *)node);
-    case SyntaxKind::NameExpression:
-        return BindNameExpression((NameExpressionNode *)node);
-    case SyntaxKind::AssignmentExpression:
-        return BindAssignmentExpression((AssignmentExpressionNode *)node);
-    case SyntaxKind::UnaryExpression:
-        return BindUnaryExpression((UnaryExpressionNode *)node);
-    case SyntaxKind::BinaryExpression:
-        return BindBinaryExpression((BinaryExpressionNode *)node);
-    case SyntaxKind::ParenthesizedExpression:
-        return BindExpression(((ParenthesizedExpressionNode *)node)->expression);
-    case SyntaxKind::CallExpression:
-        return BindCallExpression((CallExpressionNode *)node);
-    default:
-        std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
-        return nullptr;
-    }
-}
-
 BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
 {
 
@@ -252,10 +205,61 @@ BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type)
         return new BoundErrorExpression();
 }
 
+BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
+{
+
+    // if (node->IsArray)
+    //     {
+
+    //         TypeSymbol elementType = BindTypeClause(node->ElementType);
+
+    //         if (elementType == TypeSymbol::Null)
+    //         {
+    //             _diagnostics.ReportUndefinedType(node->ElementType->IdentifierToken.Location, node->ElementType->IdentifierToken.value);
+    //             return TypeSymbol::Error;
+    //         }
+
+    //         TypeSymbol arrayType = TypeSymbol::Array(&elementType);
+
+    //         std::cout << arrayType.elementType->ToString() << std::endl;
+    //         return arrayType;
+    //     }
+    TypeSymbol elementType = BindTypeClause(node->TypeClause->ElementType);
+
+    TypeSymbol type = TypeSymbol::Array(&elementType);
+
+    BoundExpression *initializer;
+    if (node->Initializer->Kind == SyntaxKind::ArrayInitializer)
+    {
+        initializer = BindArrayInitializerExpression((ArrayInitializerSyntax *)node->Initializer, elementType);
+    }
+    else
+    {
+        initializer = BindExpression(node->Initializer);
+    }
+    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, node->Keyword.Kind == SyntaxKind::LET_KEYWORD, type);
+    TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
+    BoundExpression *convertedInitializer;
+
+    if (node->Initializer == nullptr)
+    {
+        convertedInitializer = BindConversion(node->TypeClause ? node->TypeClause->Location : node->Identifier.Location, initializer, variableType);
+    }
+    else
+    {
+        convertedInitializer = BindConversion(node->Initializer->Location, initializer, variableType);
+    }
+    return new BoundVariableDeclaration(*variable, convertedInitializer);
+}
 BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
 {
 
     bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
+    if (node->TypeClause->IsArray)
+    {
+        return BindArrayDeclaration(node);
+    }
+
     TypeSymbol type = BindTypeClause(node->TypeClause);
 
     BoundExpression *initializer = node->Initializer == nullptr ? GetDefaultValueExpression(type != TypeSymbol::Null ? type : TypeSymbol::Any)
@@ -275,7 +279,7 @@ BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
     {
         convertedInitializer = BindConversion(node->Initializer->Location, initializer, variableType);
     }
-    return new BoundVariableDeclaration(*variable, initializer);
+    return new BoundVariableDeclaration(*variable, convertedInitializer);
 }
 VariableSymbol *Binder::BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type)
 {
@@ -291,6 +295,22 @@ VariableSymbol *Binder::BindVariableDeclaration(Token identifier, bool isReadOnl
     }
 
     return variable;
+}
+
+BoundExpression *Binder::BindArrayInitializerExpression(ArrayInitializerSyntax *node, TypeSymbol type)
+{
+    std::vector<BoundExpression *> elements;
+    for (auto expression : node->Elements)
+    {
+        BoundExpression *boundExpression = BindExpression(expression);
+        if (boundExpression->type != type)
+        {
+            _diagnostics.ReportTypeMismatch(expression->Location, type.ToString(), boundExpression->type.ToString());
+            boundExpression = new BoundErrorExpression();
+        }
+        elements.push_back(boundExpression);
+    }
+    return new BoundArrayInitializerExpression(elements, TypeSymbol::Array(&type));
 }
 
 BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node)
@@ -603,6 +623,7 @@ TypeSymbol Binder::BindTypeClause(TypeClauseNode *node)
     {
         return TypeSymbol::Null;
     }
+
     TypeSymbol type = LookupType(node->IdentifierToken.value);
 
     if (type == TypeSymbol::Null)
@@ -610,6 +631,53 @@ TypeSymbol Binder::BindTypeClause(TypeClauseNode *node)
         _diagnostics.ReportUndefinedType(node->IdentifierToken.Location, node->IdentifierToken.value);
     }
     return type;
+}
+
+BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
+{
+    BoundExpression *expression = BindExpression(node->Expression, true);
+    return new BoundExpressionStatement(expression);
+}
+
+BoundExpression *Binder::BindExpression(SyntaxNode *node, TypeSymbol type)
+{
+
+    return BindConversion(node, type);
+}
+BoundExpression *Binder::BindExpression(SyntaxNode *node, bool canBeVoid)
+{
+    BoundExpression *result = BindExpressionInternal(node);
+
+    if (!canBeVoid && result->type == TypeSymbol::Void)
+    {
+        _diagnostics.ReportExpressionMustHaveValue(node->Location);
+        return new BoundErrorExpression();
+    }
+    return result;
+}
+
+BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
+{
+    switch (node->Kind)
+    {
+    case SyntaxKind::LiteralExpression:
+        return BindLiteralExpression((LiteralExpressionNode *)node);
+    case SyntaxKind::NameExpression:
+        return BindNameExpression((NameExpressionNode *)node);
+    case SyntaxKind::AssignmentExpression:
+        return BindAssignmentExpression((AssignmentExpressionNode *)node);
+    case SyntaxKind::UnaryExpression:
+        return BindUnaryExpression((UnaryExpressionNode *)node);
+    case SyntaxKind::BinaryExpression:
+        return BindBinaryExpression((BinaryExpressionNode *)node);
+    case SyntaxKind::ParenthesizedExpression:
+        return BindExpression(((ParenthesizedExpressionNode *)node)->expression);
+    case SyntaxKind::CallExpression:
+        return BindCallExpression((CallExpressionNode *)node);
+    default:
+        std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
+        return nullptr;
+    }
 }
 BoundExpression *Binder::BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit)
 {
@@ -698,7 +766,8 @@ std::string convertBoundNodeKindToString(BoundNodeKind kind)
         return "CallExpression";
     case BoundNodeKind::ConversionExpression:
         return "ConversionExpression";
-
+    case BoundNodeKind::ArrayInitializerExpression:
+        return "ArrayInitializerExpression";
     case BoundNodeKind::ErrorExpression:
         return "ErrorExpression";
     default:
