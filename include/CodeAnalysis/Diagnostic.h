@@ -60,6 +60,9 @@ public:
     void ReportTypeMismatch(const TextLocation &location, const std::string &expectedType, const std::string &actualType);
     void ReportInvalidArrayIndex(const TextLocation &location);
     void ReportInvalidArrayAccess(const TextLocation &location);
+    void ReportInvalidArraySize(const TextLocation &location);
+    void ReportArraySizeNotSpecified(const TextLocation &location);
+    void ReportArraySizeMismatch(const TextLocation &location, int expectedSize, int actualSize);
     const std::vector<Diagnostic> &GetDiagnostics() const
     {
         return _diagnostics;

@@ -228,7 +228,7 @@ BoundExpression *Binder::BindArrayAccessExpression(ArrayAccessExpressionSyntax *
     return new BoundArrayAccessExpression(variable, indexExpression);
 }
 
-BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type)
+BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type, int arrSize)
 {
     if (type == TypeSymbol::Integer)
         return new BoundLiteralExpression("0", TypeSymbol::Integer);
@@ -238,6 +238,15 @@ BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type)
         return new BoundLiteralExpression("false", TypeSymbol::Boolean);
     if (type == TypeSymbol::Any)
         return new BoundLiteralExpression("0", TypeSymbol::Any);
+    if (type.IsArray())
+    {
+        std::vector<BoundExpression *> elements;
+        for (int i = 0; i < arrSize; i++)
+        {
+            elements.push_back(GetDefaultValueExpression(GetArrayType(type), arrSize));
+        }
+        return new BoundArrayInitializerExpression(elements, type);
+    }
     else
         return new BoundErrorExpression();
 }
@@ -275,20 +284,71 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
     //         return arrayType;
     //     }
     TypeSymbol elementType = BindTypeClause(node->TypeClause->ElementType);
-
+    BoundExpression *size = nullptr;
     TypeSymbol type = GenerateArrayType(elementType);
 
-    BoundExpression *initializer;
-    if (node->Initializer->Kind == SyntaxKind::ArrayInitializer)
+    BoundExpression *initializer = nullptr;
+
+    if (node->TypeClause->Size != nullptr)
     {
-        initializer = BindArrayInitializerExpression((ArrayInitializerSyntax *)node->Initializer, elementType);
+        size = BindExpression(node->TypeClause->Size, TypeSymbol::Integer);
+    }
+
+    if (node->Initializer != nullptr)
+    {
+        if (node->Initializer->Kind == SyntaxKind::ArrayInitializer)
+        {
+            initializer = BindArrayInitializerExpression((ArrayInitializerSyntax *)node->Initializer, elementType);
+
+            if(size != nullptr)
+            {
+                BoundLiteralExpression *sizeLiteral = (BoundLiteralExpression *)size;
+                if (sizeLiteral->type != TypeSymbol::Integer)
+                {
+                    _diagnostics.ReportInvalidArraySize(node->Location);
+                    initializer = new BoundErrorExpression();
+                }
+                else
+                {
+                   BoundArrayInitializerExpression *arrayInitializer = (BoundArrayInitializerExpression *)initializer;
+                     if(arrayInitializer->Elements.size() != std::stoi(sizeLiteral->Value))
+                     {
+                          _diagnostics.ReportArraySizeMismatch(node->Location, arrayInitializer->Elements.size(), std::stoi(sizeLiteral->Value));
+                          initializer = new BoundErrorExpression();
+                     }
+                }
+            }
+        }
+        else
+        {
+            initializer = BindExpression(node->Initializer);
+        }
     }
     else
     {
-        initializer = BindExpression(node->Initializer);
+        if (size != nullptr)
+        {
+            BoundLiteralExpression *sizeLiteral = (BoundLiteralExpression *)size;
+            if (sizeLiteral->type != TypeSymbol::Integer)
+            {
+                _diagnostics.ReportInvalidArraySize(node->Location);
+                initializer = new BoundErrorExpression();
+            }
+            else
+            {
+                initializer = GetDefaultValueExpression(type, std::stoi(sizeLiteral->Value));
+            }
+        }
+        else
+        {
+            _diagnostics.ReportArraySizeNotSpecified(node->Identifier.Location);
+        }
     }
+    
     VariableSymbol *variable = BindVariableDeclaration(node->Identifier, node->Keyword.Kind == SyntaxKind::LET_KEYWORD, type);
+
     TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
+
     BoundExpression *convertedInitializer;
 
     if (node->Initializer == nullptr)
@@ -738,7 +798,7 @@ BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
 BoundExpression *Binder::BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit)
 {
     BoundExpression *expression = BindExpression(node);
-    return BindConversion(node->Location, expression, type, node);
+    return BindConversion(node->Location, expression, type, allowExplicit);
 }
 BoundExpression *Binder::BindConversion(TextLocation diagnosticLocation, BoundExpression *expression, TypeSymbol type, bool allowExplicit)
 {

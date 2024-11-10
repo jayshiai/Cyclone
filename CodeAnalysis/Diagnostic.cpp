@@ -177,3 +177,20 @@ void DiagnosticBag::ReportInvalidArrayAccess(const TextLocation &location)
 {
     Report(location, "Invalid array access.");
 }
+
+void DiagnosticBag::ReportInvalidArraySize(const TextLocation &location)
+{
+    Report(location, "Invalid array size.");
+}
+
+void DiagnosticBag::ReportArraySizeNotSpecified(const TextLocation &location)
+{
+    Report(location, "Array size not specified. Either initialize the array with elements or specify the size.");
+}
+
+void DiagnosticBag::ReportArraySizeMismatch(const TextLocation &location, int expectedSize, int actualSize)
+{
+    std::ostringstream oss;
+    oss << "Expected array size of " << expectedSize << " but received " << actualSize << ".";
+    Report(location, oss.str());
+}

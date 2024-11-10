@@ -681,7 +681,7 @@ private:
 
     static BoundScope *CreateParentScope(BoundGlobalScope *previous);
     static BoundScope *CreateRootScope();
-    BoundExpression *GetDefaultValueExpression(TypeSymbol type);
+    BoundExpression *GetDefaultValueExpression(TypeSymbol type, int arrSize = 0);
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);

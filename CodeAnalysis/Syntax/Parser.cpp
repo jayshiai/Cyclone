@@ -8,6 +8,13 @@ Parser::Parser(SyntaxTree *syntaxTree) : _syntaxTree(syntaxTree), _text(syntaxTr
 {
     Lexer lexer(syntaxTree);
     tokens = lexer.tokenize();
+
+    // std::cout << "TOKENS" << std::endl;
+
+    // for (auto token : tokens)
+    // {
+    //     std::cout << "  " << convertSyntaxKindToString(token.Kind) << " " << token.value << std::endl;
+    // }
     currentToken = tokens[0];
 }
 Token Parser::peek(int offset)
@@ -154,6 +161,11 @@ StatementSyntax *Parser::ParseVariableDeclaration()
         initializer = ParseExpression();
     }
 
+    if (initializer == nullptr && typeClause->IsArray && typeClause->Size == nullptr)
+    {
+        _diagnostics.ReportArraySizeNotSpecified(identifier.Location);
+    }
+
     return new VariableDeclarationSyntax(_syntaxTree, keyword, identifier, typeClause, equals, initializer);
 }
 
@@ -171,11 +183,17 @@ TypeClauseNode *Parser::ParseTypeClause()
     Token colon = Expect(SyntaxKind::COLON);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
 
-    if (peek(0).Kind == SyntaxKind::OPEN_BRACKET && peek(1).Kind == SyntaxKind::CLOSE_BRACKET)
+    if (peek(0).Kind == SyntaxKind::OPEN_BRACKET)
     {
         Expect(SyntaxKind::OPEN_BRACKET);
+        SyntaxNode *size = nullptr;
+
+        if (peek(0).Kind != SyntaxKind::CLOSE_BRACKET)
+        {
+            size = ParsePrimaryExpression();
+        }
         Expect(SyntaxKind::CLOSE_BRACKET);
-        return new TypeClauseNode(_syntaxTree, colon, identifier, true);
+        return new TypeClauseNode(_syntaxTree, colon, identifier, true, size);
     }
 
     return new TypeClauseNode(_syntaxTree, colon, identifier);
@@ -388,9 +406,11 @@ SyntaxNode *Parser::ParseNameOrCallExpression()
     }
     if (peek(0).Kind == SyntaxKind::IDENTIFIER && peek(1).Kind == SyntaxKind::OPEN_BRACKET)
     {
-        return ParseArrayAccessExpression();
+        return ParseArrayAssignmentOrAccessExpression();
     }
-    return ParseNameExpression();
+
+    if (peek)
+        return ParseNameExpression();
 }
 
 SyntaxNode *Parser::ParseArrayInitializer()
@@ -414,13 +434,20 @@ SyntaxNode *Parser::ParseArrayInitializer()
     return new ArrayInitializerSyntax(_syntaxTree, openBraceToken, nodesAndSeparators, closeBraceToken);
 }
 
-SyntaxNode *Parser::ParseArrayAccessExpression()
+SyntaxNode *Parser::ParseArrayAssignmentOrAccessExpression()
 {
 
     SyntaxNode *identifier = ParseNameExpression();
     Token openBracket = Expect(SyntaxKind::OPEN_BRACKET);
     SyntaxNode *index = ParseExpression();
     Token closeBracket = Expect(SyntaxKind::CLOSE_BRACKET);
+
+    if (currentToken.Kind == SyntaxKind::EQUALS)
+    {
+        Token equals = Expect(SyntaxKind::EQUALS);
+        SyntaxNode *right = ParseExpression();
+        return new ArrayAssignmentExpressionSyntax(_syntaxTree, identifier, openBracket, index, closeBracket, equals, right);
+    }
     return new ArrayAccessExpressionSyntax(_syntaxTree, identifier, openBracket, index, closeBracket);
 }
 SyntaxNode *Parser::ParseCallExpression()

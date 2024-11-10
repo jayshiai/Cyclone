@@ -68,6 +68,7 @@ enum class SyntaxKind
     CallExpression,
     ArrayInitializer,
     ArrayAccessExpression,
+    ArrayAssignmentExpression,
 
     CompilationUnit,
     FunctionDeclaration,
@@ -283,8 +284,9 @@ public:
 
     bool IsArray;
     TypeClauseNode *ElementType;
-    TypeClauseNode(SyntaxTree *syntaxTree, Token ColonToken, Token IdentifierToken, bool isArray = false)
-        : SyntaxNode(syntaxTree, SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken), IsArray(isArray)
+    SyntaxNode *Size;
+    TypeClauseNode(SyntaxTree *syntaxTree, Token ColonToken, Token IdentifierToken, bool isArray = false, SyntaxNode *size = nullptr)
+        : SyntaxNode(syntaxTree, SyntaxKind::TypeClause), ColonToken(ColonToken), IdentifierToken(IdentifierToken), IsArray(isArray), Size(size)
     {
         if (isArray)
         {
@@ -352,6 +354,24 @@ public:
     }
 };
 
+class ArrayAssignmentExpressionSyntax : public SyntaxNode
+{
+public:
+    SyntaxNode *Identifier;
+    Token OpenBracketToken;
+    SyntaxNode *Index;
+    Token CloseBracketToken;
+    Token EqualsToken;
+    SyntaxNode *Right;
+
+    ArrayAssignmentExpressionSyntax(SyntaxTree *syntaxTree, SyntaxNode *identifier, Token openBracketToken, SyntaxNode *index, Token closeBracketToken, Token equalsToken, SyntaxNode *right)
+        : SyntaxNode(syntaxTree, SyntaxKind::ArrayAssignmentExpression), Identifier(identifier), OpenBracketToken(openBracketToken), Index(index), CloseBracketToken(closeBracketToken), EqualsToken(equalsToken), Right(right) {}
+
+    std::vector<SyntaxNode *> GetChildren() const override
+    {
+        return {const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&Identifier)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&OpenBracketToken)), Index, const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&CloseBracketToken)), const_cast<SyntaxNode *>(reinterpret_cast<const SyntaxNode *>(&EqualsToken)), Right};
+    }
+};
 class ExpressionStatementSyntax : public StatementSyntax
 {
 public:
