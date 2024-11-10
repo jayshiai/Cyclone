@@ -157,21 +157,6 @@ BoundStatement *Binder::BindBlockStatement(BlockStatementSyntax *node)
     return new BoundBlockStatement(statements);
 }
 
-VariableSymbol *Binder::BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type)
-{
-    std::string name = identifier.value;
-    bool declare = name != "" || !name.empty();
-    VariableSymbol *variable = _function == nullptr
-                                   ? static_cast<VariableSymbol *>(new GlobalVariableSymbol(name, isReadOnly, type))
-                                   : static_cast<VariableSymbol *>(new LocalVariableSymbol(name, isReadOnly, type));
-
-    if (declare && !_scope->TryDeclareVariable(*variable))
-    {
-        _diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
-    }
-
-    return variable;
-}
 BoundStatement *Binder::BindExpressionStatement(ExpressionStatementSyntax *node)
 {
     BoundExpression *expression = BindExpression(node->Expression, true);
@@ -251,6 +236,61 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
         return new BoundErrorExpression();
     }
     return new BoundVariableExpression(variable);
+}
+
+BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type)
+{
+    if (type == TypeSymbol::Integer)
+        return new BoundLiteralExpression("0", TypeSymbol::Integer);
+    if (type == TypeSymbol::String)
+        return new BoundLiteralExpression("", TypeSymbol::String);
+    if (type == TypeSymbol::Boolean)
+        return new BoundLiteralExpression("false", TypeSymbol::Boolean);
+    if (type == TypeSymbol::Any)
+        return new BoundLiteralExpression("0", TypeSymbol::Any);
+    else
+        return new BoundErrorExpression();
+}
+
+BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
+{
+
+    bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
+    TypeSymbol type = BindTypeClause(node->TypeClause);
+
+    BoundExpression *initializer = node->Initializer == nullptr ? GetDefaultValueExpression(type != TypeSymbol::Null ? type : TypeSymbol::Any)
+                                                                : BindExpression(node->Initializer);
+
+    TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
+
+    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, isReadOnly, variableType);
+
+    BoundExpression *convertedInitializer;
+
+    if (node->Initializer == nullptr)
+    {
+        convertedInitializer = BindConversion(node->TypeClause ? node->TypeClause->Location : node->Identifier.Location, initializer, variableType);
+    }
+    else
+    {
+        convertedInitializer = BindConversion(node->Initializer->Location, initializer, variableType);
+    }
+    return new BoundVariableDeclaration(*variable, initializer);
+}
+VariableSymbol *Binder::BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type)
+{
+    std::string name = identifier.value;
+    bool declare = name != "" || !name.empty();
+    VariableSymbol *variable = _function == nullptr
+                                   ? static_cast<VariableSymbol *>(new GlobalVariableSymbol(name, isReadOnly, type))
+                                   : static_cast<VariableSymbol *>(new LocalVariableSymbol(name, isReadOnly, type));
+
+    if (declare && !_scope->TryDeclareVariable(*variable))
+    {
+        _diagnostics.ReportSymbolAlreadyDeclared(identifier.Location, name);
+    }
+
+    return variable;
 }
 
 BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node)
@@ -359,25 +399,27 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
         return new BoundErrorExpression();
     }
 
-    bool hasErrors = false;
+    // bool hasErrors = false;
 
     for (int i = 0; i < node->Arguments.Count(); i++)
     {
+        TextLocation argumentLocation = node->Arguments[i]->Location;
         BoundExpression *argument = boundArguments[i];
         ParameterSymbol parameter = function.Parameters[i];
-        if (argument->type != parameter.Type)
-        {
-            if (argument->type != TypeSymbol::Error)
-            {
-                _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Location, parameter.Name, parameter.Type.ToString(), argument->type.ToString());
-            }
+        // if (argument->type != parameter.Type)
+        // {
+        //     if (argument->type != TypeSymbol::Error)
+        //     {
+        //         _diagnostics.ReportWrongArgumentType(node->Arguments[i]->Location, parameter.Name, parameter.Type.ToString(), argument->type.ToString());
+        //     }
 
-            hasErrors = true;
-        }
+        //     hasErrors = true;
+        // }
+        boundArguments[i] = BindConversion(argumentLocation, argument, parameter.Type);
     }
 
-    if (hasErrors)
-        return new BoundErrorExpression();
+    // if (hasErrors)
+    //     return new BoundErrorExpression();
     return new BoundCallExpression(function, boundArguments);
 }
 BoundGlobalScope *Binder::BindGlobalScope(BoundGlobalScope *previous, std::vector<SyntaxTree *> syntaxTrees)
@@ -533,20 +575,6 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
     return parent;
 }
 
-BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
-{
-
-    bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
-    TypeSymbol type = BindTypeClause(node->TypeClause);
-    BoundExpression *initializer = BindExpression(node->Initializer);
-
-    TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
-    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, isReadOnly, variableType);
-    BoundExpression *convertedInitializer = BindConversion(node->Initializer->Location, initializer, variableType);
-
-    return new BoundVariableDeclaration(*variable, initializer);
-}
-
 TypeSymbol Binder::LookupType(std::string name)
 {
     if (name == "bool")
@@ -561,6 +589,11 @@ TypeSymbol Binder::LookupType(std::string name)
     {
         return TypeSymbol::String;
     }
+    if (name == "any")
+    {
+        return TypeSymbol::Any;
+    }
+
     return TypeSymbol::Null;
 }
 
@@ -585,8 +618,8 @@ BoundExpression *Binder::BindConversion(SyntaxNode *node, TypeSymbol type, bool 
 }
 BoundExpression *Binder::BindConversion(TextLocation diagnosticLocation, BoundExpression *expression, TypeSymbol type, bool allowExplicit)
 {
-
     Conversion conversion = Conversion::Classify(expression->type, type);
+
     if (!conversion.Exists)
     {
         if (expression->type != TypeSymbol::Error && type != TypeSymbol::Error)
@@ -603,6 +636,7 @@ BoundExpression *Binder::BindConversion(TextLocation diagnosticLocation, BoundEx
     {
         return expression;
     }
+
     return new BoundConversionExpression(type, expression);
 }
 // enum class BoundNodeKind
@@ -732,6 +766,15 @@ Conversion Conversion::Classify(TypeSymbol from, TypeSymbol to)
         return Conversion::Identity;
     }
 
+    if (from != TypeSymbol::Void && to == TypeSymbol::Any)
+    {
+        return Conversion::Implicit;
+    }
+
+    if (from == TypeSymbol::Any && to != TypeSymbol::Void)
+    {
+        return Conversion::Implicit;
+    }
     if (from == TypeSymbol::String)
     {
         if (to == TypeSymbol::Integer || to == TypeSymbol::Boolean)

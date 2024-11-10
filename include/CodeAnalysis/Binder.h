@@ -638,6 +638,7 @@ private:
 
     static BoundScope *CreateParentScope(BoundGlobalScope *previous);
     static BoundScope *CreateRootScope();
+    BoundExpression *GetDefaultValueExpression(TypeSymbol type);
     BoundStatement *BindStatement(StatementSyntax *node);
     BoundStatement *BindBlockStatement(BlockStatementSyntax *node);
     BoundStatement *BindVariableDeclaration(VariableDeclarationSyntax *node);

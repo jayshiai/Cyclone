@@ -19,6 +19,8 @@ enum class SyntaxKind
     DIVIDE,
     LPAREN, // (
     RPAREN, // )
+    LBRACKET,
+    RBRACKET,
     BANG,
     EQUALS,
     LESS,

@@ -309,9 +309,36 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
 {
     auto value = EvaluateExpression(n->Expression);
     if (n->type == TypeSymbol::Boolean)
-        return std::any_cast<bool>(value);
+    {
+        if (n->Expression->type == TypeSymbol::Boolean)
+            return std::any_cast<bool>(value);
+        else if (n->Expression->type == TypeSymbol::Integer)
+            return std::any_cast<int>(value) != 0;
+        else if (n->Expression->type == TypeSymbol::String)
+            return std::any_cast<std::string>(value) != "";
+        else if (n->Expression->type == TypeSymbol::Any)
+            return value.has_value();
+    }
     else if (n->type == TypeSymbol::String)
-        return std::to_string(std::any_cast<int>(value));
+    {
+        if (n->Expression->type == TypeSymbol::Boolean)
+            return std::to_string(std::any_cast<bool>(value));
+        else if (n->Expression->type == TypeSymbol::Integer)
+            return std::to_string(std::any_cast<int>(value));
+        else if (n->Expression->type == TypeSymbol::String)
+            return std::any_cast<std::string>(value);
+        else if (n->Expression->type == TypeSymbol::Any)
+        {
+            if (value.type() == typeid(bool))
+                return std::to_string(std::any_cast<bool>(value));
+            else if (value.type() == typeid(int))
+                return std::to_string(std::any_cast<int>(value));
+            else if (value.type() == typeid(std::string))
+                return std::any_cast<std::string>(value);
+            else if (value.type() == typeid(std::any))
+                return "any";
+        }
+    }
     else if (n->type == TypeSymbol::Integer)
     {
         if (n->Expression->type == TypeSymbol::Boolean)
@@ -320,6 +347,17 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
             return std::stoi(std::any_cast<std::string>(value));
         else if (n->Expression->type == TypeSymbol::Integer)
             return std::any_cast<int>(value);
+    }
+    else if (n->type == TypeSymbol::Any)
+    {
+        if (n->Expression->type == TypeSymbol::Boolean)
+            return std::any_cast<bool>(value);
+        else if (n->Expression->type == TypeSymbol::String)
+            return std::any_cast<std::string>(value);
+        else if (n->Expression->type == TypeSymbol::Integer)
+            return std::any_cast<int>(value);
+        else if (n->Expression->type == TypeSymbol::Any)
+            return value;
     }
     else
         throw std::runtime_error("Unexpected conversion: " + n->type.Name);

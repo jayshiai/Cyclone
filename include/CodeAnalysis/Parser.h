@@ -56,6 +56,8 @@ private:
     SyntaxNode *ParseNameExpression();
     SyntaxNode *ParseCallExpression();
 
+    SeparatedSyntaxList<SyntaxNode> ParseArrayInitializer();
+
     std::vector<MemberSyntax *> ParseMembers();
     MemberSyntax *ParseMember();
     MemberSyntax *ParseGlobalStatement();

@@ -50,6 +50,14 @@ std::vector<Token> Lexer::tokenize()
             tokens.push_back(Token{_syntaxTree, SyntaxKind::CLOSE_BRACE, "}", pos});
             advance();
             break;
+        case '[':
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::LBRACKET, "[", pos});
+            advance();
+            break;
+        case ']':
+            tokens.push_back(Token{_syntaxTree, SyntaxKind::RBRACKET, "]", pos});
+            advance();
+            break;
         case ':':
             tokens.push_back(Token{_syntaxTree, SyntaxKind::COLON, ":", pos});
             advance();

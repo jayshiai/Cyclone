@@ -46,6 +46,7 @@ public:
     static const TypeSymbol Error;
     static const TypeSymbol Void;
     static const TypeSymbol Null;
+    static const TypeSymbol Any;
     virtual SymbolKind GetKind() const override
     {
         return SymbolKind::Type;

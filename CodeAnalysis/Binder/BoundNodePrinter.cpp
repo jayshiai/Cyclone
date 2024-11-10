@@ -264,6 +264,10 @@ void BoundNodePrinter::WriteLiteralExpression(const BoundLiteralExpression *node
     {
         writer.WriteString(value);
     }
+    else if (node->type == TypeSymbol::Any)
+    {
+        writer.WriteIdentifier(value);
+    }
     else
     {
         throw std::runtime_error("Unexpected type: " + node->type.ToString());

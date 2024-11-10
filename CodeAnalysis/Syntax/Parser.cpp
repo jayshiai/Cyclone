@@ -146,8 +146,14 @@ StatementSyntax *Parser::ParseVariableDeclaration()
     Token keyword = Expect(expected);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
     TypeClauseNode *typeClause = ParseOptionalTypeClause();
-    Token equals = Expect(SyntaxKind::EQUALS);
-    SyntaxNode *initializer = ParseExpression();
+    Token equals = Token(_syntaxTree);
+    SyntaxNode *initializer = nullptr;
+    if (peek(0).Kind == SyntaxKind::EQUALS)
+    {
+        equals = Expect(SyntaxKind::EQUALS);
+        initializer = ParseExpression();
+    }
+
     return new VariableDeclarationSyntax(_syntaxTree, keyword, identifier, typeClause, equals, initializer);
 }
 
@@ -336,20 +342,7 @@ int Parser::GetBinaryPrecedence(SyntaxKind kind)
         return 0;
     }
 }
-Token Parser::Expect(SyntaxKind kind)
-{
-    if (currentToken.Kind == kind)
-    {
-        Token token = currentToken;
-        NextToken();
-        return token;
-    }
-    else
-    {
-        _diagnostics.ReportUnexpectedToken(currentToken.Location, convertSyntaxKindToString(currentToken.Kind), convertSyntaxKindToString(kind));
-        return Token(_syntaxTree, kind, currentToken.value, currentToken.position);
-    }
-}
+
 SyntaxNode *Parser::ParsePrimaryExpression()
 {
 
@@ -443,4 +436,19 @@ SyntaxNode *Parser::ParseNameExpression()
 {
     Token name = Expect(SyntaxKind::IDENTIFIER);
     return new NameExpressionNode(_syntaxTree, name);
+}
+
+Token Parser::Expect(SyntaxKind kind)
+{
+    if (currentToken.Kind == kind)
+    {
+        Token token = currentToken;
+        NextToken();
+        return token;
+    }
+    else
+    {
+        _diagnostics.ReportUnexpectedToken(currentToken.Location, convertSyntaxKindToString(currentToken.Kind), convertSyntaxKindToString(kind));
+        return Token(_syntaxTree, kind, currentToken.value, currentToken.position);
+    }
 }
