@@ -409,8 +409,7 @@ SyntaxNode *Parser::ParseNameOrCallExpression()
         return ParseArrayAssignmentOrAccessExpression();
     }
 
-    if (peek)
-        return ParseNameExpression();
+    return ParseNameExpression();
 }
 
 SyntaxNode *Parser::ParseArrayInitializer()
