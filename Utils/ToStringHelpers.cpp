@@ -103,12 +103,17 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
         return "CallExpression";
     case SyntaxKind::ArrayInitializer:
         return "ArrayInitializer";
+    case SyntaxKind::ArrayAccessExpression:
+        return "ArrayAccessExpression";
 
     case SyntaxKind::IDENTIFIER:
         return "IdentifierToken";
     case SyntaxKind::LPAREN:
     case SyntaxKind::RPAREN:
         return "ParenthesisToken";
+    case SyntaxKind::OPEN_BRACKET:
+    case SyntaxKind::CLOSE_BRACKET:
+        return "BracketToken";
     case SyntaxKind::BANG:
         return "BangToken";
     case SyntaxKind::EQUALS:

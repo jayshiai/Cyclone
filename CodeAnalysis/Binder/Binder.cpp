@@ -191,6 +191,43 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
     return new BoundVariableExpression(variable);
 }
 
+TypeSymbol Binder::GetArrayType(TypeSymbol arrayType)
+{
+    if (arrayType == TypeSymbol::ArrayInt)
+        return TypeSymbol::Integer;
+    if (arrayType == TypeSymbol::ArrayString)
+        return TypeSymbol::String;
+    if (arrayType == TypeSymbol::ArrayBool)
+        return TypeSymbol::Boolean;
+    if (arrayType == TypeSymbol::ArrayAny)
+        return TypeSymbol::Any;
+    else
+        return TypeSymbol::Error;
+}
+
+BoundExpression *Binder::BindArrayAccessExpression(ArrayAccessExpressionSyntax *node)
+{
+    BoundExpression *variable = BindExpression(node->Identifier);
+
+    if (!variable->type.IsArray())
+    {
+        _diagnostics.ReportInvalidArrayAccess(node->Location);
+        return new BoundErrorExpression();
+    }
+    BoundExpression *indexExpression = BindExpression(node->Index);
+
+    TypeSymbol arrayType = GetArrayType(variable->type);
+    variable->type = arrayType;
+
+    if (indexExpression->type != TypeSymbol::Integer)
+    {
+        _diagnostics.ReportInvalidArrayIndex(node->Index->Location);
+        return new BoundErrorExpression();
+    }
+
+    return new BoundArrayAccessExpression(variable, indexExpression);
+}
+
 BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type)
 {
     if (type == TypeSymbol::Integer)
@@ -203,6 +240,19 @@ BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type)
         return new BoundLiteralExpression("0", TypeSymbol::Any);
     else
         return new BoundErrorExpression();
+}
+TypeSymbol Binder::GenerateArrayType(TypeSymbol type)
+{
+    if (type == TypeSymbol::Integer)
+        return TypeSymbol::ArrayInt;
+    if (type == TypeSymbol::String)
+        return TypeSymbol::ArrayString;
+    if (type == TypeSymbol::Boolean)
+        return TypeSymbol::ArrayBool;
+    if (type == TypeSymbol::Any)
+        return TypeSymbol::ArrayAny;
+    else
+        return TypeSymbol::Error;
 }
 
 BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
@@ -226,7 +276,7 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
     //     }
     TypeSymbol elementType = BindTypeClause(node->TypeClause->ElementType);
 
-    TypeSymbol type = TypeSymbol::Array(&elementType);
+    TypeSymbol type = GenerateArrayType(elementType);
 
     BoundExpression *initializer;
     if (node->Initializer->Kind == SyntaxKind::ArrayInitializer)
@@ -255,11 +305,11 @@ BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
 {
 
     bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
-    if (node->TypeClause->IsArray)
+
+    if (node->TypeClause && node->TypeClause->IsArray)
     {
         return BindArrayDeclaration(node);
     }
-
     TypeSymbol type = BindTypeClause(node->TypeClause);
 
     BoundExpression *initializer = node->Initializer == nullptr ? GetDefaultValueExpression(type != TypeSymbol::Null ? type : TypeSymbol::Any)
@@ -310,7 +360,7 @@ BoundExpression *Binder::BindArrayInitializerExpression(ArrayInitializerSyntax *
         }
         elements.push_back(boundExpression);
     }
-    return new BoundArrayInitializerExpression(elements, TypeSymbol::Array(&type));
+    return new BoundArrayInitializerExpression(elements, GenerateArrayType(type));
 }
 
 BoundExpression *Binder::BindAssignmentExpression(AssignmentExpressionNode *node)
@@ -481,6 +531,7 @@ BoundGlobalScope *Binder::BindGlobalScope(BoundGlobalScope *previous, std::vecto
     }
     std::vector<FunctionSymbol> functions = binder._scope->GetDeclaredFunctions();
     std::vector<VariableSymbol> variables = binder._scope->GetDeclaredVariables();
+
     std::vector<Diagnostic> diagnostics = binder.GetDiagnostics().GetDiagnostics();
 
     if (previous != nullptr)
@@ -492,6 +543,7 @@ BoundGlobalScope *Binder::BindGlobalScope(BoundGlobalScope *previous, std::vecto
 
 BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
 {
+
     BoundScope parentScope = CreateParentScope(globalScope);
     std::unordered_map<FunctionSymbol, BoundBlockStatement *> functions = {};
     std::vector<Diagnostic> diagnostics = {};
@@ -570,6 +622,7 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
     std::stack<BoundGlobalScope *> stack;
     while (previous != nullptr)
     {
+
         stack.push(previous);
         previous = previous->Previous;
     }
@@ -586,8 +639,9 @@ BoundScope *Binder::CreateParentScope(BoundGlobalScope *previous)
         {
             scope->TryDeclareFunction(function);
         }
-        for (auto &variable : previous->Variables)
+        for (auto variable : previous->Variables)
         {
+
             scope->TryDeclareVariable(variable);
         }
         parent = scope;
@@ -674,6 +728,8 @@ BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
         return BindExpression(((ParenthesizedExpressionNode *)node)->expression);
     case SyntaxKind::CallExpression:
         return BindCallExpression((CallExpressionNode *)node);
+    case SyntaxKind::ArrayAccessExpression:
+        return BindArrayAccessExpression((ArrayAccessExpressionSyntax *)node);
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;

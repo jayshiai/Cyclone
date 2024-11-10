@@ -167,3 +167,13 @@ void DiagnosticBag::ReportTypeMismatch(const TextLocation &location, const std::
     oss << "Expected type '" << expectedType << "' but received type '" << actualType << "'.";
     Report(location, oss.str());
 }
+
+void DiagnosticBag::ReportInvalidArrayIndex(const TextLocation &location)
+{
+    Report(location, "Invalid array index.");
+}
+
+void DiagnosticBag::ReportInvalidArrayAccess(const TextLocation &location)
+{
+    Report(location, "Invalid array access.");
+}

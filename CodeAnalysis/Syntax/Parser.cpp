@@ -390,7 +390,6 @@ SyntaxNode *Parser::ParseNameOrCallExpression()
     {
         return ParseArrayAccessExpression();
     }
-
     return ParseNameExpression();
 }
 
@@ -417,7 +416,8 @@ SyntaxNode *Parser::ParseArrayInitializer()
 
 SyntaxNode *Parser::ParseArrayAccessExpression()
 {
-    Token identifier = Expect(SyntaxKind::IDENTIFIER);
+
+    SyntaxNode *identifier = ParseNameExpression();
     Token openBracket = Expect(SyntaxKind::OPEN_BRACKET);
     SyntaxNode *index = ParseExpression();
     Token closeBracket = Expect(SyntaxKind::CLOSE_BRACKET);

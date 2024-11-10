@@ -67,6 +67,7 @@ enum class SyntaxKind
     AssignmentExpression,
     CallExpression,
     ArrayInitializer,
+    ArrayAccessExpression,
 
     CompilationUnit,
     FunctionDeclaration,
@@ -337,13 +338,13 @@ public:
 class ArrayAccessExpressionSyntax : public SyntaxNode
 {
 public:
-    Token Identifier;
+    SyntaxNode *Identifier;
     Token OpenBracketToken;
     SyntaxNode *Index;
     Token CloseBracketToken;
 
-    ArrayAccessExpressionSyntax(SyntaxTree *syntaxTree, Token identifier, Token openBracketToken, SyntaxNode *index, Token closeBracketToken)
-        : SyntaxNode(syntaxTree, SyntaxKind::BinaryExpression), Identifier(identifier), OpenBracketToken(openBracketToken), Index(index), CloseBracketToken(closeBracketToken) {}
+    ArrayAccessExpressionSyntax(SyntaxTree *syntaxTree, SyntaxNode *identifier, Token openBracketToken, SyntaxNode *index, Token closeBracketToken)
+        : SyntaxNode(syntaxTree, SyntaxKind::ArrayAccessExpression), Identifier(identifier), OpenBracketToken(openBracketToken), Index(index), CloseBracketToken(closeBracketToken) {}
 
     std::vector<SyntaxNode *> GetChildren() const override
     {

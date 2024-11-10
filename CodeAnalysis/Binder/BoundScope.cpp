@@ -9,6 +9,7 @@ bool BoundScope::TryDeclareVariable(VariableSymbol &variable)
     }
 
     _variables[variable.Name] = variable;
+
     return true;
 };
 
@@ -19,6 +20,7 @@ bool BoundScope::TryLookupVariable(const std::string &name, VariableSymbol &vari
     {
 
         variable = it->second;
+
         return true;
     }
 

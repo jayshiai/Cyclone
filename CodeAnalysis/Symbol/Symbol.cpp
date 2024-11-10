@@ -7,6 +7,10 @@ const TypeSymbol TypeSymbol::Void("void");
 const TypeSymbol TypeSymbol::Error("?");
 const TypeSymbol TypeSymbol::Null("null");
 const TypeSymbol TypeSymbol::Any("any");
+const TypeSymbol TypeSymbol::ArrayInt("array<int>");
+const TypeSymbol TypeSymbol::ArrayBool("array<bool>");
+const TypeSymbol TypeSymbol::ArrayString("array<string>");
+const TypeSymbol TypeSymbol::ArrayAny("array<any>");
 
 const FunctionSymbol BuiltInFunctions::Print("print", std::vector<ParameterSymbol>{ParameterSymbol("text", TypeSymbol::String)}, TypeSymbol::Void);
 const FunctionSymbol BuiltInFunctions::Input("input", std::vector<ParameterSymbol>{}, TypeSymbol::String);

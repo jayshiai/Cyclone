@@ -19,6 +19,8 @@ enum class BoundNodeKind
     CallExpression,
     ConversionExpression,
     ArrayInitializerExpression,
+    ArrayAccessExpression,
+
     ExpressionStatement,
     VariableDeclaration,
     BlockStatement,
@@ -439,6 +441,27 @@ public:
         return {};
     }
 };
+
+class BoundArrayAccessExpression : public BoundExpression
+{
+public:
+    BoundArrayAccessExpression(BoundExpression *variable, BoundExpression *index) : BoundExpression(variable->type), Variable(variable), Index(index), type(variable->type) {};
+    BoundNodeKind kind = BoundNodeKind::ArrayAccessExpression;
+    BoundExpression *Variable;
+    BoundExpression *Index;
+    TypeSymbol type;
+    BoundNodeKind GetKind() const override { return BoundNodeKind::ArrayAccessExpression; }
+
+    std::vector<BoundNode *> GetChildren() const override
+    {
+        return {Variable, Index};
+    }
+
+    std::vector<std::pair<std::string, std::string>> GetProperties() const override
+    {
+        return {};
+    }
+};
 class BoundUnaryExpression : public BoundExpression
 {
 public:
@@ -667,7 +690,8 @@ private:
 
     VariableSymbol *BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type);
     TypeSymbol BindTypeClause(TypeClauseNode *node);
-
+    TypeSymbol GenerateArrayType(TypeSymbol elementType);
+    TypeSymbol GetArrayType(TypeSymbol type);
     BoundStatement *BindExpressionStatement(ExpressionStatementSyntax *node);
     BoundStatement *BindIfStatement(IfStatementSyntax *node);
     BoundStatement *BindWhileStatement(WhileStatementSyntax *node);
@@ -687,6 +711,7 @@ private:
     BoundExpression *BindCallExpression(CallExpressionNode *node);
     BoundExpression *BindConversion(SyntaxNode *node, TypeSymbol type, bool allowExplicit = false);
     BoundExpression *BindConversion(TextLocation diagnosticLocation, BoundExpression *expression, TypeSymbol type, bool allowExplicit = false);
+    BoundExpression *BindArrayAccessExpression(ArrayAccessExpressionSyntax *node);
 };
 
 class Conversion
@@ -738,5 +763,6 @@ private:
     static void WriteCallExpression(const BoundCallExpression *node, IndentedTextWriter &writer);
     static void WriteConversionExpression(const BoundConversionExpression *node, IndentedTextWriter &writer);
     static void WriteArrayInitializerExpression(const BoundArrayInitializerExpression *node, IndentedTextWriter &writer);
+    static void WriteArrayAccessExpression(const BoundArrayAccessExpression *node, IndentedTextWriter &writer);
 };
 #endif

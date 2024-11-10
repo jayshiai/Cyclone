@@ -144,6 +144,8 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
         return EvaluateConversionExpression((BoundConversionExpression *)node);
     case BoundNodeKind::ArrayInitializerExpression:
         return EvaluateArrayInitializerExpression((BoundArrayInitializerExpression *)node);
+    case BoundNodeKind::ArrayAccessExpression:
+        return EvaluateArrayAccessExpression((BoundArrayAccessExpression *)node);
     default:
         throw std::runtime_error("Unexpected node kind");
     }
@@ -365,6 +367,16 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         throw std::runtime_error("Unexpected conversion: " + n->type.Name);
 
     return std::any();
+}
+
+std::any Evaluator::EvaluateArrayAccessExpression(BoundArrayAccessExpression *n)
+{
+    std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Variable));
+    int index = std::any_cast<int>(EvaluateExpression(n->Index));
+
+    if (index < 0 || index >= array.size())
+        throw std::runtime_error("Index out of bounds");
+    return array[index];
 }
 
 std::any Evaluator::EvaluateArrayInitializerExpression(BoundArrayInitializerExpression *n)
