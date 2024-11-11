@@ -156,7 +156,7 @@ public:
         return SymbolKind::Parameter;
     }
 
-    ParameterSymbol(std::string name, TypeSymbol type) : LocalVariableSymbol(name, true, type) {}
+    ParameterSymbol(std::string name, TypeSymbol type) : LocalVariableSymbol(name, false, type) {}
 };
 
 class FunctionSymbol : public Symbol
