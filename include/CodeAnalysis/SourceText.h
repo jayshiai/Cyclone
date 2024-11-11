@@ -13,7 +13,9 @@ struct TextSpan
     {
         End = start + length;
     }
-
+    TextSpan()
+    {
+    }
     static TextSpan FromBounds(int start, int end)
     {
         int length = end - start;
@@ -44,6 +46,7 @@ private:
     static int GetLineBreakWidth(const std::string &text, int position);
 
 public:
+    SourceText() {}
     std::string Filename;
     std::vector<TextLine> _lines;
     static SourceText From(const std::string &text, std::string filename = "")
@@ -116,6 +119,10 @@ public:
         StartCharacter = span.Start - text._lines[StartLine].Start;
         EndLine = text.GetLineIndex(span.End);
         EndCharacter = span.End - text._lines[EndLine].Start;
+    }
+
+    TextLocation()
+    {
     }
 
     std::string ToString() const

@@ -1,2 +1,2 @@
 1+1
-var a : int[]
+var a = 20

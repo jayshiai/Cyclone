@@ -160,6 +160,7 @@ StatementSyntax *Parser::ParseVariableDeclaration()
 
     if (initializer == nullptr && typeClause && typeClause->IsArray && typeClause->Size == nullptr)
     {
+
         _diagnostics.ReportArraySizeNotSpecified(identifier.Location);
     }
 
@@ -251,8 +252,8 @@ StatementSyntax *Parser::ParseContinueStatement()
 StatementSyntax *Parser::ParseRetrunStatement()
 {
     Token keyword = Expect(SyntaxKind::RETURN_KEYWORD);
-    int keywordLine = _text.GetLineIndex(keyword.Span.Start);
-    int currentLine = _text.GetLineIndex(currentToken.Span.Start);
+    int keywordLine = _text.GetLineIndex(keyword.Span().Start);
+    int currentLine = _text.GetLineIndex(currentToken.Span().Start);
     bool isEof = currentToken.Kind == SyntaxKind::END_OF_FILE;
     bool isOnSameLine = !isEof && keywordLine == currentLine;
     SyntaxNode *expression = isOnSameLine ? ParseExpression() : nullptr;

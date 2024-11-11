@@ -539,18 +539,18 @@ BoundExpression *Binder::BindCallExpression(CallExpressionNode *node)
             TextSpan firstExceedingNode(0, 0);
             if (function.Parameters.size() > 0)
             {
-                firstExceedingNode = node->Arguments.GetSeparator(function.Parameters.size() - 1)->Span;
+                firstExceedingNode = node->Arguments.GetSeparator(function.Parameters.size() - 1)->Span();
             }
             else
             {
                 firstExceedingNode = node->Arguments[0]->Span();
             }
 
-            Span = TextSpan::FromBounds(firstExceedingNode.Start, node->CloseParenthesisToken.Span.End);
+            Span = TextSpan::FromBounds(firstExceedingNode.Start, node->CloseParenthesisToken.Span().End);
         }
         else
         {
-            Span = node->CloseParenthesisToken.Span;
+            Span = node->CloseParenthesisToken.Span();
         }
         TextLocation location = TextLocation(node->syntaxTree->Text, Span);
         _diagnostics.ReportWrongArgumentCount(location, function.Name, function.Parameters.size(), node->Arguments.Count());
