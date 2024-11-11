@@ -161,7 +161,7 @@ StatementSyntax *Parser::ParseVariableDeclaration()
         initializer = ParseExpression();
     }
 
-    if (initializer == nullptr && typeClause->IsArray && typeClause->Size == nullptr)
+    if (initializer == nullptr && typeClause && typeClause->IsArray && typeClause->Size == nullptr)
     {
         _diagnostics.ReportArraySizeNotSpecified(identifier.Location);
     }
@@ -278,14 +278,15 @@ void Parser::NextToken()
 }
 SyntaxNode *Parser::ParseExpression()
 {
-    if (peek(0).Kind == SyntaxKind::OPEN_BRACE)
-    {
-        return ParseArrayInitializer();
-    }
+
     return ParseAssignmentExpression();
 }
 SyntaxNode *Parser::ParseAssignmentExpression()
 {
+    if (peek(0).Kind == SyntaxKind::OPEN_BRACE)
+    {
+        return ParseArrayInitializer();
+    }
     if (peek(0).Kind == SyntaxKind::IDENTIFIER && peek(1).Kind == SyntaxKind::EQUALS)
     {
         Token identifier = currentToken;

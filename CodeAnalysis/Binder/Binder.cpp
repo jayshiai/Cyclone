@@ -209,14 +209,14 @@ BoundExpression *Binder::BindArrayAccessExpression(ArrayAccessExpressionSyntax *
 {
     BoundExpression *variable = BindExpression(node->Identifier);
 
-    if (!variable->type.IsArray())
+    if (!variable->type.IsArray() && variable->type != TypeSymbol::String)
     {
         _diagnostics.ReportInvalidArrayAccess(node->Location);
         return new BoundErrorExpression();
     }
     BoundExpression *indexExpression = BindExpression(node->Index);
 
-    TypeSymbol arrayType = GetArrayType(variable->type);
+    TypeSymbol arrayType = variable->type == TypeSymbol::String ? variable->type : GetArrayType(variable->type);
     variable->type = arrayType;
 
     if (indexExpression->type != TypeSymbol::Integer)
@@ -412,12 +412,8 @@ BoundExpression *Binder::BindArrayInitializerExpression(ArrayInitializerSyntax *
     std::vector<BoundExpression *> elements;
     for (auto expression : node->Elements)
     {
-        BoundExpression *boundExpression = BindExpression(expression);
-        if (boundExpression->type != type)
-        {
-            _diagnostics.ReportTypeMismatch(expression->Location, type.ToString(), boundExpression->type.ToString());
-            boundExpression = new BoundErrorExpression();
-        }
+        BoundExpression *boundExpression = BindExpression(expression, type);
+
         elements.push_back(boundExpression);
     }
     return new BoundArrayInitializerExpression(elements, GenerateArrayType(type));
@@ -447,14 +443,14 @@ BoundExpression *Binder::BindArrayAssignmentExpression(ArrayAssignmentExpression
 {
     BoundExpression *identifier = BindExpression(node->Identifier);
 
-    if (!identifier->type.IsArray())
+    if (!identifier->type.IsArray() && identifier->type != TypeSymbol::String)
     {
         _diagnostics.ReportInvalidArrayAccess(node->Location);
         return new BoundErrorExpression();
     }
     BoundExpression *indexExpression = BindExpression(node->Index);
     VariableSymbol variableSymbol = ((BoundVariableExpression *)identifier)->Variable;
-    TypeSymbol elementsType = GetArrayType(identifier->type);
+    TypeSymbol elementsType = identifier->type == TypeSymbol::String ? identifier->type : GetArrayType(identifier->type);
     identifier->type = elementsType;
 
     if (indexExpression->type != TypeSymbol::Integer)
@@ -830,6 +826,7 @@ BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
         return BindArrayAccessExpression((ArrayAccessExpressionSyntax *)node);
     case SyntaxKind::ArrayAssignmentExpression:
         return BindArrayAssignmentExpression((ArrayAssignmentExpressionSyntax *)node);
+
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
         return nullptr;

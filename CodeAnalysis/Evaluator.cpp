@@ -373,12 +373,22 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
 
 std::any Evaluator::EvaluateArrayAccessExpression(BoundArrayAccessExpression *n)
 {
-    std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Variable));
     int index = std::any_cast<int>(EvaluateExpression(n->Index));
+    if (n->type == TypeSymbol::String)
+    {
+        std::string array = std::any_cast<std::string>(EvaluateExpression(n->Variable));
+        if (index < 0 || index >= array.size())
+            throw std::runtime_error("Index out of bounds");
+        return std::string(1, array[index]);
+    }
+    else
+    {
 
-    if (index < 0 || index >= array.size())
-        throw std::runtime_error("Index out of bounds");
-    return array[index];
+        std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Variable));
+        if (index < 0 || index >= array.size())
+            throw std::runtime_error("Index out of bounds");
+        return array[index];
+    }
 }
 
 std::any Evaluator::EvaluateArrayInitializerExpression(BoundArrayInitializerExpression *n)
@@ -393,17 +403,30 @@ std::any Evaluator::EvaluateArrayInitializerExpression(BoundArrayInitializerExpr
 
 std::any Evaluator::EvaluateArrayAssignmentExpression(BoundArrayAssignmentExpression *n)
 {
-    std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Identifier));
     int index = std::any_cast<int>(EvaluateExpression(n->Index));
     std::any value = EvaluateExpression(n->Expression);
 
-    if (index < 0 || index >= array.size())
-        throw std::runtime_error("Index out of bounds");
-
-    array[index] = value;
-
-    Assign(n->Variable, array);
-    return value;
+    if (n->type == TypeSymbol::String)
+    {
+        std::string array = std::any_cast<std::string>(EvaluateExpression(n->Identifier));
+        std::string newValue = std::any_cast<std::string>(value);
+        if (index < 0 || index >= array.size())
+            throw std::runtime_error("Index out of bounds");
+        if (newValue.size() != 1)
+            throw std::runtime_error("Expected a character");
+        array[index] = newValue[0];
+        Assign(n->Variable, array);
+        return value;
+    }
+    else
+    {
+        std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Identifier));
+        if (index < 0 || index >= array.size())
+            throw std::runtime_error("Index out of bounds");
+        array[index] = value;
+        Assign(n->Variable, array);
+        return value;
+    }
 }
 
 void Evaluator::Assign(VariableSymbol variable, std::any value)
