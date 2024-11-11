@@ -49,7 +49,7 @@ enum class SyntaxKind
 
     TRUE_KEYWORD,
     FALSE_KEYWORD,
-    LET_KEYWORD,
+    CONST_KEYWORD,
     VAR_KEYWORD,
     ELSE_KEYWORD,
     IF_KEYWORD,

@@ -103,7 +103,7 @@ StatementSyntax *Parser::ParseStatement()
     {
     case SyntaxKind::OPEN_BRACE:
         return ParseBlockStatement();
-    case SyntaxKind::LET_KEYWORD:
+    case SyntaxKind::CONST_KEYWORD:
     case SyntaxKind::VAR_KEYWORD:
         return ParseVariableDeclaration();
     case SyntaxKind::IF_KEYWORD:
@@ -146,7 +146,7 @@ BlockStatementSyntax *Parser::ParseBlockStatement()
 
 StatementSyntax *Parser::ParseVariableDeclaration()
 {
-    SyntaxKind expected = currentToken.Kind == SyntaxKind::LET_KEYWORD ? SyntaxKind::LET_KEYWORD : SyntaxKind::VAR_KEYWORD;
+    SyntaxKind expected = currentToken.Kind == SyntaxKind::CONST_KEYWORD ? SyntaxKind::CONST_KEYWORD : SyntaxKind::VAR_KEYWORD;
     Token keyword = Expect(expected);
     Token identifier = Expect(SyntaxKind::IDENTIFIER);
     TypeClauseNode *typeClause = ParseOptionalTypeClause();

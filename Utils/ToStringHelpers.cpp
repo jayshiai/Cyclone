@@ -36,7 +36,7 @@
 //     COLON,
 //     TRUE_KEYWORD,
 //     FALSE_KEYWORD,
-//     LET_KEYWORD,
+//     CONST_KEYWORD,
 //     VAR_KEYWORD,
 //     ELSE_KEYWORD,
 //     IF_KEYWORD,
@@ -147,8 +147,8 @@ std::string convertSyntaxKindToString(SyntaxKind kind)
     case SyntaxKind::WHITESPACE:
         return "WhitespaceToken";
 
-    case SyntaxKind::LET_KEYWORD:
-        return "LetKeyword";
+    case SyntaxKind::CONST_KEYWORD:
+        return "ConstKeyword";
     case SyntaxKind::VAR_KEYWORD:
         return "VarKeyword";
     case SyntaxKind::IF_KEYWORD:

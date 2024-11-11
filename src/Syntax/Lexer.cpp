@@ -393,8 +393,8 @@ SyntaxKind Lexer::checkKeyword(const std::string &keyword)
         return SyntaxKind::TRUE_KEYWORD;
     else if (keyword == "false")
         return SyntaxKind::FALSE_KEYWORD;
-    else if (keyword == "let")
-        return SyntaxKind::LET_KEYWORD;
+    else if (keyword == "const")
+        return SyntaxKind::CONST_KEYWORD;
     else if (keyword == "var")
         return SyntaxKind::VAR_KEYWORD;
     else if (keyword == "if")
