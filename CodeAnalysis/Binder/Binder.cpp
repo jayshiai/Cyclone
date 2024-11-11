@@ -826,6 +826,11 @@ BoundExpression *Binder::BindExpressionInternal(SyntaxNode *node)
         return BindArrayAccessExpression((ArrayAccessExpressionSyntax *)node);
     case SyntaxKind::ArrayAssignmentExpression:
         return BindArrayAssignmentExpression((ArrayAssignmentExpressionSyntax *)node);
+    case SyntaxKind::ArrayInitializer:
+    {
+        _diagnostics.ReportInvalidArrayInitializer(node->Location);
+        return new BoundErrorExpression();
+    }
 
     default:
         std::cerr << "Unexpected syntax kind: {" << convertSyntaxKindToString(node->Kind) << "}" << std::endl;
@@ -989,6 +994,11 @@ Conversion Conversion::Classify(TypeSymbol from, TypeSymbol to)
     }
 
     if (from != TypeSymbol::Void && to == TypeSymbol::Any)
+    {
+        return Conversion::Implicit;
+    }
+
+    if (from.IsArray() && to == TypeSymbol::ArrayAny)
     {
         return Conversion::Implicit;
     }

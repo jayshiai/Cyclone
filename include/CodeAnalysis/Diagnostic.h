@@ -63,6 +63,7 @@ public:
     void ReportInvalidArraySize(const TextLocation &location);
     void ReportArraySizeNotSpecified(const TextLocation &location);
     void ReportArraySizeMismatch(const TextLocation &location, int expectedSize, int actualSize);
+    void ReportInvalidArrayInitializer(const TextLocation &location);
     const std::vector<Diagnostic> &GetDiagnostics() const
     {
         return _diagnostics;

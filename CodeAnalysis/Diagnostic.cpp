@@ -194,3 +194,8 @@ void DiagnosticBag::ReportArraySizeMismatch(const TextLocation &location, int ex
     oss << "Expected array size of " << expectedSize << " but received " << actualSize << ".";
     Report(location, oss.str());
 }
+
+void DiagnosticBag::ReportInvalidArrayInitializer(const TextLocation &location)
+{
+    Report(location, "Invalid array initializer.");
+}
