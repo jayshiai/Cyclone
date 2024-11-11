@@ -9,12 +9,9 @@ Parser::Parser(SyntaxTree *syntaxTree) : _syntaxTree(syntaxTree), _text(syntaxTr
     Lexer lexer(syntaxTree);
     tokens = lexer.tokenize();
 
-    // std::cout << "TOKENS" << std::endl;
+    DiagnosticBag lexerDiagnostic = lexer.GetDiagnostics();
 
-    // for (auto token : tokens)
-    // {
-    //     std::cout << "  " << convertSyntaxKindToString(token.Kind) << " " << token.value << std::endl;
-    // }
+    _diagnostics.AddRange(lexerDiagnostic);
     currentToken = tokens[0];
 }
 Token Parser::peek(int offset)
