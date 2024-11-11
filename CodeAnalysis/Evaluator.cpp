@@ -292,6 +292,12 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
         int size = array.size();
         return size;
     }
+    else if (n->Function == BuiltInFunctions::StringLength)
+    {
+        std::string text = std::any_cast<std::string>(EvaluateExpression(n->Arguments[0]));
+        int size = text.size();
+        return size;
+    }
     else if (n->Function == BuiltInFunctions::Random)
     {
         int max = std::any_cast<int>(EvaluateExpression(n->Arguments[0]));

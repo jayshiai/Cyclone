@@ -206,9 +206,10 @@ public:
     static const FunctionSymbol Input;
     static const FunctionSymbol Random;
     static const FunctionSymbol ArrayLength;
+    static const FunctionSymbol StringLength;
     static std::vector<FunctionSymbol> GetAll()
     {
-        return {Print, Input, Random, ArrayLength};
+        return {Print, Input, Random, ArrayLength, StringLength};
     }
 };
 
