@@ -22,6 +22,21 @@ const std::vector<BoundBinaryOperator> BoundBinaryOperator::operators{
     BoundBinaryOperator(SyntaxKind::MULTIPLY, BoundBinaryOperatorKind::Multiplication, TypeSymbol::Integer),
     BoundBinaryOperator(SyntaxKind::DIVIDE, BoundBinaryOperatorKind::Division, TypeSymbol::Integer),
 
+    BoundBinaryOperator(SyntaxKind::PLUS, BoundBinaryOperatorKind::Addition, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::MINUS, BoundBinaryOperatorKind::Subtraction, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::MULTIPLY, BoundBinaryOperatorKind::Multiplication, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::DIVIDE, BoundBinaryOperatorKind::Division, TypeSymbol::Float),
+
+    BoundBinaryOperator(SyntaxKind::PLUS, BoundBinaryOperatorKind::Addition, TypeSymbol::Float, TypeSymbol::Integer, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::MINUS, BoundBinaryOperatorKind::Subtraction, TypeSymbol::Float, TypeSymbol::Integer, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::MULTIPLY, BoundBinaryOperatorKind::Multiplication, TypeSymbol::Float, TypeSymbol::Integer, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::DIVIDE, BoundBinaryOperatorKind::Division, TypeSymbol::Float, TypeSymbol::Integer, TypeSymbol::Float),
+
+    BoundBinaryOperator(SyntaxKind::PLUS, BoundBinaryOperatorKind::Addition, TypeSymbol::Integer, TypeSymbol::Float, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::MINUS, BoundBinaryOperatorKind::Subtraction, TypeSymbol::Integer, TypeSymbol::Float, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::MULTIPLY, BoundBinaryOperatorKind::Multiplication, TypeSymbol::Integer, TypeSymbol::Float, TypeSymbol::Float),
+    BoundBinaryOperator(SyntaxKind::DIVIDE, BoundBinaryOperatorKind::Division, TypeSymbol::Integer, TypeSymbol::Float, TypeSymbol::Float),
+
     BoundBinaryOperator(SyntaxKind::PLUS, BoundBinaryOperatorKind::Addition, TypeSymbol::String),
     BoundBinaryOperator(SyntaxKind::EQUALS_EQUALS, BoundBinaryOperatorKind::Equals, TypeSymbol::String, TypeSymbol::Boolean),
     BoundBinaryOperator(SyntaxKind::BANG_EQUALS, BoundBinaryOperatorKind::NotEquals, TypeSymbol::String, TypeSymbol::Boolean),
@@ -33,10 +48,18 @@ const std::vector<BoundBinaryOperator> BoundBinaryOperator::operators{
     BoundBinaryOperator(SyntaxKind::EQUALS_EQUALS, BoundBinaryOperatorKind::Equals, TypeSymbol::Integer, TypeSymbol::Boolean),
     BoundBinaryOperator(SyntaxKind::BANG_EQUALS, BoundBinaryOperatorKind::NotEquals, TypeSymbol::Integer, TypeSymbol::Boolean),
 
+    BoundBinaryOperator(SyntaxKind::EQUALS_EQUALS, BoundBinaryOperatorKind::Equals, TypeSymbol::Float, TypeSymbol::Boolean),
+    BoundBinaryOperator(SyntaxKind::BANG_EQUALS, BoundBinaryOperatorKind::NotEquals, TypeSymbol::Float, TypeSymbol::Boolean),
+
     BoundBinaryOperator(SyntaxKind::LESS, BoundBinaryOperatorKind::Less, TypeSymbol::Integer, TypeSymbol::Boolean),
     BoundBinaryOperator(SyntaxKind::LESS_EQUALS, BoundBinaryOperatorKind::LessOrEquals, TypeSymbol::Integer, TypeSymbol::Boolean),
     BoundBinaryOperator(SyntaxKind::GREATER, BoundBinaryOperatorKind::Greater, TypeSymbol::Integer, TypeSymbol::Boolean),
     BoundBinaryOperator(SyntaxKind::GREATER_EQUALS, BoundBinaryOperatorKind::GreaterOrEquals, TypeSymbol::Integer, TypeSymbol::Boolean),
+
+    BoundBinaryOperator(SyntaxKind::LESS, BoundBinaryOperatorKind::Less, TypeSymbol::Float, TypeSymbol::Boolean),
+    BoundBinaryOperator(SyntaxKind::LESS_EQUALS, BoundBinaryOperatorKind::LessOrEquals, TypeSymbol::Float, TypeSymbol::Boolean),
+    BoundBinaryOperator(SyntaxKind::GREATER, BoundBinaryOperatorKind::Greater, TypeSymbol::Float, TypeSymbol::Boolean),
+    BoundBinaryOperator(SyntaxKind::GREATER_EQUALS, BoundBinaryOperatorKind::GreaterOrEquals, TypeSymbol::Float, TypeSymbol::Boolean),
 
     BoundBinaryOperator(SyntaxKind::AMPERSAND, BoundBinaryOperatorKind::BitwiseAnd, TypeSymbol::Boolean),
     BoundBinaryOperator(SyntaxKind::PIPE, BoundBinaryOperatorKind::BitwiseOr, TypeSymbol::Boolean),

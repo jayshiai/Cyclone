@@ -253,9 +253,13 @@ void PrintVariables(const std::unordered_map<VariableSymbol, std::any> &variable
     for (const auto &[key, value] : variables)
     {
         std::cout << key << ": ";
-        if (value.type() == typeid(int))
+        if (value.type() == typeid(long long))
         {
-            std::cout << std::any_cast<int>(value);
+            std::cout << std::any_cast<long long>(value);
+        }
+        else if (value.type() == typeid(int))
+        {
+            std::cout << std::any_cast<long long>(value);
         }
         else if (value.type() == typeid(double))
         {

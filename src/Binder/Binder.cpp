@@ -167,6 +167,8 @@ BoundExpression *Binder::BindLiteralExpression(LiteralExpressionNode *node)
         return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Boolean);
     case SyntaxKind::NUMBER:
         return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Integer);
+    case SyntaxKind::DECIMAL:
+        return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::Float);
     case SyntaxKind::STRING:
         return new BoundLiteralExpression(node->LiteralToken.value, TypeSymbol::String);
     default:
@@ -195,6 +197,8 @@ TypeSymbol Binder::GetArrayType(TypeSymbol arrayType)
 {
     if (arrayType == TypeSymbol::ArrayInt)
         return TypeSymbol::Integer;
+    if (arrayType == TypeSymbol::ArrayFloat)
+        return TypeSymbol::Float;
     if (arrayType == TypeSymbol::ArrayString)
         return TypeSymbol::String;
     if (arrayType == TypeSymbol::ArrayBool)
@@ -232,6 +236,8 @@ BoundExpression *Binder::GetDefaultValueExpression(TypeSymbol type, int arrSize)
 {
     if (type == TypeSymbol::Integer)
         return new BoundLiteralExpression("0", TypeSymbol::Integer);
+    if (type == TypeSymbol::Float)
+        return new BoundLiteralExpression("0.0", TypeSymbol::Float);
     if (type == TypeSymbol::String)
         return new BoundLiteralExpression("", TypeSymbol::String);
     if (type == TypeSymbol::Boolean)
@@ -254,6 +260,8 @@ TypeSymbol Binder::GenerateArrayType(TypeSymbol type)
 {
     if (type == TypeSymbol::Integer)
         return TypeSymbol::ArrayInt;
+    if (type == TypeSymbol::Float)
+        return TypeSymbol::ArrayFloat;
     if (type == TypeSymbol::String)
         return TypeSymbol::ArrayString;
     if (type == TypeSymbol::Boolean)
@@ -311,9 +319,9 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
                 else
                 {
                     BoundArrayInitializerExpression *arrayInitializer = (BoundArrayInitializerExpression *)initializer;
-                    if (arrayInitializer->Elements.size() != std::stoi(sizeLiteral->Value))
+                    if (arrayInitializer->Elements.size() != std::stoll(sizeLiteral->Value))
                     {
-                        _diagnostics.ReportArraySizeMismatch(node->Location, arrayInitializer->Elements.size(), std::stoi(sizeLiteral->Value));
+                        _diagnostics.ReportArraySizeMismatch(node->Location, arrayInitializer->Elements.size(), std::stoll(sizeLiteral->Value));
                         initializer = new BoundErrorExpression();
                     }
                 }
@@ -336,7 +344,7 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
             }
             else
             {
-                initializer = GetDefaultValueExpression(type, std::stoi(sizeLiteral->Value));
+                initializer = GetDefaultValueExpression(type, std::stoll(sizeLiteral->Value));
             }
         }
         else
@@ -757,6 +765,10 @@ TypeSymbol Binder::LookupType(std::string name)
     {
         return TypeSymbol::Integer;
     }
+    if (name == "float")
+    {
+        return TypeSymbol::Float;
+    }
     if (name == "string")
     {
         return TypeSymbol::String;
@@ -1011,15 +1023,26 @@ Conversion Conversion::Classify(TypeSymbol from, TypeSymbol to)
     {
         return Conversion::Implicit;
     }
+
+    if (from == TypeSymbol::Float && to == TypeSymbol::Integer)
+    {
+        return Conversion::Implicit;
+    }
+
+    if (from == TypeSymbol::Integer && to == TypeSymbol::Float)
+    {
+        return Conversion::Implicit;
+    }
+
     if (from == TypeSymbol::String)
     {
-        if (to == TypeSymbol::Integer || to == TypeSymbol::Boolean)
+        if (to == TypeSymbol::Integer || to == TypeSymbol::Boolean || to == TypeSymbol::Float)
         {
             return Conversion::Explicit;
         }
     }
 
-    if (from == TypeSymbol::Integer || from == TypeSymbol::Boolean)
+    if (from == TypeSymbol::Integer || from == TypeSymbol::Boolean || from == TypeSymbol::Float)
     {
         if (to == TypeSymbol::String)
         {

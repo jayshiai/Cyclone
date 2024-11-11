@@ -18,6 +18,10 @@ const std::vector<BoundUnaryOperator> BoundUnaryOperator::operators{
     BoundUnaryOperator(SyntaxKind::PLUS, BoundUnaryOperatorKind::Identity, TypeSymbol::Integer),
     BoundUnaryOperator(SyntaxKind::MINUS, BoundUnaryOperatorKind::Negation, TypeSymbol::Integer),
     BoundUnaryOperator(SyntaxKind::TILDE, BoundUnaryOperatorKind::OnesComplement, TypeSymbol::Integer),
+
+    BoundUnaryOperator(SyntaxKind::PLUS, BoundUnaryOperatorKind::Identity, TypeSymbol::Float),
+    BoundUnaryOperator(SyntaxKind::MINUS, BoundUnaryOperatorKind::Negation, TypeSymbol::Float),
+
 };
 
 std::string BoundUnaryOperator::ToString() const

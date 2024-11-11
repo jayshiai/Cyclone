@@ -387,6 +387,9 @@ SyntaxNode *Parser::ParsePrimaryExpression()
     case SyntaxKind::NUMBER:
         return ParseNumberLiteral();
         break;
+    case SyntaxKind::DECIMAL:
+        return ParseDecimalLiteral();
+        break;
     case SyntaxKind::STRING:
         return ParseStringLiteral();
         break;
@@ -497,7 +500,14 @@ SyntaxNode *Parser::ParseStringLiteral()
 }
 SyntaxNode *Parser::ParseNumberLiteral()
 {
-    SyntaxNode *node = new LiteralExpressionNode(_syntaxTree, currentToken, std::stoi(currentToken.value));
+    SyntaxNode *node = new LiteralExpressionNode(_syntaxTree, currentToken, std::stoll(currentToken.value));
+    NextToken();
+    return node;
+}
+
+SyntaxNode *Parser::ParseDecimalLiteral()
+{
+    SyntaxNode *node = new LiteralExpressionNode(_syntaxTree, currentToken, std::stod(currentToken.value));
     NextToken();
     return node;
 }

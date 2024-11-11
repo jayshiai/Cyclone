@@ -51,6 +51,7 @@ private:
     SyntaxNode *ParseParenthesizedExpression();
     SyntaxNode *ParseBooleanLiteral();
     SyntaxNode *ParseNumberLiteral();
+    SyntaxNode *ParseDecimalLiteral();
     SyntaxNode *ParseStringLiteral();
     SyntaxNode *ParseNameOrCallExpression();
     SyntaxNode *ParseNameExpression();

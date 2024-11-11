@@ -41,6 +41,7 @@ private:
 
 public:
     static const TypeSymbol Integer;
+    static const TypeSymbol Float;
     static const TypeSymbol Boolean;
     static const TypeSymbol String;
     static const TypeSymbol Error;
@@ -48,6 +49,7 @@ public:
     static const TypeSymbol Null;
     static const TypeSymbol Any;
     static const TypeSymbol ArrayInt;
+    static const TypeSymbol ArrayFloat;
     static const TypeSymbol ArrayBool;
     static const TypeSymbol ArrayString;
     static const TypeSymbol ArrayAny;

@@ -269,6 +269,10 @@ void BoundNodePrinter::WriteLiteralExpression(const BoundLiteralExpression *node
     {
         writer.WriteNumber(value);
     }
+    else if (node->type == TypeSymbol::Float)
+    {
+        writer.WriteNumber(value);
+    }
     else if (node->type == TypeSymbol::String)
     {
         writer.WriteString(value);

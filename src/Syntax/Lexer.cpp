@@ -314,19 +314,45 @@ Token Lexer::GenerateWhitespaceToken()
     }
     return Token{_syntaxTree, SyntaxKind::WHITESPACE, " ", pos};
 }
+
 Token Lexer::GenerateNumberToken()
 {
     size_t start = pos;
     std::string result;
+
+    // Read the integer part
     while (pos < input.Length() && isdigit(currentChar))
     {
         result += currentChar;
         advance();
     }
 
-    int length = pos - start;
-    int value;
+    // Check for a decimal point to handle floating-point numbers
+    bool hasDecimalPoint = false;
+    if (currentChar == '.')
+    {
+        hasDecimalPoint = true;
+        result += currentChar;
+        advance();
 
+        // Ensure there are digits after the decimal point
+        if (!isdigit(currentChar))
+        {
+            TextSpan span(start, pos - start);
+            TextLocation location(_syntaxTree->Text, span);
+            _diagnostics.ReportInvalidNumber(location, result, "float");
+            return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, result, start};
+        }
+
+        // Read the fractional part
+        while (pos < input.Length() && isdigit(currentChar))
+        {
+            result += currentChar;
+            advance();
+        }
+    }
+
+    // Check for trailing alphanumeric characters
     if (isalpha(currentChar))
     {
         while (isalnum(currentChar))
@@ -337,11 +363,43 @@ Token Lexer::GenerateNumberToken()
 
         TextSpan span(start, pos - start);
         TextLocation location(_syntaxTree->Text, span);
-        _diagnostics.ReportInvalidNumber(location, result, "int");
+        _diagnostics.ReportInvalidNumber(location, result, hasDecimalPoint ? "float" : "int");
         return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, result, start};
     }
-    return Token{_syntaxTree, SyntaxKind::NUMBER, result, pos};
+
+    // Determine the appropriate token kind based on the presence of a decimal point
+    SyntaxKind kind = hasDecimalPoint ? SyntaxKind::DECIMAL : SyntaxKind::NUMBER;
+    return Token{_syntaxTree, kind, result, start};
 }
+
+// Token Lexer::GenerateNumberToken()
+// {
+//       size_t start = pos;
+//     std::string result;
+//     while (pos < input.Length() && isdigit(currentChar))
+//     {
+//         result += currentChar;
+//         advance();
+//     }
+
+//     int length = pos - start;
+//     int value;
+
+//     if (isalpha(currentChar))
+//     {
+//         while (isalnum(currentChar))
+//         {
+//             result += currentChar;
+//             advance();
+//         }
+
+//         TextSpan span(start, pos - start);
+//         TextLocation location(_syntaxTree->Text, span);
+//         _diagnostics.ReportInvalidNumber(location, result, "int");
+//         return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, result, start};
+//     }
+//     return Token{_syntaxTree, SyntaxKind::NUMBER, result, pos};
+// }
 
 Token Lexer::GenerateSingleLineComment()
 {

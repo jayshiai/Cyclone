@@ -174,9 +174,21 @@ main()
         else
         {
             std::cout << std::endl;
-            if (result.Value.type() == typeid(int))
+            if (result.Value.type() == typeid(long long))
             {
-                std::cout << std::any_cast<int>(result.Value) << std::endl;
+                std::cout << std::any_cast<long long>(result.Value) << std::endl;
+            }
+            else if (result.Value.type() == typeid(float))
+            {
+                std::cout << std::any_cast<double>(result.Value) << std::endl;
+            }
+            else if (result.Value.type() == typeid(double))
+            {
+                std::cout << std::any_cast<double>(result.Value) << std::endl;
+            }
+            else if (result.Value.type() == typeid(int))
+            {
+                std::cout << (long long)std::any_cast<int>(result.Value) << std::endl;
             }
             else if (result.Value.type() == typeid(bool))
             {
@@ -191,9 +203,21 @@ main()
                 auto values = std::any_cast<std::vector<std::any>>(result.Value);
                 for (auto &value : values)
                 {
-                    if (value.type() == typeid(int))
+                    if (value.type() == typeid(long long))
                     {
-                        std::cout << std::any_cast<int>(value) << " ";
+                        std::cout << std::any_cast<long long>(value) << " ";
+                    }
+                    if (value.type() == typeid(float))
+                    {
+                        std::cout << std::any_cast<double>(value) << " ";
+                    }
+                    else if (value.type() == typeid(double))
+                    {
+                        std::cout << std::any_cast<double>(value) << " ";
+                    }
+                    else if (value.type() == typeid(int))
+                    {
+                        std::cout << (long long)std::any_cast<int>(value) << " ";
                     }
                     else if (value.type() == typeid(bool))
                     {

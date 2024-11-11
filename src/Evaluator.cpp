@@ -159,7 +159,10 @@ std::any Evaluator::EvaluateLiteralExpression(BoundLiteralExpression *n)
         return std::any(n->Value == "true");
     if (n->type == TypeSymbol::String)
         return std::any(n->Value);
-    return std::any(std::stoi(n->Value));
+    if (n->type == TypeSymbol::Float)
+        return std::any(std::stod(n->Value));
+
+    return std::any(std::stoll(n->Value));
 }
 
 std::any Evaluator::EvaluateVariableExpression(BoundVariableExpression *n)
@@ -195,13 +198,23 @@ std::any Evaluator::EvaluateUnaryExpression(BoundUnaryExpression *n)
     switch (n->Op->Kind)
     {
     case BoundUnaryOperatorKind::Identity:
-        return std::any_cast<int>(operand);
+        if (n->Op->OperandType == TypeSymbol::Integer)
+            return std::any_cast<long long>(operand);
+        else if (n->Op->OperandType == TypeSymbol::Float)
+            return std::any_cast<double>(operand);
+        else
+            return std::any_cast<std::string>(operand);
     case BoundUnaryOperatorKind::Negation:
-        return -std::any_cast<int>(operand);
+        if (n->Op->OperandType == TypeSymbol::Integer)
+            return -std::any_cast<long long>(operand);
+        else if (n->Op->OperandType == TypeSymbol::Float)
+            return -std::any_cast<double>(operand);
+        else
+            throw std::runtime_error("Unexpected unary operator");
     case BoundUnaryOperatorKind::LogicalNegation:
         return !std::any_cast<bool>(operand);
     case BoundUnaryOperatorKind::OnesComplement:
-        return ~std::any_cast<int>(operand);
+        return ~std::any_cast<long long>(operand);
     default:
         throw std::runtime_error("Unexpected unary operator");
     }
@@ -215,52 +228,110 @@ std::any Evaluator::EvaluateBinaryExpression(BoundBinaryExpression *n)
     switch (n->Op->Kind)
     {
     case BoundBinaryOperatorKind::Addition:
-        if (n->Op->LeftType == TypeSymbol::String && n->Op->RightType == TypeSymbol::String)
-            return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
-        return std::any_cast<int>(left) + std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) + std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) + std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) + std::any_cast<long long>(right);
+        return std::any_cast<double>(left) + std::any_cast<double>(right);
     case BoundBinaryOperatorKind::Subtraction:
-        return std::any_cast<int>(left) - std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) - std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) - std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) - std::any_cast<long long>(right);
+        return std::any_cast<double>(left) - std::any_cast<double>(right);
     case BoundBinaryOperatorKind::Multiplication:
-        return std::any_cast<int>(left) * std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) * std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) * std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) * std::any_cast<long long>(right);
+        return std::any_cast<double>(left) * std::any_cast<double>(right);
     case BoundBinaryOperatorKind::Division:
-        return std::any_cast<int>(left) / std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) / std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) / std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) / std::any_cast<long long>(right);
+        return std::any_cast<double>(left) / std::any_cast<double>(right);
     case BoundBinaryOperatorKind::BitwiseAnd:
         if (n->Op->LeftType == TypeSymbol::Boolean && n->Op->RightType == TypeSymbol::Boolean)
         {
             return std::any_cast<bool>(left) & std::any_cast<bool>(right);
         }
-        return std::any_cast<int>(left) & std::any_cast<int>(right);
+        return std::any_cast<long long>(left) & std::any_cast<long long>(right);
     case BoundBinaryOperatorKind::BitwiseOr:
         if (n->Op->LeftType == TypeSymbol::Boolean && n->Op->RightType == TypeSymbol::Boolean)
             return std::any_cast<bool>(left) | std::any_cast<bool>(right);
-        return std::any_cast<int>(left) | std::any_cast<int>(right);
+        return std::any_cast<long long>(left) | std::any_cast<long long>(right);
     case BoundBinaryOperatorKind::BitwiseXor:
         if (n->Op->LeftType == TypeSymbol::Boolean && n->Op->RightType == TypeSymbol::Boolean)
             return std::any_cast<bool>(left) ^ std::any_cast<bool>(right);
-        return std::any_cast<int>(left) ^ std::any_cast<int>(right);
+        return std::any_cast<long long>(left) ^ std::any_cast<long long>(right);
     case BoundBinaryOperatorKind::LogicalAnd:
         return std::any_cast<bool>(left) && std::any_cast<bool>(right);
     case BoundBinaryOperatorKind::LogicalOr:
         return std::any_cast<bool>(left) || std::any_cast<bool>(right);
     case BoundBinaryOperatorKind::Less:
-        return std::any_cast<int>(left) < std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) < std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) < std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) < std::any_cast<long long>(right);
+        return std::any_cast<double>(left) < std::any_cast<double>(right);
     case BoundBinaryOperatorKind::LessOrEquals:
-        return std::any_cast<int>(left) <= std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) < std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) < std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) < std::any_cast<long long>(right);
+        return std::any_cast<double>(left) < std::any_cast<double>(right);
     case BoundBinaryOperatorKind::Greater:
-        return std::any_cast<int>(left) > std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) < std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) < std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) < std::any_cast<long long>(right);
+        return std::any_cast<double>(left) < std::any_cast<double>(right);
     case BoundBinaryOperatorKind::GreaterOrEquals:
-        return std::any_cast<int>(left) >= std::any_cast<int>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<long long>(left) < std::any_cast<long long>(right);
+        if (n->Op->LeftType == TypeSymbol::Integer && n->Op->RightType == TypeSymbol::Float)
+            return std::any_cast<long long>(left) < std::any_cast<double>(right);
+        if (n->Op->LeftType == TypeSymbol::Float && n->Op->RightType == TypeSymbol::Integer)
+            return std::any_cast<double>(left) < std::any_cast<long long>(right);
+        return std::any_cast<double>(left) < std::any_cast<double>(right);
     case BoundBinaryOperatorKind::Equals:
-        if (left.type() == typeid(int) && right.type() == typeid(int))
-            return std::any_cast<int>(left) == std::any_cast<int>(right);
+        if (left.type() == typeid(long long) && right.type() == typeid(long long))
+            return std::any_cast<long long>(left) == std::any_cast<long long>(right);
+        if (left.type() == typeid(double) && right.type() == typeid(double))
+            return std::any_cast<double>(left) == std::any_cast<double>(right);
+        if (left.type() == typeid(long long) && right.type() == typeid(double))
+            return std::any_cast<long long>(left) == std::any_cast<double>(right);
+        if (left.type() == typeid(double) && right.type() == typeid(long long))
+            return std::any_cast<double>(left) == std::any_cast<long long>(right);
         if (left.type() == typeid(bool) && right.type() == typeid(bool))
             return std::any_cast<bool>(left) == std::any_cast<bool>(right);
         if (left.type() == typeid(std::string) && right.type() == typeid(std::string))
             return std::any_cast<std::string>(left) == std::any_cast<std::string>(right);
         throw std::runtime_error("Unexpected types for equality comparison");
     case BoundBinaryOperatorKind::NotEquals:
-        if (left.type() == typeid(int) && right.type() == typeid(int))
-            return std::any_cast<int>(left) != std::any_cast<int>(right);
+        if (left.type() == typeid(long long) && right.type() == typeid(long long))
+            return std::any_cast<long long>(left) != std::any_cast<long long>(right);
+        if (left.type() == typeid(double) && right.type() == typeid(double))
+            return std::any_cast<double>(left) != std::any_cast<double>(right);
+        if (left.type() == typeid(long long) && right.type() == typeid(double))
+            return std::any_cast<long long>(left) != std::any_cast<double>(right);
+        if (left.type() == typeid(double) && right.type() == typeid(long long))
+            return std::any_cast<double>(left) != std::any_cast<long long>(right);
         if (left.type() == typeid(bool) && right.type() == typeid(bool))
             return std::any_cast<bool>(left) != std::any_cast<bool>(right);
         if (left.type() == typeid(std::string) && right.type() == typeid(std::string))
@@ -300,7 +371,7 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
     }
     else if (n->Function == BuiltInFunctions::Random)
     {
-        int max = std::any_cast<int>(EvaluateExpression(n->Arguments[0]));
+        int max = std::any_cast<long long>(EvaluateExpression(n->Arguments[0]));
         return rand() % max;
     }
     else
@@ -331,7 +402,9 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         if (n->Expression->type == TypeSymbol::Boolean)
             return std::any_cast<bool>(value);
         else if (n->Expression->type == TypeSymbol::Integer)
-            return std::any_cast<int>(value) != 0;
+            return std::any_cast<long long>(value) != 0;
+        else if (n->Expression->type == TypeSymbol::Float)
+            return std::any_cast<double>(value) != 0.0;
         else if (n->Expression->type == TypeSymbol::String)
             return std::any_cast<std::string>(value) != "";
         else if (n->Expression->type == TypeSymbol::Any)
@@ -342,7 +415,9 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         if (n->Expression->type == TypeSymbol::Boolean)
             return std::to_string(std::any_cast<bool>(value));
         else if (n->Expression->type == TypeSymbol::Integer)
-            return std::to_string(std::any_cast<int>(value));
+            return std::to_string(std::any_cast<long long>(value));
+        else if (n->Expression->type == TypeSymbol::Float)
+            return std::to_string(std::any_cast<double>(value));
         else if (n->Expression->type == TypeSymbol::String)
             return std::any_cast<std::string>(value);
         else if (n->Expression->type == TypeSymbol::Any)
@@ -350,7 +425,13 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
             if (value.type() == typeid(bool))
                 return std::to_string(std::any_cast<bool>(value));
             else if (value.type() == typeid(int))
-                return std::to_string(std::any_cast<int>(value));
+                return std::to_string(std::any_cast<long long>(value));
+            else if (value.type() == typeid(long long))
+                return std::to_string(std::any_cast<long long>(value));
+            else if (value.type() == typeid(float))
+                return std::to_string(std::any_cast<double>(value));
+            else if (value.type() == typeid(double))
+                return std::to_string(std::any_cast<double>(value));
             else if (value.type() == typeid(std::string))
                 return std::any_cast<std::string>(value);
             else if (value.type() == typeid(std::any))
@@ -362,9 +443,26 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         if (n->Expression->type == TypeSymbol::Boolean)
             return std::any_cast<bool>(value);
         else if (n->Expression->type == TypeSymbol::String)
-            return std::stoi(std::any_cast<std::string>(value));
+            return std::stoll(std::any_cast<std::string>(value));
         else if (n->Expression->type == TypeSymbol::Integer)
-            return std::any_cast<int>(value);
+            return std::any_cast<long long>(value);
+        else if (n->Expression->type == TypeSymbol::Float)
+            return (long long)std::any_cast<double>(value);
+        else if (n->Expression->type == TypeSymbol::Any)
+            return std::any_cast<long long>(value);
+    }
+    else if (n->type == TypeSymbol::Float)
+    {
+        if (n->Expression->type == TypeSymbol::Boolean)
+            return std::any_cast<bool>(value);
+        else if (n->Expression->type == TypeSymbol::String)
+            return std::stod(std::any_cast<std::string>(value));
+        else if (n->Expression->type == TypeSymbol::Integer)
+            return (double)std::any_cast<long long>(value);
+        else if (n->Expression->type == TypeSymbol::Float)
+            return std::any_cast<double>(value);
+        else if (n->Expression->type == TypeSymbol::Any)
+            return std::any_cast<double>(value);
     }
     else if (n->type == TypeSymbol::Any)
     {
@@ -373,7 +471,9 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
         else if (n->Expression->type == TypeSymbol::String)
             return std::any_cast<std::string>(value);
         else if (n->Expression->type == TypeSymbol::Integer)
-            return std::any_cast<int>(value);
+            return std::any_cast<long long>(value);
+        else if (n->Expression->type == TypeSymbol::Float)
+            return std::any_cast<double>(value);
         else if (n->Expression->type == TypeSymbol::Any)
             return value;
     }
@@ -390,7 +490,7 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
 
 std::any Evaluator::EvaluateArrayAccessExpression(BoundArrayAccessExpression *n)
 {
-    int index = std::any_cast<int>(EvaluateExpression(n->Index));
+    int index = std::any_cast<long long>(EvaluateExpression(n->Index));
     if (n->type == TypeSymbol::String)
     {
         std::string array = std::any_cast<std::string>(EvaluateExpression(n->Variable));
@@ -420,7 +520,7 @@ std::any Evaluator::EvaluateArrayInitializerExpression(BoundArrayInitializerExpr
 
 std::any Evaluator::EvaluateArrayAssignmentExpression(BoundArrayAssignmentExpression *n)
 {
-    int index = std::any_cast<int>(EvaluateExpression(n->Index));
+    int index = std::any_cast<long long>(EvaluateExpression(n->Index));
     std::any value = EvaluateExpression(n->Expression);
 
     if (n->type == TypeSymbol::String)
