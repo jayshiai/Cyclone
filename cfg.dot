@@ -1,8 +1,0 @@
-digraph G {
-    N0 [label = "<Start>" shape = box]
-    N1 [label = "var c = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-" shape = box]
-    N2 [label = "<End>" shape = box]
-    N0 -> N1 [label = ""]
-    N1 -> N2 [label = ""]
-}
