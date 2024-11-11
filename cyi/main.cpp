@@ -173,6 +173,7 @@ main()
         }
         else
         {
+            std::cout << std::endl;
             if (result.Value.type() == typeid(int))
             {
                 std::cout << std::any_cast<int>(result.Value) << std::endl;
