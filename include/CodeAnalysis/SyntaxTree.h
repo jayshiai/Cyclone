@@ -44,6 +44,8 @@ enum class SyntaxKind
     CLOSE_BRACE,
     COMMA,
     COLON,
+    SingleLineComment,
+    MultiLineComment,
 
     TRUE_KEYWORD,
     FALSE_KEYWORD,

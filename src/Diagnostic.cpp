@@ -199,3 +199,8 @@ void DiagnosticBag::ReportInvalidArrayInitializer(const TextLocation &location)
 {
     Report(location, "Invalid array initializer.");
 }
+
+void DiagnosticBag::ReportUnterminatedComment(const TextLocation &location)
+{
+    Report(location, "Unterminated comment.");
+}

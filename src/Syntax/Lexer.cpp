@@ -29,8 +29,19 @@ std::vector<Token> Lexer::tokenize()
             break;
 
         case '/':
-            tokens.push_back(Token{_syntaxTree, SyntaxKind::DIVIDE, "/", pos});
-            advance();
+            if (lookAhead == '/')
+            {
+                GenerateSingleLineComment();
+            }
+            else if (lookAhead == '*')
+            {
+                GenerateMultiLineComment();
+            }
+            else
+            {
+                tokens.push_back(Token{_syntaxTree, SyntaxKind::DIVIDE, "/", pos});
+                advance();
+            }
             break;
 
         case '(':
@@ -332,6 +343,37 @@ Token Lexer::GenerateNumberToken()
     return Token{_syntaxTree, SyntaxKind::NUMBER, result, pos};
 }
 
+Token Lexer::GenerateSingleLineComment()
+{
+    size_t start = pos;
+    while (currentChar != '\n' && currentChar != '\0' && currentChar != '\r')
+    {
+        advance();
+    }
+    return Token{_syntaxTree, SyntaxKind::SingleLineComment, input.ToString(start, pos - start), start};
+}
+
+Token Lexer::GenerateMultiLineComment()
+{
+    size_t start = pos;
+    advance();
+    advance();
+
+    while (currentChar != '*' && lookAhead != '/')
+    {
+        if (currentChar == '\0' || pos >= input.Length())
+        {
+            TextSpan span(start, pos - start);
+            TextLocation location(_syntaxTree->Text, span);
+            _diagnostics.ReportUnterminatedComment(location);
+            return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
+        }
+        advance();
+    }
+    advance();
+    advance();
+    return Token{_syntaxTree, SyntaxKind::MultiLineComment, input.ToString(start, pos - start), start};
+}
 Token Lexer::GenerateIdentifierToken()
 {
     size_t start = pos;

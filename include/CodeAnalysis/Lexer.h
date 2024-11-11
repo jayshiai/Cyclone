@@ -27,6 +27,8 @@ private:
     Token GenerateWhitespaceToken();
     Token GenerateNumberToken();
     Token GenerateIdentifierToken();
+    Token GenerateSingleLineComment();
+    Token GenerateMultiLineComment();
     SyntaxKind checkKeyword(const std::string &keyword);
 };
 
