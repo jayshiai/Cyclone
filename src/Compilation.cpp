@@ -76,7 +76,10 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     {
         diagnostics.insert(diagnostics.end(), st->Diagnostics.begin(), st->Diagnostics.end());
     }
-
+    if (diagnostics.size() > 0)
+    {
+        return EvaluationResult(diagnostics, std::any());
+    }
     BoundGlobalScope *globalScope = GlobalScope();
     diagnostics.insert(diagnostics.end(), globalScope->Diagnostics.begin(), globalScope->Diagnostics.end());
 
