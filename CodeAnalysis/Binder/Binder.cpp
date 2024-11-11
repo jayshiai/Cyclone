@@ -675,6 +675,12 @@ void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
     {
         std::string parameterName = parameter->IdentifierToken.value;
         TypeSymbol boundType = BindTypeClause(parameter->Type);
+
+        if (parameter->Type->IsArray)
+        {
+            boundType = GenerateArrayType(boundType);
+        }
+
         TypeSymbol parameterType = boundType != TypeSymbol::Null ? boundType : TypeSymbol::Void;
 
         if (seenParameterNames.find(parameterName) != seenParameterNames.end())
