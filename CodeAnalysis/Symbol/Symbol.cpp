@@ -15,7 +15,7 @@ const TypeSymbol TypeSymbol::ArrayAny("array<any>");
 const FunctionSymbol BuiltInFunctions::Print("print", std::vector<ParameterSymbol>{ParameterSymbol("text", TypeSymbol::String)}, TypeSymbol::Void);
 const FunctionSymbol BuiltInFunctions::Input("input", std::vector<ParameterSymbol>{}, TypeSymbol::String);
 const FunctionSymbol BuiltInFunctions::Random("random", std::vector<ParameterSymbol>{ParameterSymbol("max", TypeSymbol::Integer)}, TypeSymbol::Integer);
-
+const FunctionSymbol BuiltInFunctions::ArrayLength("size", std::vector<ParameterSymbol>{ParameterSymbol("array", TypeSymbol::ArrayAny)}, TypeSymbol::Integer);
 void Symbol::WriteTo(std::ostream &os)
 {
     IndentedTextWriter writer(os);

@@ -286,6 +286,12 @@ std::any Evaluator::EvaluateCallExpression(BoundCallExpression *n)
         std::cout << output;
         return output;
     }
+    else if (n->Function == BuiltInFunctions::ArrayLength)
+    {
+        std::vector<std::any> array = std::any_cast<std::vector<std::any>>(EvaluateExpression(n->Arguments[0]));
+        int size = array.size();
+        return size;
+    }
     else if (n->Function == BuiltInFunctions::Random)
     {
         int max = std::any_cast<int>(EvaluateExpression(n->Arguments[0]));
@@ -364,6 +370,11 @@ std::any Evaluator::EvaluateConversionExpression(BoundConversionExpression *n)
             return std::any_cast<int>(value);
         else if (n->Expression->type == TypeSymbol::Any)
             return value;
+    }
+    else if (n->type == TypeSymbol::ArrayAny)
+    {
+        if (n->Expression->type.IsArray())
+            return std::any_cast<std::vector<std::any>>(value);
     }
     else
         throw std::runtime_error("Unexpected conversion: " + n->type.Name);
