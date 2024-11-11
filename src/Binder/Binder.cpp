@@ -345,7 +345,7 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
         }
     }
 
-    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, node->Keyword.Kind == SyntaxKind::LET_KEYWORD, type);
+    VariableSymbol *variable = BindVariableDeclaration(node->Identifier, node->Keyword.Kind == SyntaxKind::CONST_KEYWORD, type);
 
     TypeSymbol variableType = type != TypeSymbol::Null ? type : initializer->type;
 
@@ -364,7 +364,7 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
 BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
 {
 
-    bool isReadOnly = node->Keyword.Kind == SyntaxKind::LET_KEYWORD;
+    bool isReadOnly = node->Keyword.Kind == SyntaxKind::CONST_KEYWORD;
 
     if (node->TypeClause && node->TypeClause->IsArray)
     {
@@ -453,6 +453,10 @@ BoundExpression *Binder::BindArrayAssignmentExpression(ArrayAssignmentExpression
     TypeSymbol elementsType = identifier->type == TypeSymbol::String ? identifier->type : GetArrayType(identifier->type);
     identifier->type = elementsType;
 
+    if (variableSymbol.IsReadOnly)
+    {
+        _diagnostics.ReportCannotAssign(node->Identifier->Location, variableSymbol.Name);
+    }
     if (indexExpression->type != TypeSymbol::Integer)
     {
         _diagnostics.ReportInvalidArrayIndex(node->Index->Location);
