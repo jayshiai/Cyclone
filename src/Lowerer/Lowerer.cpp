@@ -4,7 +4,7 @@ BoundBlockStatement *Lowerer::Lower(BoundStatement *node)
 {
     Lowerer lowerer;
     BoundStatement *result = lowerer.RewriteStatement(node);
-    return Flatten(static_cast<BoundBlockStatement *>(result));
+    return static_cast<BoundBlockStatement *>(result);
 }
 
 BoundStatement *Lowerer::RewriteIfStatement(BoundIfStatement *node)

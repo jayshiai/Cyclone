@@ -43,13 +43,14 @@ public:
 
     static BoundBlockStatement *Lower(BoundStatement *node);
 
+    static BoundBlockStatement *Flatten(BoundStatement *node);
+
 protected:
     BoundStatement *RewriteIfStatement(BoundIfStatement *node) override;
     BoundStatement *RewriteWhileStatement(BoundWhileStatement *node) override;
     BoundStatement *RewriteForStatement(BoundForStatement *node) override;
 
 private:
-    static BoundBlockStatement *Flatten(BoundStatement *node);
     BoundLabel *GenerateLabel();
 };
 #endif

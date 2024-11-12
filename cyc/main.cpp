@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         return 1;
     Compilation compilation(syntaxTrees);
     std::unordered_map<VariableSymbol, std::any> variables;
-    auto result = compilation.Evaluate(variables);
+    auto result = compilation.Compile(variables);
     if (result.Diagnostics.empty())
     {
         if (result.Value.has_value())

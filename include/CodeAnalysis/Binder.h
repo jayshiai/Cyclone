@@ -689,6 +689,7 @@ public:
     }
     static BoundGlobalScope *BindGlobalScope(BoundGlobalScope *previous, std::vector<SyntaxTree *> syntaxTrees);
     static BoundProgram *BindProgram(BoundGlobalScope *globalScope);
+    static BoundProgram *BindEmitableProgram(BoundGlobalScope *globalScope);
 
 private:
     DiagnosticBag _diagnostics;

@@ -63,7 +63,7 @@ public:
         os << "TypeSymbol(Name: " << type.Name << ")";
         return os;
     }
-    bool IsArray()
+    bool IsArray() const
     {
         return Name.find("array") != std::string::npos;
     }
@@ -90,6 +90,7 @@ public:
     TypeSymbol Type;
     bool IsReadOnly;
     SymbolKind Kind;
+    int Size = -1;
     VariableSymbol() : Symbol(""), IsReadOnly(false), Type(TypeSymbol::Error) {}
     VariableSymbol(std::string name, bool isReadOnly, TypeSymbol type) : Symbol(name), Name(name), IsReadOnly(isReadOnly), Type(type) {}
     VariableSymbol(SymbolKind kind, std::string name, bool isReadOnly, TypeSymbol type) : Symbol(name), Name(name), IsReadOnly(isReadOnly), Type(type), Kind(kind) {}

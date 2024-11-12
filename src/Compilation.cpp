@@ -6,6 +6,7 @@
 #include "CodeAnalysis/Lowerer.h"
 #include "CodeAnalysis/ControlFlowGraph.h"
 #include "CodeAnalysis/Symbol.h"
+#include "CodeGeneration/Emitter.h"
 #include <unordered_map>
 #include <atomic>
 #include <fstream>
@@ -89,7 +90,8 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     }
 
     BoundProgram *program = Binder::BindProgram(globalScope);
-    GenerateCFG(program); // Generates Graph for Control Flow analysis
+
+    // GenerateCFG(program); // Generates Graph for    Control Flow analysis
     if (program->Diagnostics.size() > 0)
     {
         diagnostics.insert(diagnostics.end(), program->Diagnostics.begin(), program->Diagnostics.end());
@@ -101,6 +103,49 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     std::any value = evaluator.Evaluate();
 
     return EvaluationResult(diagnostics, value);
+}
+
+EvaluationResult Compilation::Compile(std::unordered_map<VariableSymbol, std::any> &variables)
+{
+
+    std::vector<Diagnostic> diagnostics;
+
+    for (const auto &st : syntaxTrees)
+    {
+        diagnostics.insert(diagnostics.end(), st->Diagnostics.begin(), st->Diagnostics.end());
+    }
+    if (diagnostics.size() > 0)
+    {
+        return EvaluationResult(diagnostics, 1);
+    }
+    BoundGlobalScope *globalScope = GlobalScope();
+    diagnostics.insert(diagnostics.end(), globalScope->Diagnostics.begin(), globalScope->Diagnostics.end());
+
+    if (diagnostics.size() > 0)
+    {
+        return EvaluationResult(diagnostics, 1);
+    }
+
+    BoundProgram *program = Binder::BindEmitableProgram(globalScope);
+
+    // BoundBlockStatement *statement = program->statement;
+    // BoundBlockStatement *flatStatement = Lowerer::Flatten(statement);
+    // program->statement = flatStatement;
+    // GenerateCFG(program); // Generates Graph for Control Flow analysis
+    if (program->Diagnostics.size() > 0)
+    {
+        diagnostics.insert(diagnostics.end(), program->Diagnostics.begin(), program->Diagnostics.end());
+        return EvaluationResult(diagnostics, 1);
+    }
+
+    Emitter emitter = Emitter("jay", program, variables);
+    emitter.Emit();
+
+    // Evaluator evaluator = Evaluator(program, variables);
+
+    // std::any value = evaluator.Evaluate();
+
+    return EvaluationResult(diagnostics, 0);
 }
 
 BoundGlobalScope *Compilation::GlobalScope()

@@ -28,7 +28,7 @@ private:
     void EvaluateExpressionStatement(BoundExpressionStatement *node);
     void EvaluateVariableDeclaration(BoundVariableDeclaration *node);
     void Assign(VariableSymbol variable, std::any value);
-    void AssignArray(VariableSymbol variable, std::any value, int index);
+    // void AssignArray(VariableSymbol variable, std::any value, int index);
     std::any EvaluateStatement(BoundBlockStatement *node);
 
     std::any EvaluateLiteralExpression(BoundLiteralExpression *node);

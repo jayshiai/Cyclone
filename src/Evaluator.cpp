@@ -1,5 +1,6 @@
 #include "CodeAnalysis/Evaluator.h"
 #include "CodeAnalysis/Symbol.h"
+#include "Utils.h"
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
@@ -102,8 +103,19 @@ std::any Evaluator::EvaluateStatement(BoundBlockStatement *body)
             _lastValue = rs->Expression == nullptr ? std::any() : EvaluateExpression(rs->Expression);
             return _lastValue;
         }
+        case BoundNodeKind::BlockStatement:
+        {
+            BoundBlockStatement *block = (BoundBlockStatement *)s;
+            std::any value = EvaluateStatement(block);
+            if (value.has_value())
+            {
+                return value;
+            }
+            index++;
+            break;
+        }
         default:
-            throw std::runtime_error("Unexpected node kind");
+            throw std::runtime_error("Unexpected node kind2: " + convertBoundNodeKindToString(s->GetKind()));
         }
     }
 
@@ -149,7 +161,7 @@ std::any Evaluator::EvaluateExpression(BoundExpression *node)
     case BoundNodeKind::ArrayAssignmentExpression:
         return EvaluateArrayAssignmentExpression((BoundArrayAssignmentExpression *)node);
     default:
-        throw std::runtime_error("Unexpected node kind");
+        throw std::runtime_error("Unexpected node kind1: " + convertBoundNodeKindToString(node->GetKind()));
     }
 }
 

@@ -367,6 +367,9 @@ BoundStatement *Binder::BindArrayDeclaration(VariableDeclarationSyntax *node)
     {
         convertedInitializer = BindConversion(node->Initializer->Location, initializer, variableType);
     }
+
+    variable->Size = size != nullptr ? std::stoll(((BoundLiteralExpression *)size)->Value) : -1;
+
     return new BoundVariableDeclaration(*variable, convertedInitializer);
 }
 BoundStatement *Binder::BindVariableDeclaration(VariableDeclarationSyntax *node)
@@ -656,7 +659,8 @@ BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
         {
             Binder binder(&parentScope, &function);
             BoundStatement *body = binder.BindStatement(function.Declaration->Body);
-            BoundBlockStatement *loweredBody = Lowerer::Lower(body);
+            BoundBlockStatement *loweredUnflatBody = Lowerer::Lower(body);
+            BoundBlockStatement *loweredBody = Lowerer::Flatten(loweredUnflatBody);
 
             if (function.Type != TypeSymbol::Void && !ControlFlowGraph::AllPathsReturn(loweredBody))
             {
@@ -674,6 +678,38 @@ BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
     return new BoundProgram(diagnostics, functions, statement);
 }
 
+BoundProgram *Binder::BindEmitableProgram(BoundGlobalScope *globalScope)
+{
+
+    BoundScope parentScope = CreateParentScope(globalScope);
+    std::unordered_map<FunctionSymbol, BoundBlockStatement *> functions = {};
+    std::vector<Diagnostic> diagnostics = {};
+
+    BoundGlobalScope *scope = globalScope;
+
+    while (scope != nullptr)
+    {
+        for (auto &function : scope->Functions)
+        {
+            Binder binder(&parentScope, &function);
+            BoundStatement *body = binder.BindStatement(function.Declaration->Body);
+            BoundBlockStatement *loweredBody = Lowerer::Lower(body);
+            BoundBlockStatement *flatBody = Lowerer::Flatten(loweredBody);
+            if (function.Type != TypeSymbol::Void && !ControlFlowGraph::AllPathsReturn(flatBody))
+            {
+                binder._diagnostics.ReportAllPathsMustReturn(function.Declaration->Identifier.Location);
+            }
+            functions[function] = loweredBody;
+
+            diagnostics.insert(diagnostics.end(), binder.GetDiagnostics().GetDiagnostics().begin(), binder.GetDiagnostics().GetDiagnostics().end());
+        }
+
+        scope = scope->Previous;
+    }
+
+    BoundBlockStatement *statement = Lowerer::Lower(new BoundBlockStatement(globalScope->Statements));
+    return new BoundProgram(diagnostics, functions, statement);
+}
 void Binder::BindFunctionDeclaration(FunctionDeclarationSyntax *node)
 {
     std::vector<ParameterSymbol> parameters;

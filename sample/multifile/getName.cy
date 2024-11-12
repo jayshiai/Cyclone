@@ -1,6 +1,6 @@
 function getName(): string
 {
     print("What's your name?")
-    let name = input()
+    const name = input()
     return name
 }

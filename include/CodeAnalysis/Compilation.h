@@ -23,6 +23,7 @@ public:
 
     BoundGlobalScope *GlobalScope();
     EvaluationResult Evaluate(std::unordered_map<VariableSymbol, std::any> &variables);
+    EvaluationResult Compile(std::unordered_map<VariableSymbol, std::any> &variables);
     Compilation *ContinueWith(SyntaxTree *syntaxTree);
 
     void EmitTree(std::ostream &os);
