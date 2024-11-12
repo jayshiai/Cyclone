@@ -7,61 +7,94 @@
 #include "CodeAnalysis/IndentedTextWriter.h"
 #include "Utils.h"
 #include <iostream>
-#include <any>
-#include <algorithm>
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <set>
+#include <unordered_map>
+#include <vector>
+
+namespace fs = std::filesystem;
+std::vector<std::string> GetFilePaths(const std::vector<std::string> &paths)
+{
+    std::vector<std::string> result;
+
+    for (const auto &path : paths)
+    {
+        if (fs::is_directory(path))
+        {
+            for (const auto &entry : fs::recursive_directory_iterator(path))
+            {
+                if (entry.is_regular_file() && entry.path().extension() == ".cy")
+                {
+                    result.push_back(entry.path().string());
+                }
+            }
+        }
+        else
+        {
+            result.push_back(path);
+        }
+    }
+
+    return result;
+}
+
+void Repl();
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2)
+    {
+        Repl();
+    }
+    else
+    {
+        std::vector<std::string> args(argv + 1, argv + argc);
+
+        auto paths = GetFilePaths(args);
+        std::vector<SyntaxTree *> syntaxTrees;
+        bool hasErrors = false;
+
+        for (const auto &path : paths)
+        {
+
+            if (!fs::exists(path))
+            {
+                std::cerr << "error: file '" << path << "' doesn't exist" << std::endl;
+                hasErrors = true;
+                continue;
+            }
+            SyntaxTree *syntaxTree = new SyntaxTree(SyntaxTree::Load(path));
+            syntaxTrees.push_back(syntaxTree);
+        }
+
+        if (hasErrors)
+            return 1;
+        Compilation compilation(syntaxTrees);
+        std::unordered_map<VariableSymbol, std::any> variables;
+        auto result = compilation.Evaluate(variables);
+        if (result.Diagnostics.empty())
+        {
+            if (result.Value.has_value())
+            {
+                // std::cout << std::any_cast<std::string>(result.Value) << std::endl;
+            }
+        }
+        else
+        {
+            IndentedTextWriter writer(std::cout);
+            writer.WriteDiagnostics(result.Diagnostics);
+        }
+    }
+
+    return 0;
+}
 
 const std::string BLUE = "\033[34m";
 const std::string RESET_COLOR = "\033[0m";
 const std::string GREEN = "\033[32m";
-
-std::string bconvertBoundNodeKind(BoundNodeKind kind)
-{
-    switch (kind)
-    {
-    case BoundNodeKind::LiteralExpression:
-        return "LiteralExpression";
-    case BoundNodeKind::UnaryExpression:
-        return "UnaryExpression";
-    case BoundNodeKind::BinaryExpression:
-        return "BinaryExpression";
-    case BoundNodeKind::ParenthesizedExpression:
-        return "ParenthesizedExpression";
-    case BoundNodeKind::VariableExpression:
-        return "VariableExpression";
-    case BoundNodeKind::AssignmentExpression:
-        return "AssignmentExpression";
-    case BoundNodeKind::ExpressionStatement:
-        return "ExpressionStatement";
-    case BoundNodeKind::VariableDeclaration:
-        return "VariableDeclaration";
-    case BoundNodeKind::BlockStatement:
-        return "BlockStatement";
-    default:
-        return "Unknown";
-    }
-}
-
-void PrintAST(SyntaxNode *node, std::string indent = "", bool isLast = true)
-{
-    if (!node)
-        return;
-
-    std::cout << indent << "|--" << convertSyntaxKindToString(node->Kind);
-
-    if (Token *token = dynamic_cast<Token *>(node))
-    {
-        std::cout << " " << token->value;
-    }
-    std::cout << std::endl;
-    indent += isLast ? "   " : "|   ";
-
-    auto children = node->GetChildren();
-    for (size_t i = 0; i < children.size(); i++)
-    {
-        PrintAST(children[i], indent, i == children.size() - 1);
-    }
-}
-main()
+void Repl()
 {
 
     std::string textBuilder;
@@ -246,6 +279,4 @@ main()
 
         textBuilder.clear();
     }
-
-    return 0;
 }
