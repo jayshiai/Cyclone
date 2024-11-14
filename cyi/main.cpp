@@ -1,5 +1,5 @@
-#include "CodeAnalysis/lexer.h"
-#include "CodeAnalysis/parser.h"
+#include "CodeAnalysis/Lexer.h"
+#include "CodeAnalysis/Parser.h"
 #include "CodeAnalysis/SyntaxTree.h"
 #include "CodeAnalysis/Binder.h"
 #include "CodeAnalysis/Evaluator.h"
