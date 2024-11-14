@@ -158,6 +158,7 @@ void Emitter::EmitConditionalGotoStatement(BoundConditionalGotoStatement *node)
 void Emitter::EmitLabelStatement(BoundLabelStatement *node)
 {
     codeStream << node->Label.ToString() << ":\n";
+    codeStream << ";";
 }
 
 void Emitter::EmitReturnStatement(BoundReturnStatement *node)
