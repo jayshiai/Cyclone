@@ -188,4 +188,4 @@ Project Link: [https://github.com/jayshiai/Cyclone](https://github.com/jayshiai/
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=plastic&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/jayvardhan-patil-419b9926b/
 [cpp-url]: https://isocpp.org/
-[C++]: https://img.shields.io/badge/cplusplus-#00599C?style=for-the-badge&logo=typescript&logoColor=white
+[C++]: https://img.shields.io/badge/c++-00599C?style=for-the-badge&logo=cplusplus&logoColor=white
