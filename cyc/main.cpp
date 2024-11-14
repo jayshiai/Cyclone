@@ -13,6 +13,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include <array>
 
 namespace fs = std::filesystem;
 std::vector<std::string> GetFilePaths(const std::vector<std::string> &paths)
@@ -40,16 +41,73 @@ std::vector<std::string> GetFilePaths(const std::vector<std::string> &paths)
     return result;
 }
 
+bool isGppInstalled()
+{
+    std::array<char, 128> buffer;
+    std::string result = "";
+    const char *command;
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+    command = "where g++"; // Use 'where' on Windows
+#else
+    command = "which g++"; // Use 'which' on Linux/macOS
+#endif
+
+    FILE *pipe = popen(command, "r");
+    if (!pipe)
+    {
+        return false;
+    }
+
+    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
+    {
+        result += buffer.data();
+    }
+
+    // If result is empty, g++ is not installed
+    return !result.empty();
+}
+
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
+    if (argc < 3)
     {
-        std::cerr << "usage: cyc <source-paths>" << std::endl;
+        std::cerr << "usage: cyc <source-paths> -o <output-filename>" << std::endl;
         return 1;
     }
     std::vector<std::string> args(argv + 1, argv + argc);
 
-    auto paths = GetFilePaths(args);
+    std::string outputFileName;
+
+    std::vector<std::string> sourcePaths;
+
+    for (size_t i = 0; i < args.size(); ++i)
+    {
+        if (args[i] == "-o" && i + 1 < args.size())
+        {
+            outputFileName = args[i + 1];
+            i++; // Skip the next argument, since it is the output file name
+        }
+        else
+        {
+            sourcePaths.push_back(args[i]);
+        }
+    }
+
+    if (outputFileName.empty())
+    {
+        std::cerr << "Error: Output filename must be specified with the '-o' flag." << std::endl;
+        return 1;
+    }
+
+    if (!isGppInstalled())
+    {
+        std::cerr << "Error: g++ is not installed on the system." << std::endl;
+        std::cerr << "Please install g++ before running Cyclone Compiler." << std::endl;
+        std::cerr << "If you don't want to install g++, you can use the online compiler at https://cy.3dubs.in or use the Interpreter." << std::endl;
+        return 1;
+    }
+    auto paths = GetFilePaths(sourcePaths);
     std::vector<SyntaxTree *> syntaxTrees;
     bool hasErrors = false;
 
@@ -70,7 +128,7 @@ int main(int argc, char *argv[])
         return 1;
     Compilation compilation(syntaxTrees);
     std::unordered_map<VariableSymbol, std::any> variables;
-    auto result = compilation.Compile(variables);
+    auto result = compilation.Compile(variables, outputFileName);
     if (result.Diagnostics.empty())
     {
         if (result.Value.has_value())

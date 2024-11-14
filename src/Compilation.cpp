@@ -7,12 +7,14 @@
 #include "CodeAnalysis/ControlFlowGraph.h"
 #include "CodeAnalysis/Symbol.h"
 #include "CodeGeneration/Emitter.h"
+#include "CodeGeneration/Assembler.h"
 #include <unordered_map>
 #include <atomic>
 #include <fstream>
 #include <filesystem>
 #include <algorithm>
 
+namespace fs = std::filesystem;
 void GenerateCFG(BoundProgram *program)
 {
     std::string appDirectory = std::filesystem::current_path().string();
@@ -98,6 +100,10 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
         return EvaluationResult(diagnostics, std::any());
     }
 
+    // Assembler assembler = Assembler("jay", program, variables);
+
+    // assembler.Assemble();
+
     Evaluator evaluator = Evaluator(program, variables);
 
     std::any value = evaluator.Evaluate();
@@ -105,7 +111,7 @@ EvaluationResult Compilation::Evaluate(std::unordered_map<VariableSymbol, std::a
     return EvaluationResult(diagnostics, value);
 }
 
-EvaluationResult Compilation::Compile(std::unordered_map<VariableSymbol, std::any> &variables)
+EvaluationResult Compilation::Compile(std::unordered_map<VariableSymbol, std::any> &variables, std::string outputFileName)
 {
 
     std::vector<Diagnostic> diagnostics;
@@ -138,13 +144,24 @@ EvaluationResult Compilation::Compile(std::unordered_map<VariableSymbol, std::an
         return EvaluationResult(diagnostics, 1);
     }
 
-    Emitter emitter = Emitter("jay", program, variables);
+    Emitter emitter = Emitter(outputFileName, program, variables);
     emitter.Emit();
 
     // Evaluator evaluator = Evaluator(program, variables);
 
     // std::any value = evaluator.Evaluate();
+    // At the end of the program, compile the temp.cpp file
+    std::string command = "g++  temp" + outputFileName + ".cpp -o " + outputFileName;
 
+    int ret = system(command.c_str());
+    if (ret != 0)
+    {
+        std::cerr << "Compilation failed with error code " << ret << std::endl;
+        return EvaluationResult(diagnostics, 1);
+    }
+
+    std::cout << "Compilation successful. Executable created as: " + outputFileName << std::endl;
+    fs::remove("temp" + outputFileName + ".cpp");
     return EvaluationResult(diagnostics, 0);
 }
 
