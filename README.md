@@ -12,7 +12,7 @@
 <div align="center">
   <a href="https://github.com/jayshiai/Cyclone">
     <img src="logo.png" 
-    alt="Logo" width="150" height="150">
+    alt="Logo" width="250" height="250">
   </a>
 
   <h3 align="center">Cyclone</h3>
