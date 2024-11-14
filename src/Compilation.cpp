@@ -7,7 +7,6 @@
 #include "CodeAnalysis/ControlFlowGraph.h"
 #include "CodeAnalysis/Symbol.h"
 #include "CodeGeneration/Emitter.h"
-#include "CodeGeneration/Assembler.h"
 #include <unordered_map>
 #include <atomic>
 #include <fstream>
