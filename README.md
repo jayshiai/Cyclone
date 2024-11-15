@@ -60,7 +60,11 @@
 
 ## About The Project
 
-**Cyclone** is a minimalistic, type-safe compiled and interpreted ( yes, both! ) programming language for The Tarnished
+**Cyclone** is a minimalistic, type-safe, statically typed, compiled and interpreted ( yes, both! ) programming language for The Tarnished.
+
+I liked C-Language's Type Safty and Pythons semi-colon free clean syntax. So I created a language that is semi-colon free and type-safe without having to explicitly providing types, they are infered dynamically at compile-time. However for those who prefer less ambigious code, I've added ability to add type-hints like Python / TypeScript.
+
+And, Yes, Cyclone is **Truing Complete**.
 
 ### Built With
 
@@ -74,7 +78,7 @@
 
 ### Installation
 
-1. Download the binaries from releate page.
+1. Download the binaries from release page.
 2. Start using the complier and interpreter! Its that easy!
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -101,6 +105,7 @@ Interpreter:
 ./cyinterpreter <filepath>
 ```
 
+You can find _sample_ code in _sample_ folder in repo.
 _For more examples, please refer to the [Documentation](https://cy.3dubs.in)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -116,8 +121,10 @@ _For more examples, please refer to the [Documentation](https://cy.3dubs.in)_
 - [x] Build AST
 - [x] Create Binder
 - [x] Bind BST
+- [x] Add Type Checking
 - [x] Create Evaluator
 - [x] Integrate Evaluator
+- [x] Add Lowering
 - [x] Create Compilation Unit
 - [x] Support Mulitple Files
 - [x] Add Control Flow Analysis
