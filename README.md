@@ -11,7 +11,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/jayshiai/Cyclone">
-    <img src="logo.png" 
+    <img src="resources/logo.png" 
     alt="Logo" width="250" height="250">
   </a>
 
