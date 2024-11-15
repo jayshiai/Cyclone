@@ -18,6 +18,7 @@ void Emitter::EmitIncludes()
 {
     codeStream << "#include <iostream>\n";
     codeStream << "#include <string>\n";
+    codeStream << "#include <vector>\n";
 }
 
 void Emitter::EmitFunctions()
@@ -31,10 +32,6 @@ void Emitter::EmitFunctions()
             EmitType(function.first.Parameters[i].Type);
             codeStream << " " << function.first.Parameters[i].Name;
 
-            if (function.first.Parameters[i].Type.IsArray())
-            {
-                codeStream << "[]";
-            }
             if (i < function.first.Parameters.size() - 1)
             {
                 codeStream << ", ";
@@ -89,12 +86,13 @@ void Emitter::EmitVariableDeclaration(BoundVariableDeclaration *node)
 
     if (node->Variable.Type.IsArray())
     {
-        codeStream << "[";
+
         if (node->Variable.Size != -1)
         {
+            codeStream << "(";
             codeStream << node->Variable.Size;
+            codeStream << ")";
         }
-        codeStream << "]";
     }
     if (node->Initializer != nullptr)
     {
@@ -312,11 +310,8 @@ void Emitter::EmitCallExpression(BoundCallExpression *node)
     }
     else if (node->Function == BuiltInFunctions::ArrayLength)
     {
-        codeStream << "sizeof(";
         EmitExpression(node->Arguments[0]);
-        codeStream << ") / sizeof(";
-        EmitExpression(node->Arguments[0]);
-        codeStream << "[0])";
+        codeStream << ".size()";
     }
     else if (node->Function == BuiltInFunctions::StringLength)
     {
@@ -395,23 +390,23 @@ void Emitter::EmitType(TypeSymbol type)
     }
     else if (type == TypeSymbol::ArrayAny)
     {
-        codeStream << "std::any";
+        codeStream << "std::vector<std::any>";
     }
     else if (type == TypeSymbol::ArrayInt)
     {
-        codeStream << "long long";
+        codeStream << "std::vector<long long>";
     }
     else if (type == TypeSymbol::ArrayFloat)
     {
-        codeStream << "double";
+        codeStream << "std::vector<double>";
     }
     else if (type == TypeSymbol::ArrayBool)
     {
-        codeStream << "bool";
+        codeStream << "std::vector<bool>";
     }
     else if (type == TypeSymbol::ArrayString)
     {
-        codeStream << "std::string";
+        codeStream << "std:vector<std::string>";
     }
     else if (type == TypeSymbol::Void)
     {
