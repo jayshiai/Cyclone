@@ -62,7 +62,7 @@
 
 **Cyclone** is a minimalistic, type-safe, statically typed, compiled and interpreted ( yes, both! ) programming language for The Tarnished.
 
-I liked C-Language's Type Safty and Pythons semi-colon free clean syntax. So I created a language that is semi-colon free and type-safe without having to explicitly providing types, they are infered dynamically at compile-time. However for those who prefer less ambigious code, I've added ability to add type-hints like Python / TypeScript.
+I liked C-Language's Type Safety and Pythons semi-colon-free and clean syntax. So I created a language that is semi-colon-free and type-safe without having to explicitly provide types, they are inferred dynamically at compile-time. However for those who prefer less ambigious code, I've added ability to add type-hints like Python / TypeScript.
 
 And, Yes, Cyclone is **Truing Complete**.
 
