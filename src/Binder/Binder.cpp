@@ -659,8 +659,7 @@ BoundProgram *Binder::BindProgram(BoundGlobalScope *globalScope)
         {
             Binder binder(&parentScope, &function);
             BoundStatement *body = binder.BindStatement(function.Declaration->Body);
-            BoundBlockStatement *loweredUnflatBody = Lowerer::Lower(body);
-            BoundBlockStatement *loweredBody = Lowerer::Flatten(loweredUnflatBody);
+            BoundBlockStatement *loweredBody = Lowerer::Lower(body);
 
             if (function.Type != TypeSymbol::Void && !ControlFlowGraph::AllPathsReturn(loweredBody))
             {
@@ -693,7 +692,7 @@ BoundProgram *Binder::BindEmitableProgram(BoundGlobalScope *globalScope)
         {
             Binder binder(&parentScope, &function);
             BoundStatement *body = binder.BindStatement(function.Declaration->Body);
-            BoundBlockStatement *loweredBody = Lowerer::Lower(body);
+            BoundBlockStatement *loweredBody = Lowerer::LowerEmitable(body);
             BoundBlockStatement *flatBody = Lowerer::Flatten(loweredBody);
             if (function.Type != TypeSymbol::Void && !ControlFlowGraph::AllPathsReturn(flatBody))
             {

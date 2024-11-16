@@ -4,6 +4,12 @@ BoundBlockStatement *Lowerer::Lower(BoundStatement *node)
 {
     Lowerer lowerer;
     BoundStatement *result = lowerer.RewriteStatement(node);
+    return Flatten(static_cast<BoundBlockStatement *>(result));
+}
+BoundBlockStatement *Lowerer::LowerEmitable(BoundStatement *node)
+{
+    Lowerer lowerer;
+    BoundStatement *result = lowerer.RewriteStatement(node);
     return static_cast<BoundBlockStatement *>(result);
 }
 

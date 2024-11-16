@@ -48,9 +48,9 @@ std::string convertBoundNodeKind(BoundNodeKind kind)
 
 std::any Evaluator::EvaluateStatement(BoundBlockStatement *body)
 {
-    std::unordered_map<BoundLabel, long long> labelToIndex;
+    std::unordered_map<BoundLabel, int> labelToIndex;
 
-    for (long long i = 0; i < body->Statements.size(); i++)
+    for (int i = 0; i < body->Statements.size(); i++)
     {
         if (body->Statements[i]->GetKind() == BoundNodeKind::LabelStatement)
         {
@@ -59,7 +59,7 @@ std::any Evaluator::EvaluateStatement(BoundBlockStatement *body)
         }
     }
 
-    long long index = 0;
+    int index = 0;
     while (index < body->Statements.size())
     {
         BoundStatement *s = body->Statements[index];
@@ -102,17 +102,6 @@ std::any Evaluator::EvaluateStatement(BoundBlockStatement *body)
             BoundReturnStatement *rs = (BoundReturnStatement *)s;
             _lastValue = rs->Expression == nullptr ? std::any() : EvaluateExpression(rs->Expression);
             return _lastValue;
-        }
-        case BoundNodeKind::BlockStatement:
-        {
-            BoundBlockStatement *block = (BoundBlockStatement *)s;
-            std::any value = EvaluateStatement(block);
-            if (value.has_value())
-            {
-                return value;
-            }
-            index++;
-            break;
         }
         default:
             throw std::runtime_error("Unexpected node kind2: " + convertBoundNodeKindToString(s->GetKind()));

@@ -42,7 +42,7 @@ public:
     Lowerer() {}
 
     static BoundBlockStatement *Lower(BoundStatement *node);
-
+    static BoundBlockStatement *LowerEmitable(BoundStatement *node);
     static BoundBlockStatement *Flatten(BoundStatement *node);
 
 protected:
