@@ -164,6 +164,7 @@ std::vector<Token> Lexer::tokenize()
             }
             break;
         case '"':
+        case '\'':
             tokens.push_back(GenerateStringToken());
             break;
         case '0':
@@ -265,6 +266,7 @@ Token Lexer::GenerateStringToken()
             return Token{_syntaxTree, SyntaxKind::BAD_TOKEN, input.ToString(start, pos - start), start};
         }
         case '"':
+        case '\'':
             done = true;
             break;
         case '\\':
