@@ -393,6 +393,11 @@ SyntaxNode *Parser::ParsePrimaryExpression()
     case SyntaxKind::STRING:
         return ParseStringLiteral();
         break;
+    case SyntaxKind::BAD_TOKEN:
+        NextToken();
+        _diagnostics.ReportUnexpectedToken(currentToken.Location, convertSyntaxKindToString(currentToken.Kind), "Primary Expression");
+        return nullptr;
+        break;
     case SyntaxKind::IDENTIFIER:
     default:
         return ParseNameOrCallExpression();
