@@ -16,6 +16,11 @@ void DiagnosticBag::ReportBadCharacter(TextLocation location, char character)
 {
     std::ostringstream oss;
     oss << "Bad character input: '" << character << "'.";
+
+    if (character == ';')
+    {
+        oss << "\nCyclone does not require semicolons at the end of statements. Remove the semicolon.\n";
+    }
     Report(location, oss.str());
 }
 void DiagnosticBag::ReportUnterminatedString(TextLocation location)
