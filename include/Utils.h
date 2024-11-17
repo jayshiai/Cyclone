@@ -6,4 +6,5 @@
 
 void PrintDiagnostic(Diagnostic diagnostic, SourceText Text);
 void PrintVariables(const std::unordered_map<VariableSymbol, std::any> &variables);
+bool LookUpKeyword(std::string name);
 #endif

@@ -276,3 +276,12 @@ void PrintVariables(const std::unordered_map<VariableSymbol, std::any> &variable
         std::cout << '\n';
     }
 }
+
+bool LookUpKeyword(std::string name)
+{
+    if (name == "bool" || name == "int" || name == "float" || name == "string" || name == "any" || name == "char")
+    {
+        return true;
+    }
+    return false;
+}

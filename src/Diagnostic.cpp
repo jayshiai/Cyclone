@@ -79,7 +79,9 @@ void DiagnosticBag::ReportCannotConvert(TextLocation location, std::string fromT
 void DiagnosticBag::ReportCannotConvertImplicitly(const TextLocation &location, const std::string &fromType, const std::string &toType)
 {
     std::ostringstream oss;
-    oss << "Cannot convert type " << fromType << " to " << toType << " implicitly.";
+    oss << "Cannot convert type " << fromType << " to " << toType << " implicitly.\n";
+    oss << "If you were trying to print a variable or value, convert it to string first.\n";
+    oss << "Example: Instead of print(10) or print(a) try print(string(10)) or print(string(a))\n";
     Report(location, oss.str());
 }
 
@@ -203,4 +205,17 @@ void DiagnosticBag::ReportInvalidArrayInitializer(const TextLocation &location)
 void DiagnosticBag::ReportUnterminatedComment(const TextLocation &location)
 {
     Report(location, "Unterminated comment.");
+}
+
+void DiagnosticBag::ReportUndefinedNameKeyword(const TextLocation &location, const std::string &name)
+{
+    std::ostringstream oss;
+    oss << "You are using keyword as a variable name: " << name;
+    oss << ". Please use another name.\n";
+    oss << "In case you were trying to define a variable with type " << name << ", please use 'var' keyword instead.\n";
+    oss << "Example: var myVariable = 10;\n";
+    oss << "For typed variables, use the following syntax: var variableName: typeName = value;\n";
+    oss << "Example: var myVariable: int = 10;\n";
+
+    Report(location, oss.str());
 }

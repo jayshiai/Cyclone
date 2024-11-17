@@ -187,7 +187,14 @@ BoundExpression *Binder::BindNameExpression(NameExpressionNode *node)
     VariableSymbol variable(name, false, TypeSymbol::Error);
     if (!_scope->TryLookupVariable(name, variable))
     {
-        _diagnostics.ReportUndefinedName(node->IdentifierToken.Location, name);
+        if (LookUpKeyword(name))
+        {
+            _diagnostics.ReportUndefinedNameKeyword(node->IdentifierToken.Location, name);
+        }
+        else
+        {
+            _diagnostics.ReportUndefinedName(node->IdentifierToken.Location, name);
+        }
         return new BoundErrorExpression();
     }
     return new BoundVariableExpression(variable);
